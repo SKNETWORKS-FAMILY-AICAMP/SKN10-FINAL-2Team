@@ -1,0 +1,5 @@
+django
+djangorestframework
+openai
+django-environ
+PyJWT
