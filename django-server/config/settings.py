@@ -56,11 +56,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-<<<<<<< HEAD
-        'DIRS': ['templates'],
-=======
         'DIRS': ["templates"],
->>>>>>> 22b28eaad32631d58323f5f0b88010c9927bd052
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -127,13 +123,11 @@ import os
 
 STATIC_URL = 'static/'
 STATIC_PATH = os.path.join(BASE_DIR, 'static')
-<<<<<<< HEAD
-STATICFILES_DIRS = (STATIC_PATH,)
-=======
+
 STATICFILES_DIRS = (STATIC_PATH,)   # 튜플로 넣어줌. 리스트로 넣어도 됨.
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
->>>>>>> 22b28eaad32631d58323f5f0b88010c9927bd052
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
