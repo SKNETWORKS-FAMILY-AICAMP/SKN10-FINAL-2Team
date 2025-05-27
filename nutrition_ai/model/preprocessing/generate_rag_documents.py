@@ -64,7 +64,7 @@ def generate_rag_documents(df, output_path):
 if __name__ == "__main__":
     # Get the absolute path to the data directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    data_dir = os.path.join(os.path.dirname(current_dir), "data")
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(current_dir)), "data")
     
     # Input and output file paths
     input_csv = os.path.join(data_dir, "crawling data.csv")
@@ -75,4 +75,5 @@ if __name__ == "__main__":
     
     # Generate RAG documents
     generate_rag_documents(df, output_path)
-    print(f"RAG documents have been generated and saved to: {output_path}") 
+    print(f"RAG documents have been generated and saved to: {output_path}")
+
