@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -55,7 +56,11 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+<<<<<<< HEAD
         'DIRS': ['templates'],
+=======
+        'DIRS': ["templates"],
+>>>>>>> 22b28eaad32631d58323f5f0b88010c9927bd052
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -75,8 +80,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'topDB',    # 데이터베이스 이름.
+        "USER": "topAdmin",  # 사용자 이름.
+        "PASSWORD": "root1234",    # 비밀번호
+        "HOST": "127.0.0.1",    # 호스트명
+        "PORT": "5432"          # 포트번호
     }
 }
 
@@ -118,6 +127,13 @@ import os
 
 STATIC_URL = 'static/'
 STATIC_PATH = os.path.join(BASE_DIR, 'static')
+<<<<<<< HEAD
 STATICFILES_DIRS = (STATIC_PATH,)
+=======
+STATICFILES_DIRS = (STATIC_PATH,)   # 튜플로 넣어줌. 리스트로 넣어도 됨.
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+>>>>>>> 22b28eaad32631d58323f5f0b88010c9927bd052
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
