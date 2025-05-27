@@ -3,3 +3,4 @@ djangorestframework
 openai
 django-environ
 PyJWT
+psycopg2-binary
