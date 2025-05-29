@@ -1,0 +1,95 @@
+/* 기본 스타일 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Pretendard', sans-serif;
+}
+
+body {
+    background-color: #FFFFFF;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.survey-container {
+    width: 100%;
+    max-width: 800px;
+    background: #FFFFFF;
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    padding: 2rem;
+}
+
+fieldset {
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+legend {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #DCA628;
+    padding: 0 1rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 1rem;
+    font-weight: 500;
+    color: #333;
+}
+
+input[type="number"],
+select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #E0E0E0;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+
+input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.submit-button {
+    width: 100%;
+    padding: 1rem;
+    background: #EADCA6;
+    border: none;
+    border-radius: 8px;
+    color: #FFFFFF;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+    background-color: #DCA628;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    color: #DCA628;
+    margin-bottom: 1rem;
+}
+
+.error-message {
+    color: #FF0000;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+} 
