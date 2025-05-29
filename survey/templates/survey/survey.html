@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>건강 설문조사</title>
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+</head>
+<body>
+    <!-- 상단 네비게이션 -->
+    <div class="top-bar">
+        <div class="logo">포토로그</div>
+        <div class="nav-menu">
+            <span class="nav-item">챗봇</span>
+            <span class="nav-item selected" id="mypage-menu">마이페이지</span>
+            <span class="nav-item">영양제</span>
+        </div>
+        <div class="user-info">
+            <span>홍길동님~!</span>
+            <span class="dropdown-arrow"></span>
+        </div>
+    </div>
+
+    <!-- 사이드바 -->
+    <div class="sidebar" id="mypage-sidebar">
+        <div class="sidebar-item">내 정보</div>
+        <div class="sidebar-item active">설문 조사</div>
+        <div class="sidebar-item">좋아요</div>
+        <div class="sidebar-item">영양 분석</div>
+    </div>
+
+    <!-- 인사말 카드 -->
+    <div class="survey-card" id="greeting-card">
+        <h2 class="survey-title">안녕하세요, 홍승표님!</h2>
+        <p class="survey-desc">
+            설문조사를 통해 파악된 홍승표님의 건강 상태와 생활 습관을 바탕으로,<br>
+            꼭 필요한 영양제를 추천해 드립니다.
+        </p>
+        <button class="start-btn" onclick="startSurvey()">시작하기</button>
+    </div>
+
+    <!-- 설문조사 카드 -->
+    <div class="survey-card" id="survey-card" style="display: none;">
+        <div class="question-group" id="question-1">
+            <div class="question-title">Q. 주로 앉아서 하는 일을 하시나요?</div>
+            <div class="option-row">
+                <div class="option-box" data-value="yes">예</div>
+                <div class="option-box" data-value="no">아니오</div>
+            </div>
+            <button class="next-btn" onclick="nextQuestion(1)">다음</button>
+        </div>
+
+        <div class="question-group" id="question-2" style="display: none;">
+            <div class="question-title">Q. 당신의 성별은?</div>
+            <div class="option-row">
+                <div class="option-box" data-value="male">남성</div>
+                <div class="option-box" data-value="female">여성</div>
+            </div>
+            <button class="next-btn" onclick="nextQuestion(2)">다음</button>
+        </div>
+
+        <div class="question-group" id="question-3" style="display: none;">
+            <div class="question-title">Q. 당신이 태어난 년도를 입력해주세요.</div>
+            <input type="text" class="birth-input" maxlength="4" placeholder="YYYY">
+            <button class="submit-btn" onclick="submitSurvey()">제출하기</button>
+        </div>
+    </div>
+
+    <script>
+    // 마이페이지 메뉴 호버 이벤트
+    const mypageMenu = document.getElementById('mypage-menu');
+    const mypageSidebar = document.getElementById('mypage-sidebar');
+
+    mypageMenu.addEventListener('mouseenter', () => {
+        mypageSidebar.style.display = 'block';
+    });
+
+    mypageSidebar.addEventListener('mouseleave', () => {
+        mypageSidebar.style.display = 'none';
+    });
+
+    let currentQuestion = 1;
+    const totalQuestions = 3;
+    const answers = {};
+
+    function startSurvey() {
+        document.getElementById('greeting-card').style.display = 'none';
+        document.getElementById('survey-card').style.display = 'block';
+    }
+
+    function nextQuestion(questionNum) {
+        // 현재 질문의 답변 저장
+        const questionElement = document.getElementById(`question-${questionNum}`);
+        const selectedOption = questionElement.querySelector('.option-box.active');
+        
+        if (!selectedOption) {
+            alert('답변을 선택해주세요.');
+            return;
+        }
+
+        answers[`question${questionNum}`] = selectedOption.dataset.value;
+
+        // 다음 질문으로 이동
+        questionElement.style.display = 'none';
+        document.getElementById(`question-${questionNum + 1}`).style.display = 'block';
+    }
+
+    function submitSurvey() {
+        const birthYear = document.querySelector('.birth-input').value;
+        if (!birthYear || birthYear.length !== 4) {
+            alert('올바른 출생년도를 입력해주세요.');
+            return;
+        }
+
+        answers.birthYear = birthYear;
+
+        // 서버로 데이터 전송
+        fetch('/survey/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(answers)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('설문조사가 완료되었습니다.');
+                window.location.href = '/';  // 메인 페이지로 이동
+            } else {
+                alert('오류가 발생했습니다. 다시 시도해주세요.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('오류가 발생했습니다. 다시 시도해주세요.');
+        });
+    }
+
+    // CSRF 토큰 가져오기
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // 옵션 선택 이벤트
+    document.querySelectorAll('.option-box').forEach(box => {
+        box.addEventListener('click', function() {
+            const row = this.parentNode;
+            row.querySelectorAll('.option-box').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // 출생년도 입력 제한
+    document.querySelector('.birth-input').addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+    </script>
+</body>
+</html> 
