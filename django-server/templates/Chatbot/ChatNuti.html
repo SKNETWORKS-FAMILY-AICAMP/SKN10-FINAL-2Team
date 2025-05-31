@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuti 챗봇</title>
+    <!-- 마크다운 변환 라이브러리 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            text-align: right;
+        }
+        .bot-message {
+            background-color: #f5f5f5;
+            margin-right: auto;
+        }
+        .input-container {
+            display: flex;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        /* 로딩 애니메이션 스타일 */
+        .loading {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f5f5f5;
+            max-width: 80px;
+        }
+        .loading-dots {
+            display: flex;
+            justify-content: center;
+        }
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            margin: 0 3px;
+            border-radius: 50%;
+            background-color: #888;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        @keyframes bounce {
+            0%, 80%, 100% { 
+                transform: scale(0);
+            } 
+            40% { 
+                transform: scale(1.0);
+            }
+        }
+        /* 마크다운 스타일 개선 */
+        .bot-message pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .bot-message code {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .bot-message p {
+            margin: 0 0 10px 0;
+        }
+        .bot-message ul, .bot-message ol {
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nuti 영양제 추천 챗봇</h1>
+        <div class="chat-container" id="chat-container">
+            <div class="message bot-message">
+                안녕하세요! 저는 Nuti 영양제 추천 챗봇입니다. 건강 상태나 원하는 영양제에 대해 물어보세요.
+            </div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="메시지를 입력하세요...">
+            <button id="send-button">전송</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatContainer = document.getElementById('chat-container');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            let loadingElement = null;
+
+            // 마크다운 설정
+            marked.setOptions({
+                breaks: true,  // 줄바꿈 허용
+                gfm: true      // GitHub Flavored Markdown 활성화
+            });
+
+            // 로딩 애니메이션 표시
+            function showLoading() {
+                loadingElement = document.createElement('div');
+                loadingElement.className = 'loading';
+                const dots = document.createElement('div');
+                dots.className = 'loading-dots';
+                
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement('span');
+                    dots.appendChild(dot);
+                }
+                
+                loadingElement.appendChild(dots);
+                chatContainer.appendChild(loadingElement);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            // 로딩 애니메이션 숨기기
+            function hideLoading() {
+                if (loadingElement && loadingElement.parentNode) {
+                    loadingElement.parentNode.removeChild(loadingElement);
+                    loadingElement = null;
+                }
+            }
+
+            function addMessage(message, isUser) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+                messageDiv.classList.add(isUser ? 'user-message' : 'bot-message');
+                
+                if (isUser) {
+                    // 사용자 메시지는 일반 텍스트로 표시
+                    messageDiv.textContent = message;
+                } else {
+                    // 봇 메시지는 마크다운으로 변환하여 HTML로 표시
+                    messageDiv.innerHTML = marked.parse(message);
+                }
+                
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message === '') return;
+
+                // 사용자 메시지 표시
+                addMessage(message, true);
+                userInput.value = '';
+                
+                // 로딩 애니메이션 표시
+                showLoading();
+
+                // API 호출
+                fetch('/Chatbot/ChatWithNuti/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        user_query: message
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 로딩 애니메이션 숨기기
+                    hideLoading();
+                    
+                    // 봇 응답 표시
+                    if (data.final_recommendation) {
+                        addMessage(data.final_recommendation, false);
+                    } else if (data.error) {
+                        addMessage(`**오류가 발생했습니다:** ${data.error}`, false);
+                    } else {
+                        addMessage('응답을 처리할 수 없습니다.', false);
+                    }
+                })
+                .catch(error => {
+                    // 로딩 애니메이션 숨기기
+                    hideLoading();
+                    
+                    console.error('Error:', error);
+                    addMessage('**서버와 통신 중 오류가 발생했습니다.**', false);
+                });
+            }
+
+            // CSRF 토큰 가져오기
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            // 이벤트 리스너 등록
+            sendButton.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

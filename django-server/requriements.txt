@@ -4,3 +4,7 @@ openai
 django-environ
 PyJWT
 psycopg2-binary
+langgraph
+openai
+neo4j
+python-dotenv
