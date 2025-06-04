@@ -8,3 +8,6 @@ langgraph
 openai
 neo4j
 python-dotenv
+django-allauth
+requests
+cryptography
