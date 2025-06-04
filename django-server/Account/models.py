@@ -8,6 +8,7 @@ class CustomUser(AbstractUser):
     # username, first_name, last_name, password 등 기본 필드 존재
     email = models.EmailField(unique=True, null=False, blank=False)
     birth_date = models.DateField(null=True, blank=True)
+    name = models.CharField(max_length=20, null=True, blank=True)
     gender = models.CharField(max_length=20, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)

@@ -1,0 +1,367 @@
+body {
+    font-family: Arial, sans-serif; /* 이미지와 유사한 폰트 계열로 변경 가능 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #7f7f7f; /* 이미지의 배경 오버레이 색상과 유사하게 */
+    margin: 0;
+    color: #333;
+}
+
+.login-container {
+    display: flex;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    width: 800px;
+    max-width: 90%;
+    position: relative; /* 모달이 위에 올 때를 위해 */
+    z-index: 1; /* 모달보다 아래에 있도록 */
+}
+
+.login-left {
+    background-color: #e1d8b9; /* 이미지와 유사하게 조정 */
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40%;
+}
+
+.logo-placeholder {
+    width: 150px;
+    height: 150px;
+    background-color: #7f89bA; /* 이미지와 유사하게 조정 */
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #fff;
+    font-weight: bold;
+}
+
+.login-right {
+    padding: 40px;
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #555;
+}
+
+.form-group input[type="email"],
+.form-group input[type="password"] {
+    width: calc(100% - 22px);
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.form-links {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 25px;
+    font-size: 13px;
+}
+.form-links a {
+    color: #555;
+    text-decoration: none;
+}
+.form-links a:hover {
+    text-decoration: underline;
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-login {
+    background-color: #e1d8b9; /* 로그인 버튼 색상 */
+    color: #505050;
+    font-weight: bold;
+}
+.btn-login:hover {
+    background-color: #d3cabb;
+}
+
+.btn-google {
+    background-color: #fff;
+    color: #757575;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-google:hover {
+    background-color: #f8f8f8;
+}
+
+.btn-kakao {
+    background-color: #FEE500;
+    color: #3C1E1E;
+    font-weight: bold;
+}
+.btn-kakao:hover {
+    background-color: #f0d900;
+}
+
+/* --- 모달 스타일 수정 및 추가 --- */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000; /* 로그인 컨테이너보다 위에 표시 */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.6); /* 배경 어둡게 */
+    justify-content: center;
+    align-items: center;
+    padding: 20px; /* 모달이 화면 가장자리에 붙지 않도록 */
+}
+
+.modal-content {
+    background-color: #fff; /* 모달 배경 흰색 */
+    margin: auto;
+    padding: 25px 30px; /* 내부 패딩 조정 */
+    border: none; /* 테두리 없음 */
+    width: 90%;
+    max-width: 400px; /* 모달 최대 너비 (이미지 기반) */
+    border-radius: 8px; /* 모달 모서리 둥글게 */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    position: relative;
+    text-align: left; /* 내부 텍스트 왼쪽 정렬 */
+}
+
+/* 이미지 기반 모달 공통 스타일 */
+.image-based-modal h2,
+.image-based-modal h3 {
+    text-align: center; /* 제목 중앙 정렬 */
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 25px; /* 제목과 첫번째 필드 사이 간격 */
+    font-size: 18px; /* 제목 폰트 크기 */
+    font-weight: bold;
+}
+.image-based-modal h3 { /* 이메일/비번찾기 섹션 제목 */
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+
+.modal-form-group {
+    margin-bottom: 18px; /* 필드 간 간격 */
+}
+
+.modal-form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px; /* 레이블 폰트 크기 */
+    color: #444; /* 레이블 색상 */
+}
+
+.modal-input {
+    width: calc(100% - 10px); /* 패딩 고려 안 함, border-box 사용 권장 */
+    padding: 8px 0px; /* 상하 패딩, 좌우 패딩 없음 */
+    border: none; /* 모든 테두리 제거 */
+    border-bottom: 1px solid #ccc; /* 하단 테두리만 */
+    font-size: 15px;
+    background-color: transparent;
+    outline: none; /* 포커스 시 기본 아웃라인 제거 */
+    transition: border-color 0.3s ease;
+}
+.modal-input:focus {
+    border-bottom-color: #a0a0a0; /* 포커스 시 하단 테두리 색상 변경 (이미지는 주황색 계열이지만 일단 회색으로) */
+}
+
+
+.btn-modal-action {
+    background-color: #e1d8b9; /* 이미지의 버튼 배경색 */
+    color: #505050; /* 이미지의 버튼 글자색 */
+    font-weight: normal; /* 이미지 버튼 글자가 덜 굵어보임 */
+    padding: 10px; /* 버튼 패딩 조정 */
+    font-size: 15px;
+    margin-top: 15px; /* 마지막 필드와의 간격 */
+}
+.btn-modal-action:hover {
+    background-color: #d3cabb;
+}
+.btn-modal-find { /* 조회 버튼은 위아래 마진을 조금 더 줄 수 있음 */
+    margin-top: 10px;
+}
+
+
+.close-button {
+    color: #aaa;
+    font-size: 24px; /* X 버튼 크기 조정 */
+    font-weight: normal; /* 너무 굵지 않게 */
+    position: absolute;
+    top: 15px; /* X 버튼 위치 조정 */
+    right: 15px;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #333; /* X 버튼 호버 색상 */
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-divider {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 30px 0; /* 구분선 위아래 마진 */
+}
+.small-popup-content {
+    max-width: 320px; /* 일반 팝업보다 작게 */
+    padding: 20px 25px;
+}
+
+.small-popup-content p {
+    font-size: 14px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* 모든 팝업의 확인 버튼 스타일 일관성 */
+.btn-popup-confirm {
+    margin-top: 10px;
+    background-color: #e1d8b9;
+    color: #505050;
+    width: auto; 
+    padding: 8px 25px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block; 
+}
+.btn-popup-confirm:hover {
+    background-color: #d3cabb;
+}
+
+
+/* 로그인 실패 팝업 (기존 스타일 유지 또는 필요시 조정) */
+.popup .popup-content {
+    max-width: 350px;
+    padding: 25px;
+    text-align: center; /* 팝업 내용 중앙 정렬 */
+}
+.popup .popup-content h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+.popup .popup-content p {
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: center;
+    line-height: 1.6;
+}
+.popup .popup-content button { /* 확인 버튼 */
+    margin-top: 10px;
+    background-color: #e1d8b9;
+    color: #505050;
+    width: auto; /* 전체 너비 아님 */
+    padding: 8px 25px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.popup .popup-content button:hover {
+    background-color: #d3cabb;
+}
+
+
+/* 반응형 조정 (기존 유지, 필요시 모달 관련 추가) */
+@media (max-width: 768px) {
+    .login-container {
+        flex-direction: column;
+        width: 95%;
+    }
+    .login-left, .login-right {
+        width: 100%;
+    }
+    .login-left {
+        padding: 30px;
+        min-height: 200px;
+    }
+    .logo-placeholder {
+        width: 120px;
+        height: 120px;
+        font-size: 20px;
+    }
+    .login-right {
+        padding: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-group input[type="email"],
+    .form-group input[type="password"] {
+        font-size: 15px;
+    }
+    .btn {
+        font-size: 15px;
+    }
+    .modal-content { /* 모바일에서 모달 패딩 조정 */
+        padding: 20px 25px;
+        max-width: calc(100% - 40px); /* 화면 좌우 여백 고려 */
+    }
+    .image-based-modal h2 {
+        font-size: 17px;
+        margin-bottom: 20px;
+    }
+    .image-based-modal h3 {
+        font-size: 15px;
+    }
+    .modal-input {
+        font-size: 14px;
+    }
+    .btn-modal-action {
+        font-size: 14px;
+    }
+    .close-button {
+        top: 10px;
+        right: 10px;
+        font-size: 22px;
+    }
+    .modal-divider {
+        margin: 25px 0;
+    }
+    .small-popup-content {
+        max-width: calc(100% - 50px);
+        padding: 20px;
+    }
+    .popup .popup-content h2 {
+      font-size: 16px;
+    }
+    .popup .popup-content p, .small-popup-content p {
+      font-size: 13px;
+    }
+    .btn-popup-confirm {
+        font-size: 13px;
+        padding: 8px 20px;
+    }
+}

@@ -106,3 +106,19 @@ class Products(models.Model):
 
     def __str__(self):
         return self.title
+    
+class Review(models.Model):
+    product = models.ForeignKey(
+        'Products',
+        on_delete=models.CASCADE,
+        related_name='reviews'
+    )
+    
+    asin = models.CharField(max_length=20)  # Amazon 제품 코드 (분석용으로 저장)
+    date = models.DateField()               # 리뷰 날짜
+    stars = models.FloatField()             # 별점 (예: 4.5)
+    text = models.TextField()               # 리뷰 본문
+    sentiment = models.CharField(max_length=20)  # 예: 'positive', 'neutral', 'negative'
+
+    def __str__(self):
+        return f"{self.asin} - {self.stars}★ - {self.sentiment}"

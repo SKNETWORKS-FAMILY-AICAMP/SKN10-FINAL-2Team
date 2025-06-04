@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 페이지</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-left">
+            <div class="logo-placeholder">
+                로고
+            </div>
+        </div>
+        <div class="login-right">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">이메일</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">비밀번호</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-links">
+                    <a href="#" id="signupLink">회원가입</a>
+                    <a href="#" id="findCredentialsLink">이메일/비밀번호 찾기</a>
+                </div>
+                <button type="submit" class="btn btn-login">로그인</button>
+                <button type="button" class="btn btn-google">
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" width="20" height="20" style="margin-right: 8px; vertical-align: middle;">
+                    Sign in with Google
+                </button>
+                <button type="button" class="btn btn-kakao">카카오 로그인</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="signupModal" class="modal">
+        <div class="modal-content image-based-modal">
+            <span class="close-button" data-modal="signupModal">&times;</span>
+            <h2>회원가입</h2>
+            <div class="modal-form-group">
+                <label for="signupName">이름</label>
+                <input type="text" id="signupName" class="modal-input">
+            </div>
+            <div class="modal-form-group">
+                <label for="signupEmail">이메일</label>
+                <input type="email" id="signupEmail" class="modal-input">
+            </div>
+            <div class="modal-form-group">
+                <label for="signupPassword">비밀번호</label>
+                <input type="password" id="signupPassword" class="modal-input">
+            </div>
+            <div class="modal-form-group">
+                <label for="signupBirthdate">생년월일</label>
+                <input type="text" id="signupBirthdate" class="modal-input" placeholder="YYYYMMDD">
+            </div>
+            <button class="btn btn-modal-action">회원가입</button>
+        </div>
+    </div>
+
+    <div id="findCredentialsModal" class="modal">
+        <div class="modal-content image-based-modal">
+            <span class="close-button" data-modal="findCredentialsModal">&times;</span>
+            
+            <div class="find-section">
+                <h3>이메일 찾기</h3>
+                <div class="modal-form-group">
+                    <label for="findEmailName">이름</label>
+                    <input type="text" id="findEmailName" class="modal-input">
+                </div>
+                <div class="modal-form-group">
+                    <label for="findEmailIdentifier">생년월일</label> <input type="text" id="findEmailIdentifier" class="modal-input" placeholder="YYYYMMDD">
+                </div>
+                <button id="findEmailButton" class="btn btn-modal-action btn-modal-find">조회</button>
+            </div>
+
+            <hr class="modal-divider">
+
+            <div class="find-section">
+                <h3>비밀번호 찾기</h3>
+                <div class="modal-form-group">
+                    <label for="findPassName">이름</label>
+                    <input type="text" id="findPassName" class="modal-input">
+                </div>
+                <div class="modal-form-group">
+                    <label for="findPassEmail">이메일</label>
+                    <input type="email" id="findPassEmail" class="modal-input">
+                </div>
+                <div class="modal-form-group">
+                    <label for="findPassBirthdate">생년월일</label>
+                    <input type="text" id="findPassBirthdate" class="modal-input" placeholder="YYYYMMDD">
+                </div>
+                <button id="findPasswordButton" class="btn btn-modal-action btn-modal-find">조회</button>
+            </div>
+        </div>
+    </div>
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content image-based-modal">
+            <span class="close-button" data-modal="resetPasswordModal">&times;</span>
+            <h2>비밀번호 재설정</h2>
+            <div class="modal-form-group">
+                <label for="newPassword">신규 비밀번호</label>
+                <input type="password" id="newPassword" class="modal-input">
+            </div>
+            <div class="modal-form-group">
+                <label for="confirmNewPassword">비밀번호 확인</label>
+                <input type="password" id="confirmNewPassword" class="modal-input">
+            </div>
+            <button id="saveNewPasswordButton" class="btn btn-modal-action">저장</button>
+        </div>
+    </div>
+    <div id="loginFailedPopup" class="modal popup">
+        <div class="modal-content popup-content">
+            <span class="close-button" data-modal="loginFailedPopup">&times;</span>
+            <h2 id="loginFailedPopupTitle">로그인 실패</h2>
+            <p id="loginFailedPopupMessage">이메일 또는 비밀번호가 올바르지 않습니다.</p>
+            <button class="btn" id="closeFailedPopup">확인</button>
+        </div>
+    </div>
+    <div id="smallInfoPopup" class="modal popup">
+        <div class="modal-content popup-content small-popup-content">
+            <span class="close-button" data-modal="smallInfoPopup">&times;</span>
+            <p id="smallInfoPopupMessage" style="margin-top: 10px; margin-bottom:20px;"></p>
+            <button class="btn btn-popup-confirm" data-modal="smallInfoPopup">확인</button>
+        </div>
+    </div>
+    <script src="{% static 'js/login.js' %}"></script>
+</body>
+</html>
