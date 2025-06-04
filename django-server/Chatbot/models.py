@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from Product.models import Supplement
+from Product.models import Products
 
 class RecommendationLog(models.Model):
     id = models.AutoField(primary_key=True)
@@ -11,8 +11,8 @@ class RecommendationLog(models.Model):
         related_name='recommendation_logs'
     )
     
-    recommended_supplement = models.ForeignKey(
-        Supplement,
+    recommended_product = models.ForeignKey(
+        Products,
         on_delete=models.CASCADE,
         related_name='recommendation_logs'
     )
@@ -21,7 +21,7 @@ class RecommendationLog(models.Model):
     reason = models.TextField()
 
     def __str__(self):
-        return f"{self.user.email} → {self.recommended_supplement.name} ({self.timestamp.strftime('%Y-%m-%d %H:%M')})"
+        return f"{self.user.email} → {self.recommended_product.title} ({self.timestamp.strftime('%Y-%m-%d %H:%M')})"
     
 class LLMRequest(models.Model):
     id = models.AutoField(primary_key=True)
@@ -90,13 +90,12 @@ class ChatMetadata(models.Model):
     def __str__(self):
         return f"Metadata for ChatRoom {self.chat_room.id}"
     
-from Product.models import Supplement
 
 class RecommendationStat(models.Model):
     id = models.AutoField(primary_key=True)
 
-    supplement = models.OneToOneField(
-        Supplement,
+    product = models.OneToOneField(
+        Products,
         on_delete=models.CASCADE,
         related_name='recommendation_stat'
     )
@@ -106,7 +105,7 @@ class RecommendationStat(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.supplement.name} - {self.recommended_count} recommendations, {self.liked_count} likes"
+        return f"{self.product.title} - {self.recommended_count} recommendations, {self.liked_count} likes"
 class ModelVersion(models.Model):
     id = models.AutoField(primary_key=True)
     

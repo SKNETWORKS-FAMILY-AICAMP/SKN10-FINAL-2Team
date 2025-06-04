@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>로그인 페이지</title>
     {% load static %}
+    {% load socialaccount %}
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
 </head>
 <body>
@@ -31,7 +32,7 @@
                 <button type="submit" class="btn btn-login">로그인</button>
                 <button type="button" class="btn btn-google">
                     <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" width="20" height="20" style="margin-right: 8px; vertical-align: middle;">
-                    Sign in with Google
+                    <a href="{% provider_login_url 'google' %}">Google 계정 로그인</a>
                 </button>
                 <button type="button" class="btn btn-kakao">카카오 로그인</button>
             </form>
@@ -58,7 +59,7 @@
                 <label for="signupBirthdate">생년월일</label>
                 <input type="text" id="signupBirthdate" class="modal-input" placeholder="YYYYMMDD">
             </div>
-            <button class="btn btn-modal-action">회원가입</button>
+            <button id="signupSubmitButton" class="btn btn-modal-action">회원가입</button>
         </div>
     </div>
 

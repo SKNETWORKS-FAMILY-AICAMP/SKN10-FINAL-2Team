@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from Product.models import Supplement
+from Product.models import Products
 
 class Like(models.Model):
     id = models.AutoField(primary_key=True)
@@ -11,8 +11,8 @@ class Like(models.Model):
         related_name='likes'
     )
 
-    supplement = models.ForeignKey(
-        Supplement,
+    product = models.ForeignKey(
+        Products,
         on_delete=models.CASCADE,
         related_name='likes'
     )
@@ -20,10 +20,10 @@ class Like(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'supplement')  # 같은 유저가 같은 영양제에 중복 좋아요 방지
+        unique_together = ('user', 'product')  # 같은 유저가 같은 영양제에 중복 좋아요 방지
 
     def __str__(self):
-        return f"{self.user.email} liked {self.supplement.name}"
+        return f"{self.user.email} liked {self.product.title}"
     
 class Survey(models.Model):
     id = models.AutoField(primary_key=True)
@@ -88,8 +88,8 @@ class NutrientIntake(models.Model):
         related_name='nutrient_intakes'
     )
 
-    supplement = models.ForeignKey(
-        Supplement,
+    product = models.ForeignKey(
+        Products,
         on_delete=models.CASCADE,
         related_name='nutrient_intakes'
     )
