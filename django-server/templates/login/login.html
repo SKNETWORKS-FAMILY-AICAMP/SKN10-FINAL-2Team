@@ -30,11 +30,10 @@
                     <a href="#" id="findCredentialsLink">이메일/비밀번호 찾기</a>
                 </div>
                 <button type="submit" class="btn btn-login">로그인</button>
-                <button type="button" class="btn btn-google">
-                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" width="20" height="20" style="margin-right: 8px; vertical-align: middle;">
-                    <a href="{% provider_login_url 'google' %}">Google 계정 로그인</a>
-                </button>
-                <button type="button" class="btn btn-kakao">카카오 로그인</button>
+                <a href="{% provider_login_url 'google' %}" class="btn btn-google" style="display: inline-flex; align-items: center; text-decoration: none;">
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" width="20" height="20" style="margin-right: 8px;">
+                    Google 계정 로그인
+                </a>
             </form>
         </div>
     </div>

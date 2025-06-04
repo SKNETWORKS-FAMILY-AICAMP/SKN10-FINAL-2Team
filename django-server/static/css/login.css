@@ -108,24 +108,28 @@ body {
 }
 
 .btn-google {
+    /* inherit from .btn */
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 10px;
+    transition: background-color 0.3s ease;
+    /* overrides */
     background-color: #fff;
     color: #757575;
     border: 1px solid #ddd;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-.btn-google:hover {
+    text-decoration: none;
+    box-sizing: border-box;
+    cursor: pointer;
+}-google:hover {
     background-color: #f8f8f8;
-}
-
-.btn-kakao {
-    background-color: #FEE500;
-    color: #3C1E1E;
-    font-weight: bold;
-}
-.btn-kakao:hover {
-    background-color: #f0d900;
 }
 
 /* --- 모달 스타일 수정 및 추가 --- */

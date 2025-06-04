@@ -12,7 +12,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
-
+from dotenv import load_dotenv
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -47,7 +48,6 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.kakao',
 ]
 
 MIDDLEWARE = [
@@ -132,10 +132,14 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 )
-
+import os
 LOGIN_REDIRECT_URL = '/' # 로그인 성공 후 리다이렉트될 URL
 ACCOUNT_LOGOUT_REDIRECT_URL = '/' # 로그아웃 후 리다이렉트될 URL
 SOCIALACCOUNT_LOGIN_ON_GET = True
+ACCOUNT_EMAIL_VERIFICATION = 'none' # 'none'으로 설정하면 이메일 인증 불필요
+ACCOUNT_USERNAME_REQUIRED = False   # 사용자 이름 필드 필수로 만들지 않음 (이메일로 로그인하기 위함)
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
@@ -151,10 +155,12 @@ SOCIALACCOUNT_PROVIDERS = {
             'access_type': 'offline', # Refresh Token을 받기 위해 필요
         }
     }
+
 }
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
-import os
+
 
 STATIC_URL = 'static/'
 STATIC_PATH = os.path.join(BASE_DIR, 'static')
