@@ -1,209 +1,345 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // 기본 요소
-    const loginForm = document.getElementById('loginForm');
-    const signupLink = document.getElementById('signupLink');
-    const findCredentialsLink = document.getElementById('findCredentialsLink');
+// 기본 요소
+const loginForm = document.getElementById('loginForm');
+const signupLink = document.getElementById('signupLink');
+const findCredentialsLink = document.getElementById('findCredentialsLink');
 
-    // 모달 요소
-    const signupModal = document.getElementById('signupModal');
-    const findCredentialsModal = document.getElementById('findCredentialsModal');
-    const resetPasswordModal = document.getElementById('resetPasswordModal');
-    
-    // 팝업 요소
-    const loginFailedPopup = document.getElementById('loginFailedPopup');
-    const smallInfoPopup = document.getElementById('smallInfoPopup');
+// 모달 요소
+const signupModal = document.getElementById('signupModal');
+const findCredentialsModal = document.getElementById('findCredentialsModal');
+const resetPasswordModal = document.getElementById('resetPasswordModal');
 
-    // 닫기 버튼 (모든 모달/팝업의 X 버튼)
-    const closeButtons = document.querySelectorAll('.close-button');
-    
-    // 팝업 내 확인/닫기 버튼 (data-modal 속성으로 제어)
-    const popupConfirmButtons = document.querySelectorAll('.btn-popup-confirm');
+// 팝업 요소
+const loginFailedPopup = document.getElementById('loginFailedPopup');
+const smallInfoPopup = document.getElementById('smallInfoPopup');
 
-    // 이메일/비번찾기 모달 내 버튼
-    const findEmailButton = document.getElementById('findEmailButton');
-    const findPasswordButton = document.getElementById('findPasswordButton');
+// 닫기 버튼 (모든 모달/팝업의 X 버튼)
+const closeButtons = document.querySelectorAll('.close-button');
 
-    // 비밀번호 재설정 모달 내 버튼
-    const saveNewPasswordButton = document.getElementById('saveNewPasswordButton');
-    
-    // 회원가입 버튼
-    const signupSubmitButton = document.getElementById('signupSubmitButton');
+// 팝업 내 확인/닫기 버튼 (data-modal 속성으로 제어)
+const popupConfirmButtons = document.querySelectorAll('.btn-popup-confirm');
+
+// 이메일/비번찾기 모달 내 버튼
+const findEmailButton = document.getElementById('findEmailButton');
+const findPasswordButton = document.getElementById('findPasswordButton');
+
+// 비밀번호 재설정 모달 내 버튼
+const saveNewPasswordButton = document.getElementById('saveNewPasswordButton');
+
+// 회원가입 버튼
+const signupSubmitButton = document.getElementById('signupSubmitButton');
 
 
-    // --- 유틸리티 함수 ---
-    function openModal(modal) {
-        if (modal) modal.style.display = 'flex';
-    }
+// --- 유틸리티 함수 ---
+function openModal(modal) {
+    if (modal) modal.style.display = 'flex';
+}
 
-    function closeModal(modal) {
-        if (modal) modal.style.display = 'none';
-    }
+function closeModal(modal) {
+    if (modal) modal.style.display = 'none';
+}
 
-    function showSmallInfoPopup(message) {
-        // innerHTML 사용 시 주의: 신뢰할 수 없는 소스에서 온 HTML을 직접 삽입하면 XSS 위험이 있습니다.
-        // 이 예제에서는 개발자가 제어하는 문자열이므로 사용하지만, 사용자 입력을 직접 넣을 때는 textContent 등을 고려하세요.
-        document.getElementById('smallInfoPopupMessage').innerHTML = message;
-        openModal(smallInfoPopup);
-    }
-    
-    function showLoginFailedPopup(title, message) {
-        document.getElementById('loginFailedPopupTitle').textContent = title;
-        document.getElementById('loginFailedPopupMessage').textContent = message;
-        openModal(loginFailedPopup);
-    }
+function showSmallInfoPopup(message) {
+    // innerHTML 사용 시 주의: 신뢰할 수 없는 소스에서 온 HTML을 직접 삽입하면 XSS 위험이 있습니다.
+    // 이 예제에서는 개발자가 제어하는 문자열이므로 사용하지만, 사용자 입력을 직접 넣을 때는 textContent 등을 고려하세요.
+    document.getElementById('smallInfoPopupMessage').innerHTML = message;
+    openModal(smallInfoPopup);
+}
 
-    // --- 이벤트 리스너 ---
-
-    // 회원가입 링크
-    if (signupLink) {
-        signupLink.addEventListener('click', function (e) {
-            e.preventDefault();
-            openModal(signupModal);
-        });
-    }
-
-    // 이메일/비밀번호 찾기 링크
-    if (findCredentialsLink) {
-        findCredentialsLink.addEventListener('click', function (e) {
-            e.preventDefault();
-            openModal(findCredentialsModal);
-        });
-    }
-
-    // 모든 X 닫기 버튼
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const modalToClose = document.getElementById(this.dataset.modal);
-            if (modalToClose) {
-                closeModal(modalToClose);
+function showLoginFailedPopup(title, message) {
+    document.getElementById('loginFailedPopupTitle').textContent = title;
+    document.getElementById('loginFailedPopupMessage').textContent = message;
+    openModal(loginFailedPopup);
+}
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
-        });
-    });
-    
-    // 모든 팝업 내 확인/닫기 버튼
-    popupConfirmButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const modalToClose = document.getElementById(this.dataset.modal);
-            if (modalToClose) {
-                closeModal(modalToClose);
-            }
-        });
-    });
+        }
+    }
+    return cookieValue;
+}
+// --- 이벤트 리스너 ---
 
-    // 모달 외부 클릭 시 닫기
-    window.addEventListener('click', function (event) {
-        if (event.target.classList.contains('modal')) {
-            closeModal(event.target);
+// 회원가입 링크
+if (signupLink) {
+    signupLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal(signupModal);
+    });
+}
+
+// 이메일/비밀번호 찾기 링크
+if (findCredentialsLink) {
+    findCredentialsLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal(findCredentialsModal);
+    });
+}
+
+// 모든 X 닫기 버튼
+closeButtons.forEach(button => {
+    button.addEventListener('click', function () {
+        const modalToClose = document.getElementById(this.dataset.modal);
+        if (modalToClose) {
+            closeModal(modalToClose);
         }
     });
+});
 
-    // 로그인 폼 제출
-    if (loginForm) {
-        loginForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+// 모든 팝업 내 확인/닫기 버튼
+popupConfirmButtons.forEach(button => {
+    button.addEventListener('click', function() {
+        const modalToClose = document.getElementById(this.dataset.modal);
+        if (modalToClose) {
+            closeModal(modalToClose);
+        }
+    });
+});
 
-            // 간단한 로그인 시뮬레이션
-            if (email === 'test@example.com' && password === 'password123') {
-                showSmallInfoPopup('로그인 성공!'); // 성공 시 작은 팝업으로 변경
-            } else {
-                showLoginFailedPopup('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
-            }
-        });
+// 모달 외부 클릭 시 닫기
+window.addEventListener('click', function (event) {
+    if (event.target.classList.contains('modal')) {
+        closeModal(event.target);
     }
-    
-    // 회원가입 모달 - 가입 버튼 (간단 시뮬레이션)
-    if(signupSubmitButton) {
-        signupSubmitButton.addEventListener('click', function() {
-            const nameInput = document.getElementById('signupName');
-            const emailInput = document.getElementById('signupEmail');
-            const passwordInput = document.getElementById('signupPassword');
-            const birthdateInput = document.getElementById('signupBirthdate');
+});
 
-            // 간단한 유효성 검사 예시 (실제로는 더 상세해야 함)
-            if (nameInput.value && emailInput.value && passwordInput.value) {
-                 closeModal(signupModal);
-                 showSmallInfoPopup(`${nameInput.value}님, 회원가입 요청이<br>처리되었습니다 (시뮬레이션).`);
-                 // 성공 후 필드 초기화 (선택적)
-                 nameInput.value = '';
-                 emailInput.value = '';
-                 passwordInput.value = '';
-                 birthdateInput.value = '';
+// 로그인 폼 제출
+if (loginForm) {
+    loginForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!email || !password) {
+            showLoginFailedPopup('로그인 오류', '이메일과 비밀번호를 입력해주세요.');
+            return;
+        }
+
+        const loginData = {
+            email: email,
+            password: password
+        };
+
+        try {
+            const response = await fetch('/login/login/', { // Your new login API endpoint
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken') // Include CSRF token for POST requests
+                },
+                body: JSON.stringify(loginData)
+            });
+
+            const result = await response.json(); // Parse response JSON
+
+            if (response.ok) { // Check if status code is 2xx (success)
+                showSmallInfoPopup(result.message);
+                console.log("Login Success! Tokens:", result.access, result.refresh);
+                // Store tokens (e.g., in localStorage or sessionStorage)
+                localStorage.setItem('accessToken', result.access);
+                localStorage.setItem('refreshToken', result.refresh);
+                // Redirect to main page
+                window.location.href = '/main/'; // Change to your actual main page URL
             } else {
-                 alert("이름, 이메일, 비밀번호는 필수 입력 항목입니다.");
+                // Handle different error messages from the backend
+                let errorMessage = "알 수 없는 로그인 오류가 발생했습니다.";
+                if (result && result.detail) {
+                    errorMessage = result.detail;
+                } else if (result && result.message) {
+                    errorMessage = result.message;
+                } else if (result) {
+                    errorMessage = JSON.stringify(result); // Fallback for unexpected error structures
+                }
+                showLoginFailedPopup('로그인 실패', errorMessage);
+                console.error('Login failed:', result);
             }
-        });
-    }
+        } catch (error) {
+            console.error('Network or server error during login:', error);
+            showLoginFailedPopup('네트워크 오류', '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+        }
+    });
+}
 
-    // "이메일 찾기" 버튼
-    if (findEmailButton) {
-        findEmailButton.addEventListener('click', function() {
-            const nameInput = document.getElementById('findEmailName');
-            const identifierInput = document.getElementById('findEmailIdentifier');
+// 회원가입 모달 - 가입 버튼 
+if (signupSubmitButton) {
+    signupSubmitButton.addEventListener('click', async function(event) { // async 추가
+        event.preventDefault(); // 기본 폼 제출 방지 (만약 버튼이 form 안에 있다면)
 
-            // 시뮬레이션: 실제로는 서버와 통신
-            if (nameInput.value === 'test' && identifierInput.value === '12345678') {
-                showSmallInfoPopup(`고객님의 이메일 주소는<br><b>test_kim@example.com</b> 입니다.`);
-            } else {
-                showSmallInfoPopup('입력하신 정보와 일치하는<br>이메일을 찾을 수 없습니다.<br>다시 입력해주세요.');
-            }
-            // 조회 후 필드 초기화 (선택적)
-            // nameInput.value = '';
-            // identifierInput.value = '';
-        });
-    }
+        const nameInput = document.getElementById('signupName');
+        const emailInput = document.getElementById('signupEmail');
+        const passwordInput = document.getElementById('signupPassword');
+        const birthdateInput = document.getElementById('signupBirthdate');
 
-    // "비밀번호 찾기" 버튼
-    if (findPasswordButton) {
-        findPasswordButton.addEventListener('click', function() {
-            const nameInput = document.getElementById('findPassName');
-            const emailInput = document.getElementById('findPassEmail');
-            const birthdateInput = document.getElementById('findPassBirthdate');
+        const username = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        const birth_date = birthdateInput.value; // YYYY-MM-DD 형식으로 가정
 
-            // 시뮬레이션: 실제로는 서버와 통신
-            if (nameInput.value === 'test' && emailInput.value === 'test_lee@example.com' && birthdateInput.value === '19950101') {
-                closeModal(findCredentialsModal);
-                openModal(resetPasswordModal);
-                // 성공 후 필드 초기화 (선택적)
+        // 간단한 클라이언트 측 유효성 검사
+        if (!username || !email || !password) {
+            alert("이름, 이메일, 비밀번호는 필수 입력 항목입니다.");
+            return; // 유효성 검사 실패 시 함수 종료
+        }
+
+        // 서버로 보낼 데이터 객체
+        const userData = {
+            username: username,
+            email: email,
+            password: password,
+            birth_date: birth_date // birthdate가 비어있으면 null로 전송될 것임 (Serializer 설정에 따라)
+        };
+
+        try {
+            const response = await fetch('/login/signup/', { // Django API 엔드포인트
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken') // CSRF 토큰 포함
+                },
+                body: JSON.stringify(userData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) { // HTTP 상태 코드가 200번대인 경우
+                closeModal(signupModal);
+                showSmallInfoPopup(`${username}님, 회원가입이 성공적으로 완료되었습니다!`);
+                // 성공 후 필드 초기화
                 nameInput.value = '';
                 emailInput.value = '';
+                passwordInput.value = '';
                 birthdateInput.value = '';
-            } else {
-                showSmallInfoPopup('입력하신 정보와 일치하는 사용자를<br>찾을 수 없습니다.<br>다시 확인해주세요.');
+            } else { // HTTP 상태 코드가 400, 500 등 오류인 경우
+                let errorMessage = "회원가입 중 오류가 발생했습니다.";
+                if (result && result.email) {
+                    errorMessage = `오류: ${result.email.join(', ')}`; // 이메일 중복 등
+                } else if (result && result.username) {
+                    errorMessage = `오류: ${result.username.join(', ')}`;
+                } else if (result && result.detail) {
+                    errorMessage = `오류: ${result.detail}`;
+                } else if (result && typeof result === 'object') {
+                    errorMessage = "오류: " + JSON.stringify(result); // 기타 상세 오류
+                }
+                alert(errorMessage);
+                console.error('Signup failed:', result);
             }
-        });
-    }
+        } catch (error) {
+            console.error('Fetch error:', error);
+            alert("네트워크 오류 또는 서버에 연결할 수 없습니다.");
+        }
+    });
+}
 
-    // "비밀번호 재설정" 모달 - "저장" 버튼
-    if (saveNewPasswordButton) {
-        saveNewPasswordButton.addEventListener('click', function() {
-            const newPasswordInput = document.getElementById('newPassword');
-            const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
-            const newPassword = newPasswordInput.value;
-            const confirmNewPassword = confirmNewPasswordInput.value;
 
-            if (!newPassword || !confirmNewPassword) {
-                showSmallInfoPopup('새 비밀번호와 확인 비밀번호를<br>모두 입력해주세요.');
-                return;
-            }
-            if (newPassword !== confirmNewPassword) {
-                showSmallInfoPopup('새 비밀번호와 확인 비밀번호가<br>일치하지 않습니다.');
-                return;
-            }
-            // 비밀번호 유효성 검사 (예: 길이, 특수문자 등) 추가 가능
-            if (newPassword.length < 8) {
-                showSmallInfoPopup('비밀번호는 8자 이상이어야 합니다.');
-                return;
-            }
+// "이메일 찾기" 버튼
+if (findEmailButton) {
+    findEmailButton.addEventListener('click', async function() {
+        const name = document.getElementById('findEmailName').value.trim();
+        const birth_date = document.getElementById('findEmailIdentifier').value;
+        console.log('date',birth_date)
+        if (!name || !birth_date) {
+            showSmallInfoPopup('이름과 생년월일을 모두 입력해주세요.');
+            return;
+        }
 
-            // 성공 시 (시뮬레이션)
-            closeModal(resetPasswordModal);
-            showSmallInfoPopup('비밀번호를 성공적으로<br>변경했습니다.');
-            
-            // 성공 후 입력 필드 초기화
-            newPasswordInput.value = '';
-            confirmNewPasswordInput.value = '';
-        });
-    }
+        const findData = {
+            name: name,
+            birth_date: birth_date
+        };
+        try {
+            const response = await fetch('/login/find-email/', { // 새로운 API 엔드포인트
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(findData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) { // HTTP 상태 코드가 200번대인 경우 (성공)
+                showSmallInfoPopup(`고객님의 이메일 주소는<br><b>${result.email}</b> 입니다.`);
+            } else { // HTTP 상태 코드가 400, 500 등 오류인 경우
+                let errorMessage = "이메일을 찾을 수 없습니다. 다시 시도해주세요.";
+                if (result && result.non_field_errors) {
+                    errorMessage = result.non_field_errors[0]; // Serializer.validate()에서 오는 오류
+                } else if (result && result.detail) {
+                    errorMessage = result.detail;
+                } else if (result && result.name) {
+                    errorMessage = `이름 오류: ${result.name.join(', ')}`;
+                } else if (result && result.birth_date) {
+                    errorMessage = `생년월일 오류: ${result.birth_date.join(', ')}`;
+                }
+                showSmallInfoPopup(`입력하신 정보와 일치하는<br>이메일을 찾을 수 없습니다.<br>${errorMessage}`);
+                console.error('Find Email failed:', result);
+            }
+        } catch (error) {
+            console.error('Network or server error during find email:', error);
+            showSmallInfoPopup('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        }
+
+    });
+}
+
+// "비밀번호 찾기" 버튼
+if (findPasswordButton) {
+    findPasswordButton.addEventListener('click', function() {
+        const nameInput = document.getElementById('findPassName');
+        const emailInput = document.getElementById('findPassEmail');
+        const birthdateInput = document.getElementById('findPassBirthdate');
+
+        // 시뮬레이션: 실제로는 서버와 통신
+        if (nameInput.value === 'test' && emailInput.value === 'test_lee@example.com' && birthdateInput.value === '19950101') {
+            closeModal(findCredentialsModal);
+            openModal(resetPasswordModal);
+            // 성공 후 필드 초기화 (선택적)
+            nameInput.value = '';
+            emailInput.value = '';
+            birthdateInput.value = '';
+        } else {
+            showSmallInfoPopup('입력하신 정보와 일치하는 사용자를<br>찾을 수 없습니다.<br>다시 확인해주세요.');
+        }
+    });
+}
+
+// "비밀번호 재설정" 모달 - "저장" 버튼
+if (saveNewPasswordButton) {
+    saveNewPasswordButton.addEventListener('click', function() {
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
+        const newPassword = newPasswordInput.value;
+        const confirmNewPassword = confirmNewPasswordInput.value;
+
+        if (!newPassword || !confirmNewPassword) {
+            showSmallInfoPopup('새 비밀번호와 확인 비밀번호를<br>모두 입력해주세요.');
+            return;
+        }
+        if (newPassword !== confirmNewPassword) {
+            showSmallInfoPopup('새 비밀번호와 확인 비밀번호가<br>일치하지 않습니다.');
+            return;
+        }
+        // 비밀번호 유효성 검사 (예: 길이, 특수문자 등) 추가 가능
+        if (newPassword.length < 8) {
+            showSmallInfoPopup('비밀번호는 8자 이상이어야 합니다.');
+            return;
+        }
+
+        // 성공 시 (시뮬레이션)
+        closeModal(resetPasswordModal);
+        showSmallInfoPopup('비밀번호를 성공적으로<br>변경했습니다.');
+        
+        // 성공 후 입력 필드 초기화
+        newPasswordInput.value = '';
+        confirmNewPasswordInput.value = '';
+    });
+}
 });

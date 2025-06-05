@@ -17,7 +17,7 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+CSRF_COOKIE_NAME = "csrftoken"
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -172,3 +173,70 @@ STATICFILES_DIRS = (STATIC_PATH,)   # 튜플로 넣어줌. 리스트로 넣어�
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com' # 또는 사용하는 SMTP 서버 주소
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True # TLS 암호화 사용
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER") # 발신 이메일 주소
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD") # 발신 이메일 비밀번호 (또는 앱 비밀번호)
+DEFAULT_FROM_EMAIL = os.environ.get("EMAIL_HOST_USER") # 기본 발신자 이메일
+
+# allauth 이메일 인증 설정
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory' # 'mandatory'로 설정하여 이메일 인증을 필수로 만듭니다.
+ACCOUNT_EMAIL_REQUIRED = True            # 이메일 필드 필수
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # 이메일로 로그인
+ACCOUNT_USERNAME_REQUIRED = False        # 사용자 이름 필드 필수로 만들지 않음 (선택 사항)
+
+# 이메일 확인 후 리다이렉트될 URL (선택 사항)
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3 # 이메일 인증 링크 유효 기간 (기본값)
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication', # Add JWT authentication
+        'rest_framework.authentication.SessionAuthentication', # Keep if you use Django's sessions too
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny', # Default for new endpoints, adjust as needed
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+}
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5), # Access token validity
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1), # Refresh token validity
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY, # Use your project's SECRET_KEY
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}

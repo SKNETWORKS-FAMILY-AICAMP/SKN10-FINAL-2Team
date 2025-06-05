@@ -7,16 +7,17 @@ from django.contrib.auth.models import AbstractUser
 class CustomUser(AbstractUser):
     # username, first_name, last_name, password 등 기본 필드 존재
     email = models.EmailField(unique=True, null=False, blank=False)
+    USERNAME_FIELD = 'email'
     birth_date = models.DateField(null=True, blank=True)
     name = models.CharField(max_length=20, null=True, blank=True)
     gender = models.CharField(max_length=20, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
 
-    REQUIRED_FIELDS = ['email', 'birth_date', 'gender']
+    REQUIRED_FIELDS = ['birth_date', 'gender']
 
     def __str__(self):
-        return self.username
+        return self.email
 
 from django.conf import settings
 
