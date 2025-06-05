@@ -141,66 +141,6 @@ class ChatWithNutiAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-def chat_view(request):
-    return render(request, 'Chatbot/ChatNuti.html')
-
-@csrf_exempt
-def chat_with_nuti(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        user_query = data.get('user_query')
-        chat_room_id = data.get('chat_room_id')
-        user_id = data.get('user_id', 1)  # Temporary default user_id
-
-        try:
-            user = CustomUser.objects.get(id=user_id)
-            
-            # Create new chat room if none exists
-            if not chat_room_id:
-                chat_room = ChatRooms.objects.create(
-                    user=user,
-                    title=user_query[:30] + "..."  # Use first 30 chars of message as title
-                )
-                chat_room_id = chat_room.id
-            else:
-                chat_room = ChatRooms.objects.get(id=chat_room_id)
-
-            # Save user message
-            ChatMessages.objects.create(
-                chat_room=chat_room,
-                sender_type='user',
-                message=user_query
-            )
-
-            # Use ChatWithNutiAPIView for AI response
-            api_view = ChatWithNutiAPIView()
-            api_response = api_view.post(request)
-            
-            if api_response.status_code == 200:
-                response = api_response.data.get('final_recommendation', '')
-                
-                # Save AI response
-                ChatMessages.objects.create(
-                    chat_room=chat_room,
-                    sender_type='assistant',
-                    message=response
-                )
-
-                return JsonResponse({
-                    'final_recommendation': response,
-                    'chat_room_id': chat_room_id
-                })
-            else:
-                return JsonResponse({
-                    'error': 'AI response error',
-                    'details': api_response.data
-                })
-
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-
-    return JsonResponse({'error': 'Invalid request method'})
-
 def get_chat_rooms(request):
     # Temporary: Get rooms for user_id 1
     rooms = ChatRooms.objects.filter(user_id=1).order_by('-created_at')
