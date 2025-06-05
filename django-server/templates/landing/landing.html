@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body>
+  <header>
+    <nav>
+      <a class="Logo" href="#">Logo</a>
+      <ul>
+        <li><a href="#">챗봇</a></li>
+        <li><a href="#">마이페이지</a></li>
+      </ul>
+      <button>로그인</button>
+    </nav>
+  </header>
+  <div class="content">
+    <div class="top">
+      <div class="mt">키워드 만으로<br>영양제를 검색해보세요.</div>
+      <form action="search">
+        <input type="search" name="q" placeholder="검색어를 입력하세요">
+        <span>
+          <img src="#" alt="검색 아이콘">
+        </span>
+      </form>
+    </div>
+
+    <div class="bottom">
+      <img src="#" alt="">
+    </div>
+    <div class="recoti">
+      <span>항목별 인기 영양제</span>
+      <ul>
+        <li>가성비순</li>
+        <li>인기순</li>
+        <li>판매량순</li>
+      </ul>
+    </div>
+    <div class="prolist">
+      <a href="#"></a>
+      <a href="#"></a>
+      <a href="#"></a>
+      <a href="#"></a>
+      <a href="#"></a>
+    </div>
+    <div>
+      <img src="#" alt="">
+    </div>
+  </div>
+
+  <footer>
+    <!-- Footer 내용 -->
+  </footer>
+</body>
+</html>
