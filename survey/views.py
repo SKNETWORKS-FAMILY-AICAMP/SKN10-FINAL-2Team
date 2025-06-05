@@ -8,6 +8,15 @@ def survey_view(request):
     """설문조사 페이지를 렌더링합니다."""
     return render(request, 'survey/survey.html')
 
+def mypage_view(request):
+    return render(request, 'survey/mypage.html')
+
+def favorite_view(request):
+    return render(request, 'survey/favorite.html')
+
+def analysis_view(request):
+    return render(request, 'survey/analysis.html')
+
 @csrf_exempt
 def save_survey(request):
     """설문조사 결과를 저장합니다."""

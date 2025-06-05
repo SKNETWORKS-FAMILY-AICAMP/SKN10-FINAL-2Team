@@ -22,7 +22,7 @@
         </div>
     </div>
 
-    <!-- 사이드바 -->
+    <!-- 마이페이지 사이드바 -->
     <div class="sidebar" id="mypage-sidebar">
         <div class="sidebar-item">내 정보</div>
         <div class="sidebar-item active">설문 조사</div>
@@ -80,6 +80,27 @@
         mypageSidebar.style.display = 'none';
     });
 
+    // 사이드바 메뉴 클릭 이벤트
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const page = this.textContent.trim();
+            switch(page) {
+                case '내 정보':
+                    window.location.href = '/mypage/';
+                    break;
+                case '설문 조사':
+                    window.location.href = '/survey/';
+                    break;
+                case '좋아요':
+                    window.location.href = '/favorite/';
+                    break;
+                case '영양 분석':
+                    window.location.href = '/analysis/';
+                    break;
+            }
+        });
+    });
+
     let currentQuestion = 1;
     const totalQuestions = 3;
     const answers = {};
@@ -128,7 +149,7 @@
         .then(data => {
             if (data.success) {
                 alert('설문조사가 완료되었습니다.');
-                window.location.href = '/';  // 메인 페이지로 이동
+                window.location.href = '/mypage/';  // 마이페이지로 이동
             } else {
                 alert('오류가 발생했습니다. 다시 시도해주세요.');
             }
@@ -156,17 +177,16 @@
     }
 
     // 옵션 선택 이벤트
-    document.querySelectorAll('.option-box').forEach(box => {
-        box.addEventListener('click', function() {
-            const row = this.parentNode;
-            row.querySelectorAll('.option-box').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.option-box').forEach(option => {
+        option.addEventListener('click', function() {
+            // 같은 질문의 다른 옵션들의 active 클래스 제거
+            const questionGroup = this.closest('.question-group');
+            questionGroup.querySelectorAll('.option-box').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            // 선택한 옵션에 active 클래스 추가
             this.classList.add('active');
         });
-    });
-
-    // 출생년도 입력 제한
-    document.querySelector('.birth-input').addEventListener('input', function(e) {
-        this.value = this.value.replace(/[^0-9]/g, '');
     });
     </script>
 </body>
