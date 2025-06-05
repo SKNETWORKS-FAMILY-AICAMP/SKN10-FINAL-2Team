@@ -1,0 +1,272 @@
+{% block content %}
+<style>
+@font-face {
+    font-family: 'Pretendard-Regular';
+    src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
+html, body {
+    font-family: 'Pretendard', 'Pretendard-Regular', sans-serif;
+}
+/* 공통 텍스트 스타일 */
+.h2 {
+    font-size: 24pt;
+    font-weight: 700;
+    line-height: auto;
+}
+.h2-1 {
+    font-size: 24pt;
+    font-weight: 400;
+    line-height: auto;
+}
+.h3 {
+    font-size: 18pt;
+    font-weight: 500;
+    line-height: auto;
+}
+.body-font {
+    font-size: 16pt;
+    font-weight: 400;
+    line-height: auto;
+}
+.caption-font {
+    font-size: 12pt;
+    font-weight: 300;
+    line-height: auto;
+}
+.h2, .h2-1, .h3, .body-font, .caption-font {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+.item-info > .h2,
+.item-info > .h2-1,
+.item-info > .body-font,
+.item-info > .caption-font {
+    max-width: 160px; /* 필요에 따라 조정 */
+}
+.center-container {
+    width: 468px;
+    height: 780px;
+    margin: 180px auto 60px auto;
+    border-radius: 6px;
+    background: #fff;
+    box-sizing: border-box;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 0 8px 0 rgba(0,0,0,0.25);
+    border: none;
+}
+.product-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+}
+.like-list-container {
+    width: 100%;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    max-height: 680px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.like-item {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    position: relative;
+}
+.like-item:not(:last-child)::after {
+    content: "";
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -4px;
+    height: 4px;
+    background: #D9D9D9;
+    z-index: 1;
+}
+.like-item img {
+    width: 160px;
+    height: 160px;
+    object-fit: contain;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 24px;
+}
+.item-info {
+    flex: 1;
+}
+.item-info > * {
+    margin-bottom: 15px;
+}
+.item-info > *:last-child {
+    margin-bottom: 0;
+}
+.empty-image {
+    width: 160px;
+    height: 160px;
+    background: #F7F4D4;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 24px;
+    font-size: 24px;
+}
+.heart-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    margin: 24px;
+    color: #DCA628;
+    outline: none;
+}
+.heart-btn.liked {
+    color: #DCA628;
+}
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-content {
+    background: #fff;
+    border-radius: 8px;
+    padding: 32px 24px;
+    min-width: 280px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+.modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 28px;
+    cursor: pointer;
+}
+@media (max-width: 500px) {
+    .center-container {
+        width: 100vw;
+        margin: 0;
+    }
+}
+</style>
+<div class="center-container">
+    <div class="h2" style="margin-top: 30px; margin-bottom: 30px;">
+        <span style="color: #DCA628;">{{ user.name }}</span> 님이 좋아요 누른 영양제
+    </div>
+    <div class="like-list-container">
+        {% if like_list %}
+            {% for like in like_list %}
+            <div class="like-item" data-product-id="{{ like.product.id }}">
+                <div class="product-container">
+                    <img src="{{ like.product.image_link|default:'https://placehold.co/96x96?text=Image' }}" alt="Image"/>
+                    <div class="item-info">
+                        <div class="body-font">{{ like.product.title }}</div>
+                        <div class="caption-font" style="color:#7D97A1">{{ like.product.manufacturer }}</div>
+                        <div class="body-font" style="color: #DCA628;">$ {{ like.product.total_price }}</div>
+                        <div class="caption-font" style="color:#7D97A1">
+                            <span style="color:#DCA628">★ </span>{{ like.product.average_rating }} ({{ like.product.total_reviews }})
+                        </div>
+                    </div>
+                    <button class="heart-btn liked" title="Dislike">&#10084;</button>
+                </div>
+            </div>
+        {% endfor %}
+        {% else %}
+            <div class="empty-image">
+            </div>
+            <div class="h3" style="margin-top:8px;">좋아요 누른 영양제가 없어요.</div>
+        {% endif %}
+    </div>
+    <div id="product-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="modal-body">
+                <!-- JS로 내용 채움 -->
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.querySelectorAll('.heart-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const likeItem = btn.closest('.like-item');
+        const productId = likeItem.dataset.productId;
+        const isLiked = btn.classList.contains('liked');
+        const url = isLiked ? "{% url 'like_delete' %}" : "{% url 'like_add' %}";
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: "product_id=" + encodeURIComponent(productId)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (isLiked) {
+                    btn.classList.remove('liked');
+                    btn.innerHTML = "&#9825;"; // 빈 하트
+                } else {
+                    btn.classList.add('liked');
+                    btn.innerHTML = "&#10084;"; // 채운 하트
+                }
+            } else {
+                alert("처리 실패: " + (data.error || "알 수 없는 오류"));
+            }
+        });
+    });
+});
+
+document.querySelectorAll('.product-container').forEach(function(container) {
+    container.addEventListener('click', function(e) {
+        // 하트 버튼 클릭 시에는 모달 안 뜨게
+        if (e.target.classList.contains('heart-btn')) return;
+
+        const item = container.closest('.like-item');
+        const title = item.querySelector('.body-font').innerText;
+        const manufacturer = item.querySelector('.caption-font').innerText;
+        const price = item.querySelector('.body-font[style*="color: #DCA628;"]')?.innerText || '';
+        const rating = item.querySelector('.caption-font span')?.parentNode.innerText || '';
+        const imgSrc = container.querySelector('img').src;
+
+        // 모달 내용 구성
+        document.getElementById('modal-body').innerHTML = `
+            <img src="${imgSrc}" alt="상품 이미지" style="width:160px;height:160px;object-fit:contain;display:block;margin:0 auto 16px auto;">
+            <div style="font-size:20px;font-weight:700;margin-bottom:8px;">${title}</div>
+            <div style="color:#7D97A1;margin-bottom:8px;">${manufacturer}</div>
+            <div style="color:#DCA628;margin-bottom:8px;">${price}</div>
+            <div style="color:#7D97A1;">${rating}</div>
+        `;
+        document.getElementById('product-modal').style.display = 'flex';
+    });
+});
+document.querySelector('.modal-close').onclick = function() {
+    document.getElementById('product-modal').style.display = 'none';
+};
+document.getElementById('product-modal').onclick = function(e) {
+    if (e.target === this) this.style.display = 'none';
+};
+</script>
+{% endblock %}
