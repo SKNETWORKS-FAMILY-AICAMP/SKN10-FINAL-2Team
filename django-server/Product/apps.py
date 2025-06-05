@@ -1,6 +1,5 @@
 from django.apps import AppConfig
 
-class SurveyConfig(AppConfig):
+class ProductConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'Survey'
-    verbose_name = '건강 설문조사' 
+    name = 'Product' 

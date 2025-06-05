@@ -58,4 +58,20 @@ def save_survey(request):
     return JsonResponse({
         'status': 'error',
         'message': '허용되지 않는 메소드입니다.'
-    }, status=405) 
+    }, status=405)
+
+@csrf_exempt
+def save_survey_results(request):
+    """설문조사 결과를 저장합니다."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            response = SurveyResponse.objects.create(
+                sedentary=data.get('question1'),
+                gender=data.get('question2'),
+                birth_year=data.get('birthYear')
+            )
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}) 

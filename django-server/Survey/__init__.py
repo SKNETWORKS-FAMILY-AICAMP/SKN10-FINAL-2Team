@@ -1,1 +1,1 @@
-default_app_config = 'survey.apps.SurveyConfig' 
+default_app_config = 'Survey.apps.SurveyConfig' 

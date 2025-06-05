@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>마이페이지</title>
+    <title>포토로그</title>
     <meta name="viewport" content="width=1920, initial-scale=1.0">
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
@@ -24,7 +24,7 @@
 
     <!-- 마이페이지 사이드바 -->
     <div class="sidebar" id="mypage-sidebar">
-        <div class="sidebar-item active" onclick="navigateTo('mypage')">내 정보</div>
+        <div class="sidebar-item" onclick="navigateTo('mypage')">내 정보</div>
         <div class="sidebar-item" onclick="navigateTo('survey')">설문 조사</div>
         <div class="sidebar-item" onclick="navigateTo('favorite')">좋아요</div>
         <div class="sidebar-item" onclick="navigateTo('analysis')">영양 분석</div>
@@ -32,10 +32,8 @@
 
     <!-- 메인 컨텐츠 -->
     <div class="main-content">
-        <div class="card">
-            <h2 class="card-title">내 정보</h2>
-            <!-- 내 정보 컨텐츠 -->
-        </div>
+        {% block content %}
+        {% endblock %}
     </div>
 
     <script>

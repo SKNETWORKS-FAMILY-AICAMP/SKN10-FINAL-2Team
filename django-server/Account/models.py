@@ -1,8 +1,7 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser, Group, Permission
 
 # Create your models here.
-from django.contrib.auth.models import AbstractUser
-
 
 class CustomUser(AbstractUser):
     # username, first_name, last_name, password 등 기본 필드 존재
@@ -12,6 +11,21 @@ class CustomUser(AbstractUser):
     gender = models.CharField(max_length=20, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
+
+    groups = models.ManyToManyField(
+        Group,
+        related_name='customuser_set',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        verbose_name='groups'
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name='customuser_set',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions'
+    )
 
     REQUIRED_FIELDS = ['email', 'birth_date', 'gender']
 

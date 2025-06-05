@@ -1,11 +1,11 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('account/', include('Account.urls')),
-    path('chatbot/', include('Chatbot.urls')),
-    path('mypage/', include('Mypage.urls')),
-    path('product/', include('Product.urls')),
-    path('survey/', include('Survey.urls')),
-] 
+    path('', include('Mypage.urls', namespace='mypage')),
+    path('survey/', include('Survey.urls', namespace='survey')),
+    path('product/', include('Product.urls', namespace='product')),
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 
