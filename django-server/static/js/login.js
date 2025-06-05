@@ -28,8 +28,8 @@ const saveNewPasswordButton = document.getElementById('saveNewPasswordButton');
 
 // 회원가입 버튼
 const signupSubmitButton = document.getElementById('signupSubmitButton');
-
-
+// id save 변수 (모달 간 데이터 전달)
+let currentUserIdForPasswordReset = null;
 // --- 유틸리티 함수 ---
 function openModal(modal) {
     if (modal) modal.style.display = 'flex';
@@ -292,28 +292,70 @@ if (findEmailButton) {
 
 // "비밀번호 찾기" 버튼
 if (findPasswordButton) {
-    findPasswordButton.addEventListener('click', function() {
+    findPasswordButton.addEventListener('click', async function() {
         const nameInput = document.getElementById('findPassName');
         const emailInput = document.getElementById('findPassEmail');
         const birthdateInput = document.getElementById('findPassBirthdate');
 
-        // 시뮬레이션: 실제로는 서버와 통신
-        if (nameInput.value === 'test' && emailInput.value === 'test_lee@example.com' && birthdateInput.value === '19950101') {
-            closeModal(findCredentialsModal);
-            openModal(resetPasswordModal);
-            // 성공 후 필드 초기화 (선택적)
-            nameInput.value = '';
-            emailInput.value = '';
-            birthdateInput.value = '';
-        } else {
-            showSmallInfoPopup('입력하신 정보와 일치하는 사용자를<br>찾을 수 없습니다.<br>다시 확인해주세요.');
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        const birth_date = birthdateInput.value;
+
+        if (!name || !email || !birth_date) {
+            showSmallInfoPopup('이름, 이메일, 생년월일을 모두 입력해주세요.');
+            return;
+        }
+        const verificationData = {
+            name: name,
+            email: email,
+            birth_date: birth_date
+        };
+        try {
+            const response = await fetch('/login/password-verify/', { // 사용자 정보 확인 API
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(verificationData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showSmallInfoPopup(result.message);
+                currentUserIdForPasswordReset = result.user_id; // user_id 저장
+                closeModal(findCredentialsModal); // 현재 모달 닫기
+                openModal(resetPasswordModal);   // 비밀번호 재설정 모달 열기
+                
+                // 성공 후 입력 필드 초기화 (선택적)
+                nameInput.value = '';
+                emailInput.value = '';
+                birthdateInput.value = '';
+
+            } else {
+                let errorMessage = "사용자 정보 확인 중 오류가 발생했습니다.";
+                if (result && result.non_field_errors) {
+                    errorMessage = result.non_field_errors[0];
+                } else if (result && result.detail) {
+                    errorMessage = result.detail;
+                } else if (result && typeof result === 'object') {
+                    const fieldErrors = Object.keys(result).map(key => `${key}: ${result[key].join(', ')}`).join('<br>');
+                    errorMessage = fieldErrors || errorMessage;
+                }
+                showSmallInfoPopup(`오류: ${errorMessage}`);
+                console.error('User verification failed:', result);
+            }
+        } catch (error) {
+            console.error('Network or server error during user verification:', error);
+            showSmallInfoPopup('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         }
     });
 }
 
 // "비밀번호 재설정" 모달 - "저장" 버튼
 if (saveNewPasswordButton) {
-    saveNewPasswordButton.addEventListener('click', function() {
+    saveNewPasswordButton.addEventListener('click', async function() {
         const newPasswordInput = document.getElementById('newPassword');
         const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
         const newPassword = newPasswordInput.value;
@@ -332,10 +374,57 @@ if (saveNewPasswordButton) {
             showSmallInfoPopup('비밀번호는 8자 이상이어야 합니다.');
             return;
         }
-
+        if (currentUserIdForPasswordReset === null) {
+            showSmallInfoPopup('사용자 정보가 확인되지 않았습니다.<br>다시 처음부터 시도해주세요.');
+            closeModal(resetPasswordModal); // 재설정 모달 닫기
+            return;
+        }
+        const setNewPasswordData = {
+            user_id: currentUserIdForPasswordReset,
+            new_password: newPassword,
+            confirm_new_password: confirmNewPassword
+        };
         // 성공 시 (시뮬레이션)
-        closeModal(resetPasswordModal);
-        showSmallInfoPopup('비밀번호를 성공적으로<br>변경했습니다.');
+        try {
+            const response = await fetch('/login/set-new-password/', { // 새 비밀번호 설정 API
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(setNewPasswordData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                closeModal(resetPasswordModal);
+                showSmallInfoPopup('비밀번호를 성공적으로<br>변경했습니다.');
+                
+                // 성공 후 입력 필드 초기화
+                newPasswordInput.value = '';
+                confirmNewPasswordInput.value = '';
+                currentUserIdForPasswordReset = null; // user_id 초기화
+
+                // 비밀번호 변경 후 로그인 페이지로 이동하거나, 자동 로그인 처리
+                window.location.href = '/login/'; 
+            } else {
+                let errorMessage = "비밀번호 변경 중 오류가 발생했습니다.";
+                if (result && result.non_field_errors) {
+                    errorMessage = result.non_field_errors[0];
+                } else if (result && result.detail) {
+                    errorMessage = result.detail;
+                } else if (result && typeof result === 'object') {
+                    const fieldErrors = Object.keys(result).map(key => `${key}: ${result[key].join(', ')}`).join('<br>');
+                    errorMessage = fieldErrors || errorMessage;
+                }
+                showSmallInfoPopup(`오류: ${errorMessage}`);
+                console.error('Set new password failed:', result);
+            }
+        } catch (error) {
+            console.error('Network or server error during password reset:', error);
+            showSmallInfoPopup('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        }
         
         // 성공 후 입력 필드 초기화
         newPasswordInput.value = '';

@@ -1,11 +1,12 @@
 from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import SignupSerializer, FindEmailSerializer
+from .serializers import SignupSerializer, FindEmailSerializer, UserVerificationSerializer,SetNewPasswordSerializer
 from django.contrib.auth import get_user_model, authenticate
 from allauth.account.utils import send_email_confirmation
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth.hashers import make_password
 
 # Create your views here.
 def login(request):
@@ -109,4 +110,46 @@ class FindEmailAPIView(generics.GenericAPIView):
         return Response({
             "message": "이메일 주소를 찾았습니다.",
             "email": user.email, # 찾은 이메일 주소 반환
+        }, status=status.HTTP_200_OK)
+    
+class PasswordVerificationAPIView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = UserVerificationSerializer # 이름이 UserVerificationSerializer로 변경됨
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = serializer.validated_data['user']
+        
+        return Response({
+            "message": "사용자 정보가 확인되었습니다. 새 비밀번호를 설정해주세요.",
+            "user_id": user.id, # 프론트엔드에서 비밀번호 재설정 시 사용할 user_id 반환
+        }, status=status.HTTP_200_OK)
+
+class SetNewPasswordAPIView(generics.GenericAPIView):
+    permission_classes = [AllowAny] # 인증되지 않은 사용자도 접근 가능해야 함
+    serializer_class = SetNewPasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = serializer.validated_data['user']
+        new_password = serializer.validated_data['new_password']
+
+        # 비밀번호 업데이트
+        user.set_password(new_password) # Django의 set_password는 비밀번호를 해싱하고 저장합니다.
+        user.save()
+
+        return Response({
+            "message": "비밀번호가 성공적으로 재설정되었습니다.",
         }, status=status.HTTP_200_OK)

@@ -49,3 +49,51 @@ class FindEmailSerializer(serializers.Serializer):
 
         data['user'] = user # 찾은 유저 객체를 data에 추가하여 뷰에서 사용
         return data
+    
+class UserVerificationSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=20, required=True)
+    email = serializers.EmailField(required=True)
+    birth_date = serializers.DateField(
+        required=True,
+        input_formats=['%Y-%m-%d', '%Y%m%d']
+    )
+
+    def validate(self, data):
+        name = data.get('name')
+        email = data.get('email')
+        birth_date = data.get('birth_date')
+
+        try:
+            user = User.objects.get(name=name, email=email, birth_date=birth_date)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다.")
+        except User.MultipleObjectsReturned:
+            raise serializers.ValidationError("입력하신 정보와 일치하는 사용자가 너무 많습니다.")
+        
+        if not user.is_verified:
+            raise serializers.ValidationError("해당 계정은 이메일 인증이 완료되지 않았습니다.")
+
+        data['user'] = user
+        return data
+class SetNewPasswordSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(required=True) # 프론트에서 넘겨받을 사용자 ID
+    new_password = serializers.CharField(min_length=8, write_only=True, required=True)
+    confirm_new_password = serializers.CharField(min_length=8, write_only=True, required=True)
+
+    def validate(self, data):
+        new_password = data.get('new_password')
+        confirm_new_password = data.get('confirm_new_password')
+        user_id = data.get('user_id')
+
+        # 비밀번호 일치 여부 검사
+        if new_password != confirm_new_password:
+            raise serializers.ValidationError("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.")
+        
+        # 유저 존재 여부 확인
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("유효하지 않은 사용자 ID입니다.")
+
+        data['user'] = user # 뷰에서 사용할 유저 객체 추가
+        return data
