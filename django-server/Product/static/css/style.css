@@ -1,0 +1,136 @@
+/* General body styles */
+body {
+    font-family: 'Pretendard', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+/* Top navigation bar styles */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #DCA628;
+    color: white;
+    height: 60px; /* Fixed height for the top bar */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    box-sizing: border-box; /* Include padding in element's total width and height */
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 20px;
+}
+
+.nav-item {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px 0;
+    position: relative; /* Required for dropdown positioning */
+}
+
+.nav-link-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.hover-dropdown .dropdown-menu {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 100%; /* Position below the nav item */
+    left: 0;
+    background-color: #FFFFFF;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    min-width: 160px;
+    z-index: 1000; /* Ensure it's above other elements */
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.hover-dropdown:hover .dropdown-menu {
+    display: block; /* Show on hover */
+}
+
+.dropdown-item {
+    color: #333;
+    padding: 10px 20px;
+    text-decoration: none;
+    display: block;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f0f0;
+}
+
+.nav-item.selected {
+    font-weight: bold;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    color: white;
+    font-size: 16px;
+}
+
+.user-info span {
+    margin-right: 5px;
+}
+
+.dropdown-arrow {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid white;
+}
+
+/* Sidebar styles */
+/* Stare style paska bocznego - usunięte na rzecz menu rozwijanego */
+/*
+.sidebar {
+    position: fixed;
+    top: 60px;
+    right: 0;
+    width: 200px;
+    background-color: #FFFFFF;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: none;
+    flex-direction: column;
+    z-index: 1001;
+    padding: 10px 0;
+    border-radius: 5px;
+    border: 1px solid blue;
+}
+
+.sidebar-item {
+    padding: 10px 20px;
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar-item:hover {
+    background-color: #f0f0f0;
+}
+*/
+
+.main-content {
+    margin-top: 80px;
+    padding: 20px;
+} 

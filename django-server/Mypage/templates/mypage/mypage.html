@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="profile-section">
+        <h1>Profil użytkownika</h1>
+        <div class="profile-info">
+            <p><strong>Nazwa użytkownika:</strong> {{ user.username }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %} 

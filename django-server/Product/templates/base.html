@@ -13,7 +13,16 @@
         <div class="logo">포토로그</div>
         <div class="nav-menu">
             <span class="nav-item">챗봇</span>
-            <span class="nav-item selected" id="mypage-menu">마이페이지</span>
+            <div class="nav-link-wrapper">
+              <div class="nav-link active hover-dropdown">마이페이지
+                <div class="dropdown-menu">
+                  <a href="{% url 'mypage:mypage' %}" class="dropdown-item">내 정보</a>
+                  <a href="{% url 'survey:survey' %}" class="dropdown-item">설문 조사</a>
+                  <a href="{% url 'product:like_product' %}" class="dropdown-item">좋아요</a>
+                  <a href="{% url 'product:nutrition_analysis' %}" class="dropdown-item">영양 분석</a>
+                </div>
+              </div>
+            </div>
             <span class="nav-item">영양제</span>
         </div>
         <div class="user-info">
@@ -23,12 +32,13 @@
     </div>
 
     <!-- 마이페이지 사이드바 -->
+    {% comment %}
+    Stary pasek boczny - usunięty na rzecz menu rozwijanego
     <div class="sidebar" id="mypage-sidebar">
-        <div class="sidebar-item" onclick="navigateTo('mypage')">내 정보</div>
-        <div class="sidebar-item" onclick="navigateTo('survey')">설문 조사</div>
         <div class="sidebar-item" onclick="navigateTo('favorite')">좋아요</div>
         <div class="sidebar-item" onclick="navigateTo('analysis')">영양 분석</div>
     </div>
+    {% endcomment %}
 
     <!-- 메인 컨텐츠 -->
     <div class="main-content">
@@ -37,35 +47,17 @@
     </div>
 
     <script>
-    // 마이페이지 메뉴 호버 이벤트
-    const mypageMenu = document.getElementById('mypage-menu');
-    const mypageSidebar = document.getElementById('mypage-sidebar');
+    // Stary kod JavaScript dla paska bocznego - usunięty na rzecz CSS hover
+    // const mypageMenu = document.getElementById('mypage-menu');
+    // const mypageSidebar = document.getElementById('mypage-sidebar');
 
-    mypageMenu.addEventListener('mouseenter', () => {
-        mypageSidebar.style.display = 'block';
-    });
+    // mypageMenu.addEventListener('mouseenter', () => {
+    //     mypageSidebar.style.display = 'block';
+    // });
 
-    mypageSidebar.addEventListener('mouseleave', () => {
-        mypageSidebar.style.display = 'none';
-    });
-
-    // 페이지 이동 함수
-    function navigateTo(page) {
-        switch(page) {
-            case 'mypage':
-                window.location.href = '/';
-                break;
-            case 'survey':
-                window.location.href = '/survey/';
-                break;
-            case 'favorite':
-                window.location.href = '/product/like/';
-                break;
-            case 'analysis':
-                window.location.href = '/product/report/';
-                break;
-        }
-    }
+    // mypageSidebar.addEventListener('mouseleave', () => {
+    //     mypageSidebar.style.display = 'none';
+    // });
 
     // 사이드바 메뉴 클릭 이벤트
     document.querySelectorAll('.sidebar-item').forEach(item => {

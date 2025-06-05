@@ -11,11 +11,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Account',
-    'Chatbot',
+    'Survey',
     'Mypage',
     'Product',
-    'Survey',
+    'Account',
 ]
 
 MIDDLEWARE = [
@@ -31,7 +30,12 @@ MIDDLEWARE = [
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'Survey' / 'templates'],
+        'DIRS': [
+            BASE_DIR / 'Survey' / 'templates',
+            BASE_DIR / 'Mypage' / 'templates',
+            BASE_DIR / 'Product' / 'templates',
+            BASE_DIR / 'Account' / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -47,6 +51,9 @@ TEMPLATES = [
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'Survey' / 'static',
+    BASE_DIR / 'Mypage' / 'static',
+    BASE_DIR / 'Product' / 'static',
+    BASE_DIR / 'Account' / 'static',
 ]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -93,4 +100,9 @@ LOGGING = {
         'level': 'DEBUG',
         'propagate': True,
     },
-} 
+}
+
+# 로그인 관련 설정
+LOGIN_URL = '/account/login/'
+LOGIN_REDIRECT_URL = '/product/'
+LOGOUT_REDIRECT_URL = '/account/login/' 

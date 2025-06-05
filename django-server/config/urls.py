@@ -8,4 +8,5 @@ urlpatterns = [
     path('', include('Mypage.urls', namespace='mypage')),
     path('survey/', include('Survey.urls', namespace='survey')),
     path('product/', include('Product.urls', namespace='product')),
+    path('account/', include('Account.urls', namespace='account')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 

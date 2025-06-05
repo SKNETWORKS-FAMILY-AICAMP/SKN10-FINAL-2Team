@@ -4,7 +4,33 @@
 <div class="container">
     <h1>좋아요 목록</h1>
     <div class="like-list">
-        <!-- 좋아요 목록이 여기에 표시됩니다 -->
+        {% if favorites %}
+            {% for favorite in favorites %}
+            <div class="favorite-item">
+                <div class="product-image">
+                    {% if favorite.product.image_link %}
+                        <img src="{{ favorite.product.image_link }}" alt="{{ favorite.product.title }}">
+                    {% endif %}
+                </div>
+                <div class="product-info">
+                    <div class="product-name">{{ favorite.product.title }}</div>
+                    <div class="product-seller">{{ favorite.product.brand }}</div>
+                    <div class="product-price">{{ favorite.product.total_price }}원</div>
+                    <div class="product-rating">
+                        <span class="rating">{{ favorite.product.average_rating }}★</span>
+                        <span class="review-count">리뷰 {{ favorite.product.total_reviews }}개</span>
+                    </div>
+                </div>
+                <button class="favorite-btn active" data-product-id="{{ favorite.product.id }}"></button>
+            </div>
+            <div class="divider"></div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-image"></div>
+                <div class="empty-text">좋아요 누른 영양제가 없어요.</div>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %} 

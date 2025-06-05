@@ -1,193 +1,95 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>건강 설문조사</title>
-    <meta name="viewport" content="width=1920, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
-</head>
-<body>
-    <!-- 상단 네비게이션 -->
-    <div class="top-bar">
-        <div class="logo">포토로그</div>
-        <div class="nav-menu">
-            <span class="nav-item">챗봇</span>
-            <span class="nav-item selected" id="mypage-menu">마이페이지</span>
-            <span class="nav-item">영양제</span>
-        </div>
-        <div class="user-info">
-            <span>홍길동님~!</span>
-            <span class="dropdown-arrow"></span>
-        </div>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/survey.css' %}">
+{% endblock %}
+
+{% block content %}
+
+  <div class="survey-container">
+    <h1 class="survey-title">건강 설문조사</h1>
+
+    <div class="initial-survey-page">
+      <p class="survey-desc">안녕하세요, {{ user.name }}님! 설문조사를 통해 건강 상태와 생활 습관을 바탕으로 필요한 영양제를 추천해 드립니다.</p>
+      <button type="button" class="start-survey-btn next-btn">시작하기</button>
     </div>
 
-    <!-- 마이페이지 사이드바 -->
-    <div class="sidebar" id="mypage-sidebar">
-        <div class="sidebar-item">내 정보</div>
-        <div class="sidebar-item active">설문 조사</div>
-        <div class="sidebar-item">좋아요</div>
-        <div class="sidebar-item">영양 분석</div>
-    </div>
+    <form method="post" class="survey-form" style="display: none;">
+      {% csrf_token %}
 
-    <!-- 인사말 카드 -->
-    <div class="survey-card" id="greeting-card">
-        <h2 class="survey-title">안녕하세요, 홍승표님!</h2>
-        <p class="survey-desc">
-            설문조사를 통해 파악된 홍승표님의 건강 상태와 생활 습관을 바탕으로,<br>
-            꼭 필요한 영양제를 추천해 드립니다.
-        </p>
-        <button class="start-btn" onclick="startSurvey()">시작하기</button>
-    </div>
-
-    <!-- 설문조사 카드 -->
-    <div class="survey-card" id="survey-card" style="display: none;">
-        <div class="question-group" id="question-1">
-            <div class="question-title">Q. 주로 앉아서 하는 일을 하시나요?</div>
-            <div class="option-row">
-                <div class="option-box" data-value="yes">예</div>
-                <div class="option-box" data-value="no">아니오</div>
-            </div>
-            <button class="next-btn" onclick="nextQuestion(1)">다음</button>
+      {% for question in survey_questions %}
+      <div class="question-group">
+        <h2>{{ question.text }}</h2>
+        {% if question.type == 'select' %}
+        <input type="hidden" name="{{ question.name }}" value="">
+        <div class="option-row">
+          {% for option in question.options %}
+          <div class="option-box" data-value="{{ option }}" data-input="{{ question.name }}"><span>{{ option }}</span></div>
+          {% endfor %}
         </div>
+        {% elif question.type == 'number' %}
+        <input type="number" name="{{ question.name }}" placeholder="숫자 입력" required>
+        {% endif %}
+        {% if not forloop.last %}<button type="button" class="next-btn">다음</button>{% endif %}
+        {% if forloop.last %}<button type="submit" class="next-btn">제 제출</button>{% endif %}
+      </div>
+      {% endfor %}
+    </form>
+  </div>
 
-        <div class="question-group" id="question-2" style="display: none;">
-            <div class="question-title">Q. 당신의 성별은?</div>
-            <div class="option-row">
-                <div class="option-box" data-value="male">남성</div>
-                <div class="option-box" data-value="female">여성</div>
-            </div>
-            <button class="next-btn" onclick="nextQuestion(2)">다음</button>
-        </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const initialPage = document.querySelector('.initial-survey-page');
+  const surveyForm = document.querySelector('.survey-form');
+  const startButton = document.querySelector('.start-survey-btn');
+  const questionGroups = document.querySelectorAll('.question-group');
+  let currentQuestionIndex = 0;
 
-        <div class="question-group" id="question-3" style="display: none;">
-            <div class="question-title">Q. 당신이 태어난 년도를 입력해주세요.</div>
-            <input type="text" class="birth-input" maxlength="4" placeholder="YYYY">
-            <button class="submit-btn" onclick="submitSurvey()">제출하기</button>
-        </div>
-    </div>
+  surveyForm.style.display = 'none';
+  initialPage.style.display = 'block';
 
-    <script>
-    // 마이페이지 메뉴 호버 이벤트
-    const mypageMenu = document.getElementById('mypage-menu');
-    const mypageSidebar = document.getElementById('mypage-sidebar');
+  startButton.addEventListener('click', function() {
+    initialPage.style.display = 'none';
+    surveyForm.style.display = 'block';
+    showQuestion(currentQuestionIndex);
+  });
 
-    mypageMenu.addEventListener('mouseenter', () => {
-        mypageSidebar.style.display = 'block';
+  function showQuestion(index) {
+    questionGroups.forEach((group, i) => {
+      group.style.display = i === index ? 'block' : 'none';
     });
+  }
 
-    mypageSidebar.addEventListener('mouseleave', () => {
-        mypageSidebar.style.display = 'none';
-    });
-
-    // 사이드바 메뉴 클릭 이벤트
-    document.querySelectorAll('.sidebar-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const page = this.textContent.trim();
-            switch(page) {
-                case '내 정보':
-                    window.location.href = '/mypage/';
-                    break;
-                case '설문 조사':
-                    window.location.href = '/survey/';
-                    break;
-                case '좋아요':
-                    window.location.href = '/favorite/';
-                    break;
-                case '영양 분석':
-                    window.location.href = '/analysis/';
-                    break;
-            }
-        });
-    });
-
-    let currentQuestion = 1;
-    const totalQuestions = 3;
-    const answers = {};
-
-    function startSurvey() {
-        document.getElementById('greeting-card').style.display = 'none';
-        document.getElementById('survey-card').style.display = 'block';
-    }
-
-    function nextQuestion(questionNum) {
-        // 현재 질문의 답변 저장
-        const questionElement = document.getElementById(`question-${questionNum}`);
-        const selectedOption = questionElement.querySelector('.option-box.active');
-        
-        if (!selectedOption) {
-            alert('답변을 선택해주세요.');
-            return;
+  surveyForm.querySelectorAll('.next-btn').forEach(button => {
+    if (button.type === 'button') {
+      button.addEventListener('click', function() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < questionGroups.length) {
+          showQuestion(currentQuestionIndex);
         }
-
-        answers[`question${questionNum}`] = selectedOption.dataset.value;
-
-        // 다음 질문으로 이동
-        questionElement.style.display = 'none';
-        document.getElementById(`question-${questionNum + 1}`).style.display = 'block';
+      });
     }
+  });
 
-    function submitSurvey() {
-        const birthYear = document.querySelector('.birth-input').value;
-        if (!birthYear || birthYear.length !== 4) {
-            alert('올바른 출생년도를 입력해주세요.');
-            return;
-        }
+  document.querySelectorAll('.option-box').forEach(option => {
+    option.addEventListener('click', function() {
+      const value = this.getAttribute('data-value');
+      const inputName = this.getAttribute('data-input');
+      const hiddenInput = document.querySelector(`input[name="${inputName}"]`);
+      if (hiddenInput) hiddenInput.value = value;
 
-        answers.birthYear = birthYear;
+      const parentRow = this.closest('.option-row');
+      parentRow.querySelectorAll('.option-box').forEach(opt => opt.classList.remove('active'));
+      this.classList.add('active');
 
-        // 서버로 데이터 전송
-        fetch('/survey/save/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify(answers)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('설문조사가 완료되었습니다.');
-                window.location.href = '/mypage/';  // 마이페이지로 이동
-            } else {
-                alert('오류가 발생했습니다. 다시 시도해주세요.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('오류가 발생했습니다. 다시 시도해주세요.');
-        });
-    }
-
-    // CSRF 토큰 가져오기
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
-    // 옵션 선택 이벤트
-    document.querySelectorAll('.option-box').forEach(option => {
-        option.addEventListener('click', function() {
-            // 같은 질문의 다른 옵션들의 active 클래스 제거
-            const questionGroup = this.closest('.question-group');
-            questionGroup.querySelectorAll('.option-box').forEach(opt => {
-                opt.classList.remove('active');
-            });
-            // 선택한 옵션에 active 클래스 추가
-            this.classList.add('active');
-        });
+      const nextBtn = parentRow.closest('.question-group').querySelector('.next-btn');
+      if (nextBtn && nextBtn.type === 'button') {
+        setTimeout(() => nextBtn.click(), 300);
+      }
     });
-    </script>
-</body>
-</html> 
+  });
+});
+</script>
+{% endblock %}
+

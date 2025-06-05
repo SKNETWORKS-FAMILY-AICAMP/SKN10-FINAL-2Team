@@ -1,0 +1,33 @@
+/* Mypage specific styles */
+.main-content {
+    margin-left: 0;
+    padding: 40px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.profile-section {
+    background-color: #FFFFFF;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.profile-section h2 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.profile-info {
+    padding: 20px;
+}
+
+.profile-info p {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 10px;
+    line-height: 1.6;
+} 
