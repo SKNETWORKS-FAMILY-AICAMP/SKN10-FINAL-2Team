@@ -393,7 +393,14 @@ def send_kag_query(state: AgentState) -> AgentState:
 
     with driver.session() as session:
         kag_query = state["kag_query"]
-        state["kag_results"] = list(session.run(kag_query))
+        results = session.run(kag_query)
+        
+        # Record 객체를 딕셔너리로 변환 (방법 1: data() 메서드 사용)
+        state["kag_results"] = [record.data() for record in results]
+        
+        # 또는 방법 2: dict() 생성자 사용
+        # state["kag_results"] = [dict(record) for record in results]
+        print(state["kag_results"])
 
     return state
 

@@ -3,82 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuti 챗봇</title>
-    <!-- 마크다운 변환 라이브러리 추가 -->
+    <title>챗봇</title>
+    {% load static %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f5f5f5;
+            font-family: 'Pretendard', sans-serif;
         }
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
         }
-        .chat-container {
-            height: 500px;
-            overflow-y: auto;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 20px;
+
+        /* Sidebar Toggle Animation */
+        .sidebar {
+            transition: all 0.3s ease-in-out;
+            left: 0;
         }
-        .message {
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            max-width: 80%;
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
         }
-        .user-message {
-            background-color: #e3f2fd;
-            margin-left: auto;
-            text-align: right;
+
+        /* Main Content Transition */
+        .main-content {
+            transition: all 0.3s ease-in-out;
         }
-        .bot-message {
-            background-color: #f5f5f5;
-            margin-right: auto;
+
+        /* Markdown Styles */
+        .markdown-content pre {
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
         }
-        .input-container {
-            display: flex;
+        .markdown-content code {
+            background-color: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.875rem;
         }
-        #user-input {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            margin-right: 10px;
+        .markdown-content p {
+            /* margin-bottom: 0.75rem; */
+            line-height: 1.6;
         }
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        .markdown-content ul, .markdown-content ol {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
         }
-        button:hover {
-            background-color: #45a049;
+        .markdown-content ul {
+            list-style-type: disc;
         }
-        h1 {
-            color: #333;
-            text-align: center;
+        .markdown-content ol {
+            list-style-type: decimal;
         }
-        /* 로딩 애니메이션 스타일 */
-        .loading {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f5f5f5;
-            max-width: 80px;
+        .markdown-content li {
+            margin: 0.375rem 0;
         }
+        .markdown-content h1, .markdown-content h2, .markdown-content h3, 
+        .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+            line-height: 1.25;
+        }
+        .markdown-content h1 { font-size: 1.5rem; }
+        .markdown-content h2 { font-size: 1.25rem; }
+        .markdown-content h3 { font-size: 1.125rem; }
+        .markdown-content blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #4b5563;
+        }
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+        .markdown-content th, .markdown-content td {
+            border: 1px solid #e5e7eb;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        .markdown-content th {
+            background-color: #f9fafb;
+        }
+        .markdown-content hr {
+            border: 0;
+            border-top: 1px solid #e5e7eb;
+            margin: 1rem 0;
+        }
+
+        /* Loading animation styles */
         .loading-dots {
             display: flex;
             justify-content: center;
@@ -105,39 +136,99 @@
                 transform: scale(1.0);
             }
         }
-        /* 마크다운 스타일 개선 */
-        .bot-message pre {
-            background-color: #f0f0f0;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
+
+        /* SVG Color Transition */
+        .sidebar-toggle svg path {
+            fill: #EADCA6;
+            transition: fill 0.2s ease-in-out;
         }
-        .bot-message code {
-            background-color: #f0f0f0;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-family: monospace;
+        
+        .sidebar-toggle:hover svg path {
+            fill: #D97706;
         }
-        .bot-message p {
-            margin: 0 0 10px 0;
+
+        /* Chat Animation */
+        @keyframes floatUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .bot-message ul, .bot-message ol {
-            padding-left: 20px;
+
+        .message-animation {
+            animation: floatUp 0.3s ease-out forwards;
+        }
+
+        /* Staggered animation for bot messages */
+        .message-animation.bot-message {
+            animation-duration: 0.4s;
+        }
+
+        .message-animation.bot-message:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .message-animation.bot-message:nth-child(3) {
+            animation-delay: 0.2s;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Nuti 영양제 추천 챗봇</h1>
-        <div class="chat-container" id="chat-container">
-            <div class="message bot-message">
-                안녕하세요! 저는 Nuti 영양제 추천 챗봇입니다. 건강 상태나 원하는 영양제에 대해 물어보세요.
+<body class="bg-yellow-50">
+    <div class="relative h-screen overflow-hidden">
+        <aside class="sidebar fixed h-full w-72 min-w-[18rem] bg-yellow-100 p-6 z-40">
+            <button class="sidebar-toggle absolute top-4 -right-12 w-9 h-9 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-yellow-100 transition-colors">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <mask id="mask0_84_423" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
+                        <rect width="36" height="36" fill="#EADCA6"/>
+                    </mask>
+                    <g mask="url(#mask0_84_423)">
+                        <path d="M7.5 31.5C6.675 31.5 5.96875 31.2063 5.38125 30.6188C4.79375 30.0312 4.5 29.325 4.5 28.5V7.5C4.5 6.675 4.79375 5.96875 5.38125 5.38125C5.96875 4.79375 6.675 4.5 7.5 4.5H28.5C29.325 4.5 30.0312 4.79375 30.6188 5.38125C31.2063 5.96875 31.5 6.675 31.5 7.5V28.5C31.5 29.325 31.2063 30.0312 30.6188 30.6188C30.0312 31.2063 29.325 31.5 28.5 31.5H7.5ZM18 28.5H28.5V7.5H18V28.5Z"/>
+                    </g>
+                </svg>
+            </button>
+            <button id="new-chat-btn" class="w-full flex items-center justify-between text-yellow-700 border border-yellow-300 rounded-lg px-4 py-2 mb-8 hover:bg-yellow-200 transition-colors">
+                <span>새 채팅</span>
+                <span class="material-icons text-yellow-600">edit_square</span>
+            </button>
+            <nav>
+                <div id="chat-rooms-container">
+                    <!-- Chat rooms will be dynamically added here grouped by date -->
+                </div>
+            </nav>
+        </aside>
+        <main class="main-content h-screen flex justify-center pl-64 transition-all duration-300 overflow-y-auto">
+            <div class="chat-wrapper max-w-3xl w-full px-4 flex flex-col h-auto min-h-screen pt-8">
+                <div class="flex-1" id="chat-container">
+                    <div class="flex flex-col items-start space-y-4 mb-6">
+                        <div class="bg-white p-4 rounded-lg shadow max-w-xl message-animation bot-message">
+                            <div class="markdown-content">
+                                <p class="text-gray-700">안녕하세요! 저는 Nuti 영양제 추천 챗봇입니다. 건강 상태나 원하는 영양제에 대해 물어보세요.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Input area -->
+                <div class="sticky bottom-0 w-full bg-yellow-50">
+                    <div class="bg-white shadow-lg rounded-lg">
+                        <div class="flex items-center bg-yellow-100 rounded-lg p-3">
+                            <textarea id="user-input" class="flex-1 bg-transparent p-2 text-yellow-800 placeholder-yellow-700/50 focus:outline-none resize-none" placeholder="메시지를 입력하세요..." rows="1"></textarea>
+                            <button id="send-button" class="ml-2 p-2 rounded-full text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700 transition-colors">
+                                <span class="material-icons">send</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Disclaimer -->
+                    <div class="text-xs text-yellow-700/60 px-1 my-2 text-center">
+                        영양이는 성분 기반 맞춤 영양제 추천 AI입니다. 의료적 자문은 약사와, 진단은 의사에게 문의해주세요.
             </div>
         </div>
-        <div class="input-container">
-            <input type="text" id="user-input" placeholder="메시지를 입력하세요...">
-            <button id="send-button">전송</button>
+
         </div>
+        </main>
     </div>
 
     <script>
@@ -145,86 +236,291 @@
             const chatContainer = document.getElementById('chat-container');
             const userInput = document.getElementById('user-input');
             const sendButton = document.getElementById('send-button');
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarToggle = document.querySelector('.sidebar-toggle');
+            const mainContent = document.querySelector('.main-content');
+            const chatRoomsList = document.getElementById('chat-rooms-list');
             let loadingElement = null;
+            let resizeTimer;
+            let currentChatRoomId = null;
 
-            // 마크다운 설정
-            marked.setOptions({
-                breaks: true,  // 줄바꿈 허용
-                gfm: true      // GitHub Flavored Markdown 활성화
+            // Load existing chat rooms
+            function loadChatRooms() {
+                fetch('/Chatbot/chat-rooms/')
+                .then(response => response.json())
+                .then(data => {
+                    const chatRoomsContainer = document.getElementById('chat-rooms-container');
+                    chatRoomsContainer.innerHTML = '';
+
+                    // 채팅방을 날짜별로 그룹화
+                    const groupedRooms = groupRoomsByDate(data);
+                    
+                    // 날짜별로 정렬된 채팅방 표시
+                    Object.entries(groupedRooms)
+                        .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+                        .forEach(([date, rooms]) => {
+                            const dateHeader = document.createElement('p');
+                            dateHeader.className = 'text-xs text-yellow-600 mb-2 mt-4 first:mt-0';
+                            dateHeader.textContent = formatDate(date);
+                            
+                            const roomsList = document.createElement('ul');
+                            roomsList.className = 'space-y-2';
+                            
+                            rooms.forEach(room => {
+                                const li = document.createElement('li');
+                                li.className = 'mb-2 group relative';
+                                li.innerHTML = `
+                                    <div class="flex items-center group w-full relative">
+                                        <div class="flex-1 flex w-full items-center min-w-0 transition-all duration-200">
+                                            <a class="flex-1 block hover:bg-yellow-200 text-yellow-800 p-2 rounded-lg ${currentChatRoomId === room.id ? 'bg-yellow-200 font-semibold' : ''} overflow-hidden whitespace-nowrap text-ellipsis" 
+                                               href="#" data-room-id="${room.id}">
+                                                ${room.title}
+                                            </a>
+                                        </div>
+                                        <div class="hidden group-hover:flex items-center space-x-2 w-[80px] justify-end transition-all duration-200">
+                                            <button class="edit-room-btn w-8 h-8 flex items-center justify-center text-yellow-600 hover:text-yellow-800 hover:bg-yellow-200 rounded-full" data-room-id="${room.id}" title="수정">
+                                                <span class="material-icons text-xl">edit</span>
+                                            </button>
+                                            <button class="delete-room-btn w-8 h-8 flex items-center justify-center text-yellow-600 hover:text-red-600 hover:bg-red-100 rounded-full" data-room-id="${room.id}" title="삭제">
+                                                <span class="material-icons text-xl">delete</span>
+                                            </button>
+                                        </div>
+                                        <div class="hidden absolute left-0 right-0 top-0 bottom-0 flex items-center bg-yellow-100 px-2 z-10">
+                                            <div class="flex items-center w-full space-x-2">
+                                                <input type="text" class="flex-1 p-2 rounded-lg border border-yellow-300 focus:outline-none focus:border-yellow-500 bg-white min-w-0" 
+                                                       value="${room.title}">
+                                                <button class="save-room-btn shrink-0 w-8 h-8 flex items-center justify-center text-yellow-600 hover:text-yellow-800 hover:bg-yellow-200 rounded-full" title="저장">
+                                                    <span class="material-icons text-xl">check</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+
+                                const titleLink = li.querySelector('a');
+                                const titleContainer = li.querySelector('.flex-1.flex.w-full');
+                                const editContainer = li.querySelector('.absolute.left-0');
+                                const titleInput = li.querySelector('input');
+                                const editBtn = li.querySelector('.edit-room-btn');
+                                const saveBtn = li.querySelector('.save-room-btn');
+                                const deleteBtn = li.querySelector('.delete-room-btn');
+                                const actionBtns = li.querySelector('.group-hover\\:flex');
+                                let isEditing = false;
+                                let deleteClickCount = 0;
+                                let deleteTimeout;
+
+                                // 채팅방 클릭 이벤트
+                                titleLink.addEventListener('click', (e) => {
+                                    if (!isEditing) {
+                                        e.preventDefault();
+                                        loadChatRoom(room.id);
+                                    }
+                                });
+
+                                // 수정 버튼 이벤트
+                                editBtn.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    if (!isEditing) {
+                                        // 수정 모드 시작
+                                        isEditing = true;
+                                        li.classList.add('editing');
+                                        editContainer.classList.remove('hidden');
+                                        titleInput.focus();
+                                        titleInput.setSelectionRange(0, titleInput.value.length);
+                                    }
+                                });
+
+                                // 저장 버튼 이벤트
+                                saveBtn.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const newTitle = titleInput.value.trim();
+                                    if (newTitle && newTitle !== room.title) {
+                                        updateChatRoomTitle(room.id, newTitle);
+                                    } else {
+                                        // 변경사항이 없거나 빈 제목이면 원래대로 복구
+                                        titleInput.value = room.title;
+                                        exitEditMode();
+                                    }
+                                });
+
+                                // 수정 모드 종료 함수
+                                function exitEditMode() {
+                                    isEditing = false;
+                                    li.classList.remove('editing');
+                                    editContainer.classList.add('hidden');
+                                }
+
+                                // 입력 필드 이벤트
+                                titleInput.addEventListener('keypress', (e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const newTitle = titleInput.value.trim();
+                                        if (newTitle && newTitle !== room.title) {
+                                            updateChatRoomTitle(room.id, newTitle);
+                                        } else {
+                                            exitEditMode();
+                                        }
+                                    }
+                                });
+
+                                titleInput.addEventListener('blur', (e) => {
+                                    // 저장 버튼 클릭시에는 blur 이벤트를 무시
+                                    if (!e.relatedTarget || !e.relatedTarget.classList.contains('save-room-btn')) {
+                                        if (isEditing) {
+                                            exitEditMode();
+                                        }
+                                    }
+                                });
+
+                                // 삭제 버튼 이벤트
+                                deleteBtn.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    deleteClickCount++;
+                                    
+                                    if (deleteClickCount === 1) {
+                                        // 첫 번째 클릭
+                                        deleteBtn.classList.add('text-red-600');
+                                        deleteBtn.innerHTML = '<span class="material-icons text-xl">delete_forever</span>';
+                                        
+                                        // 3초 후 리셋
+                                        deleteTimeout = setTimeout(() => {
+                                            resetDeleteButton();
+                                        }, 3000);
+                                    } else if (deleteClickCount === 2) {
+                                        // 두 번째 클릭 - 실제 삭제
+                                        clearTimeout(deleteTimeout);
+                                        deleteChatRoom(room.id);
+                                    }
+                                });
+
+                                // 삭제 버튼 리셋 함수
+                                function resetDeleteButton() {
+                                    deleteClickCount = 0;
+                                    deleteBtn.classList.remove('text-red-600');
+                                    deleteBtn.innerHTML = '<span class="material-icons text-xl">delete</span>';
+                                }
+
+                                roomsList.appendChild(li);
+                            });
+                            
+                            chatRoomsContainer.appendChild(dateHeader);
+                            chatRoomsContainer.appendChild(roomsList);
+                        });
+                })
+                .catch(error => console.error('Error loading chat rooms:', error));
+            }
+
+            // 날짜 포맷팅 함수
+            function formatDate(dateStr) {
+                // 날짜 문자열에서 시간 부분 제거하고 한국 시간으로 설정
+                const date = new Date(dateStr.split('T')[0] + 'T00:00:00+09:00');
+                
+                // 현재 한국 시간 기준으로 오늘 자정 설정
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                
+                // 어제 자정 설정
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+                
+                // getTime()으로 비교할 때는 한국 시간으로 맞춰진 시간값으로 비교
+                const compareDate = date.getTime();
+                const compareToday = today.getTime();
+                const compareYesterday = yesterday.getTime();
+                
+                if (compareDate === compareToday) {
+                    return '오늘';
+                } else if (compareDate === compareYesterday) {
+                    return '어제';
+                } else {
+                    // 표시할 때는 로컬 시간 기준으로
+                    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+                }
+            }
+
+            // 채팅방을 날짜별로 그룹화하는 함수
+            function groupRoomsByDate(rooms) {
+                const groups = {};
+                
+                rooms.forEach(room => {
+                    // 한국 시간 기준으로 날짜 처리
+                    const dateStr = room.created_at.split('T')[0];
+                    const dateKey = dateStr;
+                    
+                    if (!groups[dateKey]) {
+                        groups[dateKey] = [];
+                    }
+                    groups[dateKey].push(room);
+                });
+                
+                return groups;
+            }
+
+            // Create new chat room
+            document.getElementById('new-chat-btn').addEventListener('click', () => {
+                currentChatRoomId = null;
+                chatContainer.innerHTML = `
+                    <div class="flex flex-col items-start space-y-4 mb-6">
+                        <div class="bg-white p-4 rounded-lg shadow max-w-xl message-animation bot-message">
+                            <div class="markdown-content">
+                                <p class="text-gray-700">안녕하세요! 저는 Nuti 영양제 추천 챗봇입니다. 건강 상태나 원하는 영양제에 대해 물어보세요.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                loadChatRooms();
             });
 
-            // 로딩 애니메이션 표시
-            function showLoading() {
-                loadingElement = document.createElement('div');
-                loadingElement.className = 'loading';
-                const dots = document.createElement('div');
-                dots.className = 'loading-dots';
-                
-                for (let i = 0; i < 3; i++) {
-                    const dot = document.createElement('span');
-                    dots.appendChild(dot);
-                }
-                
-                loadingElement.appendChild(dots);
-                chatContainer.appendChild(loadingElement);
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+            // Load chat room messages
+            function loadChatRoom(roomId) {
+                currentChatRoomId = roomId;
+                fetch(`/Chatbot/chat-rooms/${roomId}/messages/`)
+                .then(response => response.json())
+                .then(data => {
+                    chatContainer.innerHTML = '';
+                    data.forEach(message => {
+                        addMessage(message.message, message.sender_type === 'user');
+                    });
+                    loadChatRooms(); // Refresh room list to update active state
+                })
+                .catch(error => console.error('Error loading chat messages:', error));
             }
 
-            // 로딩 애니메이션 숨기기
-            function hideLoading() {
-                if (loadingElement && loadingElement.parentNode) {
-                    loadingElement.parentNode.removeChild(loadingElement);
-                    loadingElement = null;
-                }
-            }
-
-            function addMessage(message, isUser) {
-                const messageDiv = document.createElement('div');
-                messageDiv.classList.add('message');
-                messageDiv.classList.add(isUser ? 'user-message' : 'bot-message');
-                
-                if (isUser) {
-                    // 사용자 메시지는 일반 텍스트로 표시
-                    messageDiv.textContent = message;
-                } else {
-                    // 봇 메시지는 마크다운으로 변환하여 HTML로 표시
-                    messageDiv.innerHTML = marked.parse(message);
-                }
-                
-                chatContainer.appendChild(messageDiv);
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-
+            // Modified sendMessage function
             function sendMessage() {
                 const message = userInput.value.trim();
                 if (message === '') return;
 
-                // 사용자 메시지 표시
                 addMessage(message, true);
                 userInput.value = '';
+                userInput.style.height = 'auto';
                 
-                // 로딩 애니메이션 표시
                 showLoading();
 
-                // API 호출
+                const messageData = {
+                    user_query: message,
+                    chat_room_id: currentChatRoomId,
+                    user_id: 1  // Temporary user ID
+                };
+
                 fetch('/Chatbot/ChatWithNuti/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken')
                     },
-                    body: JSON.stringify({
-                        user_query: message
-                    })
+                    body: JSON.stringify(messageData)
                 })
                 .then(response => response.json())
                 .then(data => {
-                    // 로딩 애니메이션 숨기기
                     hideLoading();
                     
-                    // 봇 응답 표시
                     if (data.final_recommendation) {
                         addMessage(data.final_recommendation, false);
+                        if (data.chat_room_id) {
+                            currentChatRoomId = data.chat_room_id;
+                            loadChatRooms();
+                        }
                     } else if (data.error) {
                         addMessage(`**오류가 발생했습니다:** ${data.error}`, false);
                     } else {
@@ -232,15 +528,12 @@
                     }
                 })
                 .catch(error => {
-                    // 로딩 애니메이션 숨기기
                     hideLoading();
-                    
                     console.error('Error:', error);
                     addMessage('**서버와 통신 중 오류가 발생했습니다.**', false);
                 });
             }
 
-            // CSRF 토큰 가져오기
             function getCookie(name) {
                 let cookieValue = null;
                 if (document.cookie && document.cookie !== '') {
@@ -256,13 +549,178 @@
                 return cookieValue;
             }
 
-            // 이벤트 리스너 등록
             sendButton.addEventListener('click', sendMessage);
             userInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
                     sendMessage();
                 }
             });
+
+            // Responsive sidebar handling with debouncing
+            function handleResize() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth <= 768) { // sm breakpoint
+                        sidebar.classList.add('collapsed');
+                        mainContent.classList.add('pl-0');
+                    } else {
+                        // Only expand if it wasn't manually collapsed
+                        if (!sidebar.hasAttribute('data-manual-collapse')) {
+                            sidebar.classList.remove('collapsed');
+                            mainContent.classList.remove('pl-0');
+                        }
+                    }
+                }, 100);
+            }
+
+            // Initial check
+            handleResize();
+
+            // Listen for window resize
+            window.addEventListener('resize', handleResize);
+
+            // Sidebar Toggle Functionality
+            sidebarToggle.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent click from bubbling to document
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('pl-0');
+                
+                // Track manual collapse state
+                if (sidebar.classList.contains('collapsed')) {
+                    sidebar.setAttribute('data-manual-collapse', 'true');
+                } else {
+                    sidebar.removeAttribute('data-manual-collapse');
+                }
+            });
+
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768 && !sidebar.contains(e.target)) {
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('pl-0');
+                }
+            });
+
+            // Auto-resize textarea
+            userInput.addEventListener('input', () => {
+                userInput.style.height = 'auto';
+                userInput.style.height = userInput.scrollHeight + 'px';
+            });
+
+            // Markdown settings
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+                headerIds: false,
+                mangle: false,
+                sanitize: false,
+                silent: true
+            });
+
+            function showLoading() {
+                loadingElement = document.createElement('div');
+                loadingElement.className = 'flex items-start space-y-4 mb-6';
+                loadingElement.innerHTML = `
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <div class="loading-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                `;
+                chatContainer.appendChild(loadingElement);
+                document.querySelector('.main-content').scrollTop = document.querySelector('.main-content').scrollHeight;
+            }
+
+            function hideLoading() {
+                if (loadingElement && loadingElement.parentNode) {
+                    loadingElement.parentNode.removeChild(loadingElement);
+                    loadingElement = null;
+                }
+            }
+
+            function addMessage(message, isUser) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = isUser ? 'flex justify-end mb-6' : 'flex flex-col items-start space-y-4 mb-6';
+                
+                const innerDiv = document.createElement('div');
+                innerDiv.className = `${isUser ? 'bg-yellow-200 text-yellow-800' : 'bg-white text-gray-700'} p-4 rounded-lg shadow max-w-xl message-animation ${isUser ? 'user-message' : 'bot-message'}`;
+                
+                if (isUser) {
+                    innerDiv.textContent = message;
+                } else {
+                    const markdownContent = document.createElement('div');
+                    markdownContent.className = 'markdown-content';
+                    markdownContent.innerHTML = marked.parse(message);
+                    innerDiv.appendChild(markdownContent);
+                }
+                
+                messageDiv.appendChild(innerDiv);
+                chatContainer.appendChild(messageDiv);
+                document.querySelector('.main-content').scrollTop = document.querySelector('.main-content').scrollHeight;
+
+                // Remove animation class after it completes to prevent interference with future animations
+                setTimeout(() => {
+                    innerDiv.classList.remove('message-animation');
+                }, 500);
+            }
+
+            // 채팅방 제목 수정 함수
+            function updateChatRoomTitle(roomId, newTitle) {
+                fetch(`/Chatbot/chat-rooms/${roomId}/update/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ title: newTitle })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadChatRooms();
+                    } else {
+                        alert('채팅방 제목 수정에 실패했습니다.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('채팅방 제목 수정 중 오류가 발생했습니다.');
+                });
+            }
+
+            // 채팅방 삭제 함수
+            function deleteChatRoom(roomId) {
+                fetch(`/Chatbot/chat-rooms/${roomId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (currentChatRoomId === roomId) {
+                            // 현재 보고 있는 채팅방이 삭제된 경우 새로운 채팅 화면으로
+                            document.getElementById('new-chat-btn').click();
+                        } else {
+                            loadChatRooms();
+                        }
+                    } else {
+                        alert('채팅방 삭제에 실패했습니다.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('채팅방 삭제 중 오류가 발생했습니다.');
+                });
+            }
+
+            // Initial load of chat rooms
+            loadChatRooms();
         });
     </script>
 </body>
