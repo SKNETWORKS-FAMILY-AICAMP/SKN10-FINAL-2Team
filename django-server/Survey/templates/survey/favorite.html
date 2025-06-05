@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>좋아요</title>
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+</head>
+<body>
+    <!-- 상단 네비게이션 -->
+    <div class="top-bar">
+        <div class="logo">포토로그</div>
+        <div class="nav-menu">
+            <span class="nav-item">챗봇</span>
+            <span class="nav-item selected" id="mypage-menu">마이페이지</span>
+            <span class="nav-item">영양제</span>
+        </div>
+        <div class="user-info">
+            <span>홍길동님~!</span>
+            <span class="dropdown-arrow"></span>
+        </div>
+    </div>
+
+    <!-- 마이페이지 사이드바 -->
+    <div class="sidebar" id="mypage-sidebar">
+        <div class="sidebar-item" onclick="navigateTo('mypage')">내 정보</div>
+        <div class="sidebar-item" onclick="navigateTo('survey')">설문 조사</div>
+        <div class="sidebar-item active" onclick="navigateTo('favorite')">좋아요</div>
+        <div class="sidebar-item" onclick="navigateTo('analysis')">영양 분석</div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="main-content">
+        <!-- 왼쪽 카드 -->
+        <div class="card left-card">
+            <h2 class="card-title">포토로그</h2>
+            <div class="favorite-list">
+                <div class="favorite-item">
+                    <div class="product-image"></div>
+                    <div class="product-info">
+                        <div class="product-name">품목명</div>
+                        <div class="product-seller">판매업체</div>
+                        <div class="product-price">가격</div>
+                        <div class="product-rating">
+                            <span class="rating">평점</span>
+                            <span class="review-count">리뷰 갯수</span>
+                        </div>
+                    </div>
+                    <button class="favorite-btn active"></button>
+                </div>
+                <div class="divider"></div>
+
+                <div class="favorite-item">
+                    <div class="product-image"></div>
+                    <div class="product-info">
+                        <div class="product-name">품목명</div>
+                        <div class="product-seller">판매업체</div>
+                        <div class="product-price">가격</div>
+                        <div class="product-rating">
+                            <span class="rating">평점</span>
+                            <span class="review-count">리뷰 갯수</span>
+                        </div>
+                    </div>
+                    <button class="favorite-btn active"></button>
+                </div>
+                <div class="divider"></div>
+
+                <div class="favorite-item">
+                    <div class="product-image"></div>
+                    <div class="product-info">
+                        <div class="product-name">품목명</div>
+                        <div class="product-seller">판매업체</div>
+                        <div class="product-price">가격</div>
+                        <div class="product-rating">
+                            <span class="rating">평점</span>
+                            <span class="review-count">리뷰 갯수</span>
+                        </div>
+                    </div>
+                    <button class="favorite-btn active"></button>
+                </div>
+                <div class="divider"></div>
+            </div>
+        </div>
+
+        <!-- 오른쪽 카드 -->
+        <div class="card right-card">
+            <h2 class="card-title">포토로그</h2>
+            <div class="empty-state">
+                <div class="empty-image"></div>
+                <div class="empty-text">좋아요 누른 영양제가 없어요.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // 마이페이지 메뉴 호버 이벤트
+    const mypageMenu = document.getElementById('mypage-menu');
+    const mypageSidebar = document.getElementById('mypage-sidebar');
+
+    mypageMenu.addEventListener('mouseenter', () => {
+        mypageSidebar.style.display = 'block';
+    });
+
+    mypageSidebar.addEventListener('mouseleave', () => {
+        mypageSidebar.style.display = 'none';
+    });
+
+    // 페이지 이동 함수
+    function navigateTo(page) {
+        switch(page) {
+            case 'mypage':
+                window.location.href = '/mypage/';
+                break;
+            case 'survey':
+                window.location.href = '/survey/';
+                break;
+            case 'favorite':
+                window.location.href = '/favorite/';
+                break;
+            case 'analysis':
+                window.location.href = '/analysis/';
+                break;
+        }
+    }
+
+    // 사이드바 메뉴 클릭 이벤트
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.addEventListener('click', function() {
+            // 모든 메뉴 항목에서 active 클래스 제거
+            document.querySelectorAll('.sidebar-item').forEach(menuItem => {
+                menuItem.classList.remove('active');
+            });
+            // 클릭한 메뉴 항목에 active 클래스 추가
+            this.classList.add('active');
+        });
+    });
+    </script>
+</body>
+</html> 
