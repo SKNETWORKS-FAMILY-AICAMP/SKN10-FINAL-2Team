@@ -1,3 +1,8 @@
+
+let globalUidb64 = null;
+let globalToken = null;
+
+
 document.addEventListener('DOMContentLoaded', function () {
 // 기본 요소
 const loginForm = document.getElementById('loginForm');
@@ -28,8 +33,7 @@ const saveNewPasswordButton = document.getElementById('saveNewPasswordButton');
 
 // 회원가입 버튼
 const signupSubmitButton = document.getElementById('signupSubmitButton');
-// id save 변수 (모달 간 데이터 전달)
-let currentUserIdForPasswordReset = null;
+
 // --- 유틸리티 함수 ---
 function openModal(modal) {
     if (modal) modal.style.display = 'flex';
@@ -177,24 +181,31 @@ if (signupSubmitButton) {
         const emailInput = document.getElementById('signupEmail');
         const passwordInput = document.getElementById('signupPassword');
         const birthdateInput = document.getElementById('signupBirthdate');
+        const genderIdInput = document.getElementById('signupGenderId');
 
         const username = nameInput.value.trim();
         const email = emailInput.value.trim();
         const password = passwordInput.value;
         const birth_date = birthdateInput.value; // YYYY-MM-DD 형식으로 가정
+        const gender_id_raw = genderIdInput.value.trim();
 
         // 간단한 클라이언트 측 유효성 검사
-        if (!username || !email || !password) {
-            alert("이름, 이메일, 비밀번호는 필수 입력 항목입니다.");
+        if (!username || !email || !password || !gender_id_raw || !birth_date) {
+            alert("이름, 이메일, 비밀번호, 생년월일은 필수 입력 항목입니다.");
             return; // 유효성 검사 실패 시 함수 종료
         }
-
+        const gender_id = parseInt(gender_id_raw, 10);
+        if (isNaN(gender_id) || ![1, 2, 3, 4].includes(gender_id)) {
+            showSmallInfoPopup('성별 번호는 1, 2, 3, 4 중 하나여야 합니다.');
+            return;
+        }
         // 서버로 보낼 데이터 객체
         const userData = {
             username: username,
             email: email,
             password: password,
-            birth_date: birth_date // birthdate가 비어있으면 null로 전송될 것임 (Serializer 설정에 따라)
+            birth_date: birth_date, // birthdate가 비어있으면 null로 전송될 것임 (Serializer 설정에 따라)
+            gender_id: gender_id
         };
 
         try {
@@ -217,6 +228,7 @@ if (signupSubmitButton) {
                 emailInput.value = '';
                 passwordInput.value = '';
                 birthdateInput.value = '';
+                genderIdInput.value = '';
             } else { // HTTP 상태 코드가 400, 500 등 오류인 경우
                 let errorMessage = "회원가입 중 오류가 발생했습니다.";
                 if (result && result.email) {
@@ -305,28 +317,26 @@ if (findPasswordButton) {
             showSmallInfoPopup('이름, 이메일, 생년월일을 모두 입력해주세요.');
             return;
         }
-        const verificationData = {
+        const resetRequestData = {
             name: name,
             email: email,
             birth_date: birth_date
         };
         try {
-            const response = await fetch('/login/password-verify/', { // 사용자 정보 확인 API
+            const response = await fetch('/login/password-reset-request/', { // 비밀번호 재설정 요청 API
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken')
                 },
-                body: JSON.stringify(verificationData)
+                body: JSON.stringify(resetRequestData)
             });
 
             const result = await response.json();
 
             if (response.ok) {
-                showSmallInfoPopup(result.message);
-                currentUserIdForPasswordReset = result.user_id; // user_id 저장
                 closeModal(findCredentialsModal); // 현재 모달 닫기
-                openModal(resetPasswordModal);   // 비밀번호 재설정 모달 열기
+                showSmallInfoPopup(result.message); // "이메일 발송 완료" 메시지 표시
                 
                 // 성공 후 입력 필드 초기화 (선택적)
                 nameInput.value = '';
@@ -334,23 +344,38 @@ if (findPasswordButton) {
                 birthdateInput.value = '';
 
             } else {
-                let errorMessage = "사용자 정보 확인 중 오류가 발생했습니다.";
-                if (result && result.non_field_errors) {
-                    errorMessage = result.non_field_errors[0];
-                } else if (result && result.detail) {
+                let errorMessage = "비밀번호 재설정 요청 중 오류가 발생했습니다.";
+                if (result && result.detail) {
                     errorMessage = result.detail;
+                } else if (result && result.non_field_errors) {
+                    errorMessage = result.non_field_errors[0];
                 } else if (result && typeof result === 'object') {
                     const fieldErrors = Object.keys(result).map(key => `${key}: ${result[key].join(', ')}`).join('<br>');
                     errorMessage = fieldErrors || errorMessage;
                 }
                 showSmallInfoPopup(`오류: ${errorMessage}`);
-                console.error('User verification failed:', result);
+                console.error('Password reset request failed:', result);
             }
         } catch (error) {
-            console.error('Network or server error during user verification:', error);
+            console.error('Network or server error during password reset request:', error);
             showSmallInfoPopup('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         }
     });
+}
+const urlParams = new URLSearchParams(window.location.search);
+const action = urlParams.get('action');
+const uidb64 = urlParams.get('uidb64');
+const token = urlParams.get('token');
+
+// action이 'reset_password'이고 uidb64와 token이 URL에 있다면 비밀번호 재설정 모달을 띄웁니다.
+if (action === 'reset_password' && uidb64 && token) {
+    globalUidb64 = uidb64;
+    globalToken = token;
+    openModal(resetPasswordModal);
+
+    // URL에서 파라미터 제거하여 깔끔하게 유지 (선택 사항)
+    // 사용자가 새로고침했을 때 모달이 다시 뜨는 것을 방지
+    window.history.replaceState({}, document.title, window.location.pathname);
 }
 
 // "비밀번호 재설정" 모달 - "저장" 버튼
@@ -374,13 +399,17 @@ if (saveNewPasswordButton) {
             showSmallInfoPopup('비밀번호는 8자 이상이어야 합니다.');
             return;
         }
-        if (currentUserIdForPasswordReset === null) {
-            showSmallInfoPopup('사용자 정보가 확인되지 않았습니다.<br>다시 처음부터 시도해주세요.');
-            closeModal(resetPasswordModal); // 재설정 모달 닫기
-            return;
-        }
+
+        // if (!uidb64 || !token) {
+        //     // URL 정리를 했다면, uidb64와 token을 전역 변수나 localStorage에 저장하는 방법 고려.
+        //     // 여기서는 URL 정리를 하지 않는다고 가정하거나, 에러 처리 메시지를 명확히 합니다.
+        //     showSmallInfoPopup('비밀번호 재설정 정보가 누락되었습니다.<br>이메일 링크를 다시 확인해주세요.');
+        //     closeModal(resetPasswordModal);
+        //     return;
+        // }
         const setNewPasswordData = {
-            user_id: currentUserIdForPasswordReset,
+            uidb64: globalUidb64,
+            token: globalToken,
             new_password: newPassword,
             confirm_new_password: confirmNewPassword
         };
@@ -404,16 +433,21 @@ if (saveNewPasswordButton) {
                 // 성공 후 입력 필드 초기화
                 newPasswordInput.value = '';
                 confirmNewPasswordInput.value = '';
-                currentUserIdForPasswordReset = null; // user_id 초기화
+                globalUidb64 = null;
+                globalToken = null;
 
-                // 비밀번호 변경 후 로그인 페이지로 이동하거나, 자동 로그인 처리
+                // 성공 후 로그인 페이지로 리다이렉트 (필요하다면)
                 window.location.href = '/login/'; 
             } else {
                 let errorMessage = "비밀번호 변경 중 오류가 발생했습니다.";
-                if (result && result.non_field_errors) {
-                    errorMessage = result.non_field_errors[0];
-                } else if (result && result.detail) {
+                if (result && result.detail) {
                     errorMessage = result.detail;
+                } else if (result && result.new_password) {
+                    errorMessage = `새 비밀번호: ${result.new_password.join(', ')}`;
+                } else if (result && result.confirm_new_password) {
+                    errorMessage = `확인 비밀번호: ${result.confirm_new_password.join(', ')}`;
+                } else if (result && result.non_field_errors) {
+                    errorMessage = result.non_field_errors.join(', ');
                 } else if (result && typeof result === 'object') {
                     const fieldErrors = Object.keys(result).map(key => `${key}: ${result[key].join(', ')}`).join('<br>');
                     errorMessage = fieldErrors || errorMessage;
@@ -426,9 +460,7 @@ if (saveNewPasswordButton) {
             showSmallInfoPopup('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         }
         
-        // 성공 후 입력 필드 초기화
-        newPasswordInput.value = '';
-        confirmNewPasswordInput.value = '';
+
     });
 }
 });

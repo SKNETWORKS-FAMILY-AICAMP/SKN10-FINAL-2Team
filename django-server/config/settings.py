@@ -181,7 +181,7 @@ EMAIL_USE_TLS = True # TLS 암호화 사용
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER") # 발신 이메일 주소
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD") # 발신 이메일 비밀번호 (또는 앱 비밀번호)
 DEFAULT_FROM_EMAIL = os.environ.get("EMAIL_HOST_USER") # 기본 발신자 이메일
-
+PASSWORD_RESET_TIMEOUT = 3600
 # allauth 이메일 인증 설정
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory' # 'mandatory'로 설정하여 이메일 인증을 필수로 만듭니다.
 ACCOUNT_EMAIL_REQUIRED = True            # 이메일 필드 필수

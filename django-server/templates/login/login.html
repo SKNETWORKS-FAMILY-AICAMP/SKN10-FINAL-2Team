@@ -56,7 +56,10 @@
             </div>
             <div class="modal-form-group">
                 <label for="signupBirthdate">생년월일</label>
-                <input type="text" id="signupBirthdate" class="modal-input" placeholder="YYYYMMDD">
+                <div class="modal-form-group-inline"> 
+                    <input type="text" id="signupBirthdate" class="modal-input birthdate-input" placeholder="YYYYMMDD">
+                    <input type="text" id="signupGenderId" class="modal-input gender-input" placeholder="성별 (1,2,3,4)" maxlength="1">
+                </div>
             </div>
             <button id="signupSubmitButton" class="btn btn-modal-action">회원가입</button>
         </div>

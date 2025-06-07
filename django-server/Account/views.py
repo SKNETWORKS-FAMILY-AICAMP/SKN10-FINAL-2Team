@@ -1,13 +1,21 @@
 from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import SignupSerializer, FindEmailSerializer, UserVerificationSerializer,SetNewPasswordSerializer
+from .serializers import SignupSerializer, FindEmailSerializer, SetNewPasswordWithTokenSerializer, PasswordResetRequestSerializer
 from django.contrib.auth import get_user_model, authenticate
 from allauth.account.utils import send_email_confirmation
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import make_password
 
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from django.conf import settings
+from django.urls import reverse
+from django.contrib.sites.shortcuts import get_current_site
 # Create your views here.
 def login(request):
     return render(request, 'login/login.html')
@@ -112,9 +120,9 @@ class FindEmailAPIView(generics.GenericAPIView):
             "email": user.email, # 찾은 이메일 주소 반환
         }, status=status.HTTP_200_OK)
     
-class PasswordVerificationAPIView(generics.GenericAPIView):
+class PasswordResetRequestAPIView(generics.GenericAPIView):
     permission_classes = [AllowAny]
-    serializer_class = UserVerificationSerializer # 이름이 UserVerificationSerializer로 변경됨
+    serializer_class = PasswordResetRequestSerializer 
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -126,14 +134,49 @@ class PasswordVerificationAPIView(generics.GenericAPIView):
 
         user = serializer.validated_data['user']
         
+        # 토큰 생성
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # 현재 사이트 도메인 가져오기
+        current_site = get_current_site(request)
+        domain = "127.0.0.1:8000"
+        reset_url = "/login/"
+        protocol = 'http'
+
+        context = {
+            'email': user.email,
+            'domain': domain,
+            'site_name': current_site.name,
+            'uid': uid,
+            'token': token,
+            'protocol': protocol,
+            'reset_link': f"{protocol}://{domain}{reset_url}?action=reset_password&uidb64={uid}&token={token}",
+            'user': user, # 필요하다면 사용자 정보도 함께 전달
+        }
+        text_content = render_to_string('email/password_reset_email.txt', context)
+        html_content = render_to_string('email/password_reset_email.html', context)
+
+        email_subject = '비밀번호 재설정 요청'
+        to_email = user.email
+
+        email_message = EmailMultiAlternatives(
+            email_subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL, # settings.py에 DEFAULT_FROM_EMAIL 설정 필요
+            [to_email]
+        )
+        email_message.attach_alternative(html_content, "text/html")
+        email_message.send(fail_silently=False)
         return Response({
-            "message": "사용자 정보가 확인되었습니다. 새 비밀번호를 설정해주세요.",
-            "user_id": user.id, # 프론트엔드에서 비밀번호 재설정 시 사용할 user_id 반환
+            "message": f"비밀번호 재설정 이메일을 {user.email}로 발송했습니다. 이메일을 확인해주세요.",
+            "user_email": user.email,
         }, status=status.HTTP_200_OK)
+
 
 class SetNewPasswordAPIView(generics.GenericAPIView):
     permission_classes = [AllowAny] # 인증되지 않은 사용자도 접근 가능해야 함
-    serializer_class = SetNewPasswordSerializer
+    serializer_class = SetNewPasswordWithTokenSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

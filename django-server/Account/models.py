@@ -10,11 +10,15 @@ class CustomUser(AbstractUser):
     USERNAME_FIELD = 'email'
     birth_date = models.DateField(null=True, blank=True)
     name = models.CharField(max_length=20, null=True, blank=True)
-    gender = models.CharField(max_length=20, null=True, blank=True)
+    GENDER_CHOICES = [
+        ('male', '남성'),
+        ('female', '여성'),
+    ]
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
 
-    REQUIRED_FIELDS = ['birth_date', 'gender']
+    REQUIRED_FIELDS = ['birth_date', 'name']
 
     def __str__(self):
         return self.email
