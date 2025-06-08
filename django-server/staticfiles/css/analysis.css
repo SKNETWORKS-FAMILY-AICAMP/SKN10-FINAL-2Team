@@ -1,0 +1,404 @@
+/* 영양분석 페이지 스타일 */
+.analysis-section {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.analysis-section h1 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.analysis-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.chart-container, .recommendation-container, .summary-container {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chart-container {
+    grid-column: 1 / -1;
+}
+
+.chart-container h2, .recommendation-container h2, .summary-container h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.placeholder-chart {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recommendation-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.recommendation-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.product-image {
+    width: 100px;
+    height: 100px;
+    background: #ddd;
+    border-radius: 8px;
+}
+
+.product-info h3 {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.product-info p {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.summary-content {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.nutrition-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0 0;
+}
+
+.nutrition-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+}
+
+.nutrition-list li:last-child {
+    border-bottom: none;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .analysis-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-container {
+        grid-column: 1;
+    }
+}
+
+/* ⚠️ 이 파일은 영양제 분석 화면 전체 스타일링입니다 */
+
+.my_healthy {
+    position: relative;
+    width: 100%;
+    min-height: calc(100vh - 80px);
+    background: #FFFFFF;
+    padding-top: 100px;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+}
+
+/* 카드 공통 스타일 */
+.card-box {
+    width: 468px;
+    height: 840px;
+    background: #FFFFFF;
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    position: relative;
+    overflow-y: auto;
+}
+
+/* 왼쪽 카드 */
+.upload-card {
+    margin-left: 230px;
+}
+
+.upload-card .title {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 29px;
+    text-align: center;
+    color: #DDC66F;
+    padding: 36px 0;
+}
+
+.upload-box {
+    width: 436px;
+    height: 48px;
+    margin: 0 auto 20px;
+    background: #EADCA6;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.upload-box:hover {
+    background: #DCA628;
+}
+
+.upload-box span {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: #FFFFFF;
+}
+
+/* 오른쪽 카드 */
+.result-card {
+    margin-right: 230px;
+}
+
+.result-card .title {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 29px;
+    text-align: center;
+    color: #DDC66F;
+    padding: 36px 0;
+}
+
+/* 결과 카드 스타일 */
+.result-content {
+    padding: 0 32px;
+}
+
+.result-content h2 {
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 400;
+    font-size: 24px;
+    color: #31444E;
+    margin-bottom: 40px;
+}
+
+.nutrition-item {
+    margin-bottom: 30px;
+}
+
+.nutrition-label {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 16px;
+    color: #5C6B73;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.nutrition-bar {
+    position: relative;
+    height: 10px;
+    margin-bottom: 5px;
+}
+
+.nutrition-bar-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #EDEDED;
+    border-radius: 55px;
+}
+
+.nutrition-bar-fill {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(89.86deg, #EADCA6 -21.58%, #DCA628 100%);
+    border-radius: 55px;
+}
+
+.nutrition-percent {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 12px;
+    color: #000000;
+    text-align: right;
+    display: block;
+}
+
+/* 추천 영양제 섹션 */
+.recommendation-section {
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid #EDEDED;
+}
+
+.recommendation-section h2 {
+    margin-bottom: 20px;
+}
+
+.favorites-list {
+    display: grid;
+    gap: 16px;
+}
+
+.favorite-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border: 1px solid #E6E6E6;
+    border-radius: 6px;
+    background: #FFFFFF;
+    transition: transform 0.2s;
+}
+
+.favorite-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.favorite-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 16px;
+}
+
+.favorite-info {
+    flex: 1;
+}
+
+.favorite-info h3 {
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: #31444E;
+    margin: 0 0 8px 0;
+}
+
+.favorite-info p {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 14px;
+    color: #5C6B73;
+    margin: 0;
+}
+
+.remove-favorite {
+    padding: 8px 16px;
+    background: #FF4B4B;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.remove-favorite:hover {
+    background: #FF3333;
+}
+
+/* 모달 스타일 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.show {
+    display: flex !important;
+}
+
+.modal-content {
+    background: #FFFFFF;
+    padding: 32px;
+    border-radius: 8px;
+    width: 400px;
+    max-width: 90%;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modal-content h2 {
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: #31444E;
+    margin-bottom: 24px;
+}
+
+.modal-content label {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 14px;
+    color: #5C6B73;
+}
+
+.modal-content input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #E6E6E6;
+    border-radius: 4px;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 14px;
+}
+
+.modal-content button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-right: 8px;
+}
+
+.modal-content button:first-of-type {
+    background: #EADCA6;
+    color: #FFFFFF;
+}
+
+.modal-content button:first-of-type:hover {
+    background: #DCA628;
+}
+
+.modal-content button:last-of-type {
+    background: #EDEDED;
+    color: #5C6B73;
+}
+
+.modal-content button:last-of-type:hover {
+    background: #E6E6E6;
+} 

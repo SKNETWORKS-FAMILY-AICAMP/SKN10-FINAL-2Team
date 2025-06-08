@@ -30,6 +30,9 @@ class Products(models.Model):
     sales_ranks = models.TextField(blank=True)
     popularity_score = models.FloatField(null=True, blank=True)
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return self.title
     

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/favorite.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="favorite-container">
+    <!-- 왼쪽 카드 -->
+    <div class="favorite-card left-card">
+        <h2>좋아요한 영양제</h2>
+        <div class="supplement-list">
+            {% if liked_supplements %}
+                {% for supplement in liked_supplements %}
+                    <div class="supplement-item">
+                        <div class="supplement-info">
+                            <h3>{{ supplement.name }}</h3>
+                            <p>{{ supplement.description }}</p>
+                        </div>
+                        <button class="like-button active" data-id="{{ supplement.id }}">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-message">아직 좋아요한 영양제가 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 오른쪽 카드 -->
+    <div class="favorite-card right-card">
+        <h2>추천 영양제</h2>
+        <div class="supplement-list">
+            {% if recommended_supplements %}
+                {% for supplement in recommended_supplements %}
+                    <div class="supplement-item">
+                        <div class="supplement-info">
+                            <h3>{{ supplement.name }}</h3>
+                            <p>{{ supplement.description }}</p>
+                            <p class="benefits">{{ supplement.benefits }}</p>
+                        </div>
+                        <button class="like-button" data-id="{{ supplement.id }}">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-message">아직 추천 영양제가 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const likeButtons = document.querySelectorAll('.like-button');
+    
+    likeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const supplementId = this.dataset.id;
+            const isActive = this.classList.contains('active');
+            
+            // 좋아요 상태 토글
+            this.classList.toggle('active');
+            
+            // 아이콘 변경
+            const icon = this.querySelector('i');
+            if (isActive) {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+            } else {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            }
+            
+            // 서버에 좋아요 상태 업데이트 요청
+            fetch('/mypage/toggle_like/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    supplement_id: supplementId,
+                    is_liked: !isActive
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 성공적으로 업데이트됨
+                    console.log('좋아요 상태가 업데이트되었습니다.');
+                } else {
+                    // 에러 발생 시 원래 상태로 되돌림
+                    this.classList.toggle('active');
+                    if (isActive) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                    }
+                    console.error('좋아요 상태 업데이트 실패');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+});
+
+// CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function navigateTo(page) {
+    switch(page) {
+        case 'mypage':
+            window.location.href = "{% url 'mypage:mypage' %}";
+            break;
+        case 'survey':
+            window.location.href = "{% url 'mypage:survey' %}";
+            break;
+        case 'favorite':
+            window.location.href = "{% url 'mypage:favorite' %}";
+            break;
+        case 'analysis':
+            window.location.href = "{% url 'mypage:analysis' %}";
+            break;
+    }
+}
+</script>
+{% endblock %} 

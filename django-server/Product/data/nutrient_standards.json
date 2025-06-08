@@ -1,0 +1,104 @@
+{
+    "nutrients": {
+        "비타민A": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 A는 시력과 면역 체계에 중요합니다."
+        },
+        "비타민B1": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 B1은 에너지 대사에 필수적입니다."
+        },
+        "비타민B2": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 B2는 세포 성장과 발달에 중요합니다."
+        },
+        "비타민B3": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 B3는 콜레스테롤 조절에 도움을 줍니다."
+        },
+        "비타민B6": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 B6는 단백질 대사에 중요합니다."
+        },
+        "비타민B12": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 B12는 적혈구 생성에 필수적입니다."
+        },
+        "비타민C": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 C는 면역 체계 강화에 중요합니다."
+        },
+        "비타민D": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 D는 뼈 건강에 필수적입니다."
+        },
+        "비타민E": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 E는 항산화 작용을 합니다."
+        },
+        "비타민K": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "비타민 K는 혈액 응고에 중요합니다."
+        },
+        "칼슘": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "칼슘은 뼈와 치아 건강에 필수적입니다."
+        },
+        "철": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "철은 적혈구 생성에 중요합니다."
+        },
+        "마그네슘": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "마그네슘은 근육과 신경 기능에 중요합니다."
+        },
+        "아연": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "아연은 면역 체계 강화에 중요합니다."
+        },
+        "셀레늄": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "셀레늄은 항산화 작용을 합니다."
+        },
+        "오메가3": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "오메가3는 심장 건강에 중요합니다."
+        },
+        "코엔자임Q10": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "코엔자임Q10는 에너지 생산에 중요합니다."
+        },
+        "루테인": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "루테인은 눈 건강에 중요합니다."
+        },
+        "프로바이오틱스": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "프로바이오틱스는 장 건강에 중요합니다."
+        },
+        "글루코사민": {
+            "recommended_amount": 100,
+            "unit": "mg",
+            "description": "글루코사민은 관절 건강에 중요합니다."
+        }
+    }
+} 

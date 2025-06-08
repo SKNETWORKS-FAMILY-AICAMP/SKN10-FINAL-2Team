@@ -11,7 +11,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Survey',
     'Mypage',
     'Product',
     'Account',
@@ -31,10 +30,10 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR / 'Survey' / 'templates',
-            BASE_DIR / 'Mypage' / 'templates',
-            BASE_DIR / 'Product' / 'templates',
-            BASE_DIR / 'Account' / 'templates',
+            os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, 'Mypage', 'templates'),
+            os.path.join(BASE_DIR, 'Account', 'templates'),
+            os.path.join(BASE_DIR, 'Product', 'templates'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -48,13 +47,13 @@ TEMPLATES = [
     },
 ]
 
-STATIC_URL = '/static/'
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    BASE_DIR / 'Survey' / 'static',
-    BASE_DIR / 'Mypage' / 'static',
-    BASE_DIR / 'Product' / 'static',
-    BASE_DIR / 'Account' / 'static',
+    os.path.join(BASE_DIR, 'Mypage', 'static'),
+    os.path.join(BASE_DIR, 'Product', 'static'),
 ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
 def login_view(request):
@@ -16,6 +16,11 @@ def login_view(request):
     else:
         form = AuthenticationForm()
     return render(request, 'account/login.html', {'form': form})
+
+def logout_view(request):
+    """로그아웃 뷰"""
+    logout(request)
+    return redirect('account:login')
 
 def register_view(request):
     """회원가입 뷰"""
