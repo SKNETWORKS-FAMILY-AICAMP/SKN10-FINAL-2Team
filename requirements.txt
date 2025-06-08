@@ -40,3 +40,11 @@ opencv-python>=4.8.0
 # 데이터 처리
 python-dateutil==2.8.2
 pytz==2024.1 
+
+# OCR
+pytesseract
+
+# 건강 관련
+scikit-learn
+
+

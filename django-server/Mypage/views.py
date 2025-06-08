@@ -11,6 +11,9 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime, timedelta
 from Product.models import Favorite, Products  # 파일 상단에 추가
+import pytesseract
+from PIL import Image
+import re
 
 @login_required
 def mypage_view(request):
@@ -549,17 +552,32 @@ def get_nutrient_data(request):
             'message': str(e)
         }, status=500)
 
+def parse_ingredients(text):
+    ingredients = {}
+    # Szukaj linii z wartościami odżywczymi
+    # Przykład: "비타민A 210 ㎍ RE(30 %)"
+    pattern = re.compile(r'([가-힣A-Za-z0-9]+)\s*([\d\.]+)\s*([a-zA-Z㎍mgRE%]+)')
+    for line in text.split('\n'):
+        for match in re.finditer(pattern, line):
+            name = match.group(1)
+            value = match.group(2)
+            unit = match.group(3)
+            ingredients[name] = value + unit
+    return ingredients
+
 @csrf_exempt
 @require_POST
 def ocr_extract(request):
-    # Tu normalnie byłby kod OCR, na razie zwracamy przykładowe dane
-    # Możesz tu podpiąć swój kod OCR
     if 'image' not in request.FILES:
         return JsonResponse({'status': 'error', 'message': 'No image uploaded'}, status=400)
-    # Przykładowe dane
-    ingredients = {
-        '단백질': '12g',
-        '비타민C': '45mg',
-        '칼슘': '200mg'
-    }
-    return JsonResponse({'status': 'success', 'ingredients': ingredients}) 
+    image_file = request.FILES['image']
+    try:
+        image = Image.open(image_file)
+        text = pytesseract.image_to_string(image, lang='kor+eng')
+        print(text)  # Debug: sprawdź co zwraca OCR
+        ingredients = parse_ingredients(text)
+        if not ingredients:
+            ingredients = {'메시지': '성분을 인식하지 못했습니다.'}
+        return JsonResponse({'status': 'success', 'ingredients': ingredients})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}) 
