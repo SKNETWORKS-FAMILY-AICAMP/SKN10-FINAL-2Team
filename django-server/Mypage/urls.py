@@ -13,4 +13,5 @@ urlpatterns = [
     path('analysis/', views.analysis_view, name='analysis'),
     path('get_favorite_products/', views.get_favorite_products, name='get_favorite_products'),
     path('get_nutrient_data/', views.get_nutrient_data, name='get_nutrient_data'),
+    path('ocr_extract/', views.ocr_extract, name='ocr_extract'),
 ] 

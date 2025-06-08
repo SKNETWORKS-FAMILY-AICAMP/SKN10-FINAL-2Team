@@ -67,6 +67,10 @@ class SurveyResponse(models.Model):
     fatigue = models.CharField(max_length=10, null=True, blank=True)
     sleep_well = models.CharField(max_length=10, null=True, blank=True)
     still_tired = models.CharField(max_length=10, null=True, blank=True)
+    sleep_hours = models.FloatField(null=True, blank=True)
+    exercise_frequency = models.CharField(max_length=20, null=True, blank=True)
+    water_intake = models.FloatField(null=True, blank=True)
+    health_status = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.username}'s survey response - {self.created_at}"

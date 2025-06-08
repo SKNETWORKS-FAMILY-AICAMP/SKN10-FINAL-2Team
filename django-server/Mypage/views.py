@@ -538,4 +538,19 @@ def get_nutrient_data(request):
         return JsonResponse({
             'status': 'error',
             'message': str(e)
-        }, status=500) 
+        }, status=500)
+
+@csrf_exempt
+@require_POST
+def ocr_extract(request):
+    # Tu normalnie byłby kod OCR, na razie zwracamy przykładowe dane
+    # Możesz tu podpiąć swój kod OCR
+    if 'image' not in request.FILES:
+        return JsonResponse({'status': 'error', 'message': 'No image uploaded'}, status=400)
+    # Przykładowe dane
+    ingredients = {
+        '단백질': '12g',
+        '비타민C': '45mg',
+        '칼슘': '200mg'
+    }
+    return JsonResponse({'status': 'success', 'ingredients': ingredients}) 

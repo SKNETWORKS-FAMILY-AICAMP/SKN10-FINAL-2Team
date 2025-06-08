@@ -20,7 +20,8 @@
         <!-- Lewa karta -->
         <div class="card-box left-card">
             <div class="title">영양제 추가하기</div>
-            <div class="upload-box" onclick="handleImageUpload()">
+            <input type="file" id="ocr-upload" accept="image/*" style="display:none" onchange="handleOcrUpload(event)">
+            <div class="upload-box" onclick="document.getElementById('ocr-upload').click()">
                 <span>이미지 업로드하기</span>
             </div>
             <div class="upload-box" onclick="loadFavoriteProducts()">
@@ -28,6 +29,9 @@
             </div>
             <div class="upload-box" onclick="showManualInput()">
                 <span>직접 입력하기</span>
+            </div>
+            <div id="product-details" class="product-details">
+                <!-- Tutaj pojawią się szczegóły wybranego produktu -->
             </div>
         </div>
 
@@ -135,21 +139,27 @@ function getCookie(name) {
 }
 
 // 이미지 업로드 처리
-function handleImageUpload() {
-    const modal = document.getElementById('imageUploadModal');
-    modal.classList.add('show');
-}
-
-function uploadImage() {
-    const fileInput = document.getElementById('imageInput');
-    const file = fileInput.files[0];
-    if (file) {
-        // TODO: 이미지 업로드 API 호출
-        console.log('Uploading image:', file.name);
-        closeModal('imageUploadModal');
-    } else {
-        alert('이미지를 선택해주세요.');
-    }
+function handleOcrUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+    fetch('/mypage/ocr_extract/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showProductDetails({ingredients: data.ingredients});
+        } else {
+            alert('성분 인식에 실패했습니다.');
+        }
+    })
+    .catch(() => alert('서버 오류가 발생했습니다.'));
 }
 
 // Dodaj zmienne dla modalu
@@ -307,5 +317,19 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error:', error);
         });
 });
+
+function showProductDetails(product) {
+    const detailsDiv = document.getElementById('product-details');
+    if (!product) {
+        detailsDiv.innerHTML = '';
+        return;
+    }
+    let html = '<h3>제품 성분</h3><ul>';
+    for (const [key, value] of Object.entries(product.ingredients)) {
+        html += `<li><strong>${key}</strong>: ${value}</li>`;
+    }
+    html += '</ul>';
+    detailsDiv.innerHTML = html;
+}
 </script>
 {% endblock %} 
