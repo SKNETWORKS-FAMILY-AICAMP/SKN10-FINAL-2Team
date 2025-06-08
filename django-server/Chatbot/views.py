@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.apps import apps # apps 모듈 임포트
 from Chatbot.agent_system.nodes import AgentState # AgentState 임포트
+from Chatbot.agent_system.agent import SupplementRecommendationAgent # Agent 클래스 임포트
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from Account.models import CustomUser
@@ -45,8 +46,8 @@ class ChatWithNutiAPIView(APIView):
                 message=user_query
             )
 
-            # 기존 AI 응답 로직
-            state = {
+            # 초기 상태 설정 - LangGraph에 전달될 상태 객체
+            initial_state = {
                 "user_query": user_query,
                 "user_health_info": {
                     "기본 정보": {
@@ -108,18 +109,28 @@ class ChatWithNutiAPIView(APIView):
                 "final_recommendation": ""
             }
 
-            # Agent 워크플로우 가져오기
-            chatbot_config = apps.get_app_config('Chatbot')
-            agent_workflow = chatbot_config.agent_workflow
-
+            # Agent 워크플로우 가져오기 - 직접 SupplementRecommendationAgent 클래스 사용
+            agent_workflow = SupplementRecommendationAgent.get_workflow()
+            
             if not agent_workflow:
                 return Response(
                     {"error": "Agent workflow not initialized. Please restart the server."},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
-            # Agent 워크플로우 실행
-            final_state = agent_workflow.invoke(state)
+            # thread_id 설정 (채팅방 ID 사용)
+            # 동일한 채팅방에서는 이전 대화 상태가 유지됩니다
+            thread_config = SupplementRecommendationAgent.get_thread_config(chat_room_id)
+            
+            # 새로운 채팅방인 경우 (thread_id가 없는 경우) 초기 상태 전달
+            # 기존 채팅방은 이전 상태가 PostgreSQL에서 자동으로 로드됩니다
+            if not chat_room_id or ChatMessages.objects.filter(chat_room_id=chat_room_id).count() <= 1:
+                # 새 대화 시작 - 초기 상태 사용
+                final_state = agent_workflow.invoke(initial_state, thread_config)
+            else:
+                # 기존 대화 계속 - 쿼리만 업데이트하고 이전 상태는 체크포인터에서 로드
+                final_state = agent_workflow.invoke({"user_query": user_query}, thread_config)
+                
             ai_response = final_state.get("final_recommendation", "")
 
             # AI 응답 저장

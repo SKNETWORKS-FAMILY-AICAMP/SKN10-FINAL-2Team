@@ -27,7 +27,7 @@ class AgentState(TypedDict):
 # --------------------------
 # 2. extract_health_info
 # --------------------------
-def extract_health_info(state: AgentState) -> AgentState:
+def extract_health_info(state: AgentState) -> Dict[str, Any]:
     """
     사용자 입력에서 건강 정보를 추출하여 기존 설문조사 데이터를 업데이트하는 함수
 
@@ -37,8 +37,7 @@ def extract_health_info(state: AgentState) -> AgentState:
         - user_health_info: 기존 건강 정보 (설문조사 데이터)
 
     Returns:
-        업데이트된 AgentState
-        - user_health_info: 업데이트된 건강 정보
+        변경된 상태 필드만 포함하는 딕셔너리
     """
 
     user_query = state["user_query"]
@@ -92,17 +91,14 @@ def extract_health_info(state: AgentState) -> AgentState:
     content = response.choices[0].message.content
     result = json.loads(content)
 
-    # AgentState 업데이트 (기존 구조에 맞춤)
-    updated_state = state.copy()
-    updated_state["user_health_info"] = result.get("updated_health_info", current_health_data)
-
-    return updated_state
+    # 상태 변경사항만 반환 (LangGraph가 자동으로 적용)
+    return {"user_health_info": result.get("updated_health_info", current_health_data)}
 
 
 # --------------------------
 # 3. extract_comprehensive_info
 # --------------------------
-def extract_comprehensive_info(state: AgentState) -> AgentState:
+def extract_comprehensive_info(state: AgentState) -> Dict[str, Any]:
     """
     사용자 쿼리에서 영양소, 맛, 영양제 종류, 수량, 양식, 평점, 리뷰 수, 가격, 원산지, 비건 여부를 한 번에 추출
     """
@@ -211,21 +207,18 @@ def extract_comprehensive_info(state: AgentState) -> AgentState:
             if key in result:
                 extracted_info[key] = result[key]
 
-        # 상태에 저장
-        state["extracted_info"] = extracted_info
-
     except Exception as e:
         print(f"통합 정보 추출 중 에러 발생: {e}")
         # 에러 발생 시 빈 정보로 초기화
-        state["extracted_info"] = extracted_info
 
-    return state
+    # 상태 변경사항만 반환
+    return {"extracted_info": extracted_info}
 
 # --------------------------
 # 4. build_kag_query
 # --------------------------
 import re
-def build_kag_query(state: AgentState) -> AgentState:
+def build_kag_query(state: AgentState) -> Dict[str, Any]:
     """
     extracted_info를 바탕으로 그래프 DB Cypher 쿼리를 생성하는 Agent
     """
@@ -373,10 +366,8 @@ def build_kag_query(state: AgentState) -> AgentState:
     cypher_query = response.choices[0].message.content.strip()
     cypher_query = cypher_query.replace('```cypher', '').replace('```sql', '').replace('```', '').replace('`', '').strip()
 
-    # 생성된 쿼리를 상태에 저장
-    state["kag_query"] = cypher_query
-
-    return state
+    # 변경된 상태 필드만 반환
+    return {"kag_query": cypher_query}
 
 
 # --------------------------
@@ -384,49 +375,48 @@ def build_kag_query(state: AgentState) -> AgentState:
 # --------------------------
 from neo4j import GraphDatabase
 
-def send_kag_query(state: AgentState) -> AgentState:
+def send_kag_query(state: AgentState) -> Dict[str, Any]:
     # Neo4j 연결
     uri = "neo4j+ssc://4d5cd572.databases.neo4j.io"
     username = "neo4j"
     password = "Zx86I42iwxvqd5G2SUKdrLgDHuY62vhl037CfwnpgwY"
     driver = GraphDatabase.driver(uri, auth=(username, password))
 
+    results = []
     with driver.session() as session:
         kag_query = state["kag_query"]
-        results = session.run(kag_query)
+        query_results = session.run(kag_query)
         
-        # Record 객체를 딕셔너리로 변환 (방법 1: data() 메서드 사용)
-        state["kag_results"] = [record.data() for record in results]
-        
-        # 또는 방법 2: dict() 생성자 사용
-        # state["kag_results"] = [dict(record) for record in results]
-        print(state["kag_results"])
+        # Record 객체를 딕셔너리로 변환
+        results = [record.data() for record in query_results]
+        print(results)
 
-    return state
+    # 변경된 상태 필드만 반환
+    return {"kag_results": results}
 
 
 # --------------------------
 # 6. rerank_agent
 # --------------------------
-def rerank_agent(state: AgentState) -> AgentState:
+def rerank_agent(state: AgentState) -> Dict[str, Any]:
     # 추천 시스템의 리랭크 코드가 추가될 예정입니다.
-    state["rerank_results"] = state["kag_results"]
-    return state
+    # 여기서는 간단히 kag_results를 그대로 반환
+    return {"rerank_results": state["kag_results"]}
 
 
 # --------------------------
 # 7. select_product
 # --------------------------
-def select_product(state: AgentState) -> AgentState:
+def select_product(state: AgentState) -> Dict[str, Any]:
     # 어떤 코드가 추가될 예정입니다.
-    state["final_results"] = state["rerank_results"]
-    return state
+    # 여기서는 간단히 rerank_results를 그대로 반환
+    return {"final_results": state["rerank_results"]}
 
 
 # --------------------------
 # 8. final_answer
 # --------------------------
-def final_answer(state: AgentState) -> AgentState:
+def final_answer(state: AgentState) -> Dict[str, Any]:
     """
     모든 처리된 정보를 바탕으로 최종 영양제 추천 답변을 생성하는 Agent
     """
@@ -526,8 +516,6 @@ def final_answer(state: AgentState) -> AgentState:
 
 전문 상담을 위해 약사나 의료진과 상의하시기 바랍니다."""
 
-    # 상태 업데이트
-    state["final_recommendation"] = final_recommendation
-
-    return state
+    # 변경된 상태 필드만 반환
+    return {"final_recommendation": final_recommendation}
 
