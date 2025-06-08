@@ -33,6 +33,7 @@
             <div id="product-details" class="product-details">
                 <!-- Tutaj pojawią się szczegóły wybranego produktu -->
             </div>
+            <div id="ocr-error" style="color:red; margin-top:10px;"></div>
         </div>
 
         <!-- Prawa karta -->
@@ -141,9 +142,11 @@ function getCookie(name) {
 // 이미지 업로드 처리
 function handleOcrUpload(event) {
     const file = event.target.files[0];
+    console.log('Plik wybrany:', file);
     if (!file) return;
     const formData = new FormData();
     formData.append('image', file);
+    document.getElementById('ocr-error').innerText = '';
     fetch('/mypage/ocr_extract/', {
         method: 'POST',
         headers: {
@@ -151,15 +154,24 @@ function handleOcrUpload(event) {
         },
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('OCR response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Odpowiedź OCR:', data);
         if (data.status === 'success') {
             showProductDetails({ingredients: data.ingredients});
+        } else if (data.status === 'debug') {
+            document.getElementById('ocr-error').innerText = 'OCR raw text: ' + (data.raw_text || 'brak');
         } else {
-            alert('성분 인식에 실패했습니다.');
+            document.getElementById('ocr-error').innerText = data.message || '성분 인식에 실패했습니다.';
         }
     })
-    .catch(() => alert('서버 오류가 발생했습니다.'));
+    .catch((err) => {
+        document.getElementById('ocr-error').innerText = '서버 오류가 발생했습니다.';
+        console.error('OCR fetch error:', err);
+    });
 }
 
 // Dodaj zmienne dla modalu
