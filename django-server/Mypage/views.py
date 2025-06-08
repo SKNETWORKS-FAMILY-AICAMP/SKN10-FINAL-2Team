@@ -186,44 +186,49 @@ def analysis_view(request):
 
 def calculate_health_score(survey_result):
     score = 100
-    
+    answers = survey_result.answers
+
     # 수면 시간 감점
-    if survey_result.sleep_hours and survey_result.sleep_hours < 7:
+    sleep_hours = answers.get('sleep_hours')
+    if sleep_hours and float(sleep_hours) < 7:
         score -= 10
-    
+
     # 운동 빈도 감점
-    if survey_result.exercise_frequency in ['전혀 안함', '1-2회']:
+    exercise_frequency = answers.get('exercise_frequency')
+    if exercise_frequency in ['전혀 안함', '1-2회']:
         score -= 15
-    
+
     # 물 섭취량 감점
-    if survey_result.water_intake and survey_result.water_intake < 8:
+    water_intake = answers.get('water_intake')
+    if water_intake and float(water_intake) < 8:
         score -= 10
-    
+
     # 건강 상태 감점
-    if survey_result.health_status == '나쁨':
+    health_status = answers.get('health_status')
+    if health_status == '나쁨':
         score -= 20
-    elif survey_result.health_status == '보통':
+    elif health_status == '보통':
         score -= 10
-    
+
     # 생활습관 감점
-    if survey_result.smoking:
+    if answers.get('smoking'):
         score -= 15
-    if survey_result.drinking:
+    if answers.get('drinking'):
         score -= 10
-    if survey_result.fatigue:
+    if answers.get('fatigue'):
         score -= 10
-    if not survey_result.sleep_well:
+    if not answers.get('sleep_well'):
         score -= 10
-    if survey_result.still_tired:
+    if answers.get('still_tired'):
         score -= 10
-    
+
     return max(0, score)
 
 def get_recommended_supplements(survey_result):
     supplements = []
     
     # 비타민 D 추천 조건
-    if survey_result.indoor_daytime:
+    if survey_result.answers.get('indoor_daytime'):
         supplements.append({
             'name': '비타민 D',
             'reason': '실내 생활이 많고 햇빛 노출이 부족합니다.',
@@ -231,7 +236,7 @@ def get_recommended_supplements(survey_result):
         })
     
     # 오메가-3 추천 조건
-    if survey_result.sitting_work and survey_result.exercise_frequency in ['전혀 안함', '1-2회']:
+    if survey_result.answers.get('sitting_work') and survey_result.answers.get('exercise_frequency') in ['전혀 안함', '1-2회']:
         supplements.append({
             'name': '오메가-3',
             'reason': '운동 빈도가 낮고 앉아서 일하는 시간이 많습니다.',
@@ -239,7 +244,7 @@ def get_recommended_supplements(survey_result):
         })
     
     # 마그네슘 추천 조건
-    if not survey_result.sleep_well or survey_result.still_tired:
+    if not survey_result.answers.get('sleep_well') or survey_result.answers.get('still_tired'):
         supplements.append({
             'name': '마그네슘',
             'reason': '수면의 질이 좋지 않고 피로감이 있습니다.',
@@ -250,31 +255,35 @@ def get_recommended_supplements(survey_result):
 
 def generate_recommendations(survey_result, health_score):
     recommendations = []
-    
+    answers = survey_result.answers
+
     # 수면 관련 추천
-    if survey_result.sleep_hours and survey_result.sleep_hours < 7:
+    sleep_hours = answers.get('sleep_hours')
+    if sleep_hours and float(sleep_hours) < 7:
         recommendations.append('수면 시간을 7시간 이상 확보하세요.')
-    
+
     # 운동 관련 추천
-    if survey_result.exercise_frequency in ['전혀 안함', '1-2회']:
+    exercise_frequency = answers.get('exercise_frequency')
+    if exercise_frequency in ['전혀 안함', '1-2회']:
         recommendations.append('주 3회 이상의 규칙적인 운동을 시작하세요.')
-    
+
     # 물 섭취 관련 추천
-    if survey_result.water_intake and survey_result.water_intake < 8:
+    water_intake = answers.get('water_intake')
+    if water_intake and float(water_intake) < 8:
         recommendations.append('하루 8잔 이상의 물을 마시세요.')
-    
+
     # 생활습관 관련 추천
-    if survey_result.smoking:
+    if answers.get('smoking'):
         recommendations.append('금연을 시작하세요.')
-    if survey_result.drinking:
+    if answers.get('drinking'):
         recommendations.append('음주를 줄이세요.')
-    if survey_result.fatigue:
+    if answers.get('fatigue'):
         recommendations.append('충분한 휴식을 취하세요.')
-    if not survey_result.sleep_well:
+    if not answers.get('sleep_well'):
         recommendations.append('수면의 질을 개선하기 위해 취침 전 전자기기 사용을 줄이세요.')
-    if survey_result.still_tired:
+    if answers.get('still_tired'):
         recommendations.append('규칙적인 수면 패턴을 유지하세요.')
-    
+
     return '\n'.join(recommendations)
 
 @login_required
