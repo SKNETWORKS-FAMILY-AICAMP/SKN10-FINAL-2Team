@@ -100,5 +100,38 @@ async function checkUserAuthentication() {
         return false;
     }
 }
-
+// js 사용 예시
 // const isAuthenticated = await checkUserAuthentication(); api 호출 전에 인증 했는지 확인 하는 코드 true 이면 인증, false면 거부
+
+    // const isAuthenticated = await checkUserAuthentication(); // 인증 상태 확인 및 토큰 갱신
+    // if (!isAuthenticated) {
+    //     // 이미 checkUserAuthentication에서 로그아웃 처리되었을 것임
+    //     return; 
+    // }
+
+    // const accessToken = localStorage.getItem('accessToken');
+    // if (!accessToken) {
+    //     console.error("Access Token is missing for fetching user profile.");
+    //     logoutUser(); // 토큰이 없으면 로그아웃
+    //     return;
+    // }
+
+    // try {
+    //     const response = await fetch('/api/user/profile/', { // 백엔드의 API 엔드포인트 예시시
+    //         method: 'GET', // 또는 PUT
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //             'Authorization': `Bearer ${accessToken}`, // <-- Access Token을 헤더에 포함!
+    //             'X-CSRFToken': getCookie('csrftoken') // CSRF 토큰도 함께 전송
+    //         }
+    //      });
+    // }
+
+
+// view 사용 예시
+    // class UserProfileView(APIView):
+        // permission_classes = [IsAuthenticated] # 이 뷰는 인증된 사용자만 접근 가능
+
+        // def get(self, request):
+        //     # JWTAuthentication이 request.user에 User 객체를 할당해 줍니다.
+        //     user = request.user
