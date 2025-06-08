@@ -5,5 +5,6 @@ app_name = 'survey'
 
 urlpatterns = [
     path('', views.survey_view, name='survey'),
-    path('save/', views.save_survey_results, name='save_survey_results'),
+    path('save/', views.save_survey, name='save_survey'),
+    path('save-results/', views.save_survey_results, name='save_survey_results'),
 ] 

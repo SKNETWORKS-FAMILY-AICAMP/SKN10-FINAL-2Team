@@ -8,24 +8,25 @@ body {
 
 /* Top navigation bar styles */
 .top-bar {
+    position: absolute;
+    width: 1920px;
+    height: 80px;
+    left: 0px;
+    top: 0px;
+    background: #FFFFFF !important;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.12);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
-    background-color: #DCA628;
-    color: white;
-    height: 60px; /* Fixed height for the top bar */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
+    padding: 0 40px;
+    box-sizing: border-box;
     z-index: 1000;
-    box-sizing: border-box; /* Include padding in element's total width and height */
 }
 
 .logo {
     font-size: 24px;
     font-weight: bold;
+    color: #333 !important;
 }
 
 .nav-menu {
@@ -34,12 +35,12 @@ body {
 }
 
 .nav-item {
-    color: white;
+    color: #333 !important;
     text-decoration: none;
     font-size: 16px;
     cursor: pointer;
     padding: 5px 0;
-    position: relative; /* Required for dropdown positioning */
+    position: relative;
 }
 
 .nav-link-wrapper {
@@ -47,21 +48,30 @@ body {
     display: inline-block;
 }
 
+.hover-dropdown {
+    color: #333 !important;
+    text-decoration: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px 0;
+}
+
 .hover-dropdown .dropdown-menu {
-    display: none; /* Hidden by default */
+    display: none;
     position: absolute;
-    top: 100%; /* Position below the nav item */
+    top: 100%;
     left: 0;
     background-color: #FFFFFF;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     min-width: 160px;
-    z-index: 1000; /* Ensure it's above other elements */
+    z-index: 1000;
     border-radius: 5px;
     overflow: hidden;
 }
 
-.hover-dropdown:hover .dropdown-menu {
-    display: block; /* Show on hover */
+.hover-dropdown:hover .dropdown-menu,
+.hover-dropdown.active .dropdown-menu {
+    display: block;
 }
 
 .dropdown-item {
@@ -70,6 +80,7 @@ body {
     text-decoration: none;
     display: block;
     transition: background-color 0.3s ease;
+    white-space: nowrap;
 }
 
 .dropdown-item:hover {
@@ -83,7 +94,7 @@ body {
 .user-info {
     display: flex;
     align-items: center;
-    color: white;
+    color: #333 !important;
     font-size: 16px;
 }
 
@@ -96,7 +107,7 @@ body {
     height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
-    border-top: 5px solid white;
+    border-top: 5px solid #333 !important;
 }
 
 /* Sidebar styles */

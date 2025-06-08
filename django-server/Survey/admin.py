@@ -3,7 +3,7 @@ from .models import SurveyResponse
 
 @admin.register(SurveyResponse)
 class SurveyResponseAdmin(admin.ModelAdmin):
-    list_display = ('created_at', 'sedentary', 'gender', 'birth_year')
-    list_filter = ('sedentary', 'gender', 'created_at')
-    search_fields = ('gender', 'birth_year')
+    list_display = ('id', 'height', 'weight', 'sitting_work', 'created_at')
+    list_filter = ('sitting_work', 'exercise', 'smoking')
+    search_fields = ('id',)
     ordering = ('-created_at',) 
