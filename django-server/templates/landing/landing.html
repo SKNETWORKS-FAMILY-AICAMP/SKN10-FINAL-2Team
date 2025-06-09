@@ -9,7 +9,10 @@
 <body>
   <header>
     <nav>
-      <a class="Logo" href="#">Logo</a>
+      {% load static %}
+        <a class="Logo" href="/">
+          <img src="{% static 'image/Logo.png' %}" alt="Logo">
+        </a>
       <ul>
         <li><a href="#">챗봇</a></li>
         <li><a href="#">마이페이지</a></li>
@@ -34,17 +37,19 @@
     <div class="recoti">
       <span>항목별 인기 영양제</span>
       <ul>
-        <li>가성비순</li>
-        <li>인기순</li>
-        <li>판매량순</li>
+        <li data-type="cheap">가성비순</li>
+        <li data-type="popular">인기순</li>
+        <li data-type="sales">판매량순</li>
       </ul>
     </div>
-    <div class="prolist">
-      <a href="#"></a>
-      <a href="#"></a>
-      <a href="#"></a>
-      <a href="#"></a>
-      <a href="#"></a>
+    <div class="prolist" id="prolist">
+      {% for product in products|slice:":5" %}
+      <a href="{{ product.url }}" target="_blank">
+      <img src="{{ product.image_link|default:'https://via.placeholder.com/150' }}" alt="{{ product.title }}" >
+      </a>
+      {% endfor %}
+    </div>
+
     </div>
     <div>
       <img src="#" alt="">
@@ -54,5 +59,32 @@
   <footer>
     <!-- Footer 내용 -->
   </footer>
+
+  <script>
+
+ // 상품리스트탭
+document.querySelectorAll('.recoti li').forEach(li => {
+  if (li.textContent.trim() === '가성비순') {
+    li.addEventListener('click', () => {
+      fetch('/get_weighted_scores/', {
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+      })
+      .then(res => res.json())
+      .then(data => {
+        const target = document.querySelector('.prolist');
+        target.innerHTML = '';
+        data.results.forEach(item => {
+          const el = document.createElement('div');
+          el.className = 'pro-item';
+          el.innerHTML = `<strong>${item.title}</strong><br>평점: ${item.average_rating} | 가격: ${item.price} | 점수: ${item.score.toFixed(3)}`;
+          target.appendChild(el);
+        });
+      });
+    });
+  }
+});
+// 상품리스트탭 끝
+</script>
+
 </body>
 </html>

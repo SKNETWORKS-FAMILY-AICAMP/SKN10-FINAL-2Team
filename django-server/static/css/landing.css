@@ -40,6 +40,7 @@ header nav {
   box-shadow: 0 0px 8px rgba(0, 0, 0, 0.12);
   box-sizing: border-box;
   font-size: 24px;
+  background-color: #fff;
 }
 
 header nav .Logo {
@@ -181,18 +182,28 @@ header nav ul li  {
 
 .prolist a {
     display: flex;
+    justify-content: center;
+    align-items: center;
     width: 258.5px;
     height: 258.5px;
-    background-color: blanchedalmond;
+    background-color: #fff;
     box-sizing: border-box;
     padding: 0;
     border: none;
     border-radius: 8px;
     margin-top: 32px;
+    box-shadow: 0 0px 8px rgba(0, 0, 0, 0.12);
 }
 
 .prolist a:nth-child(n+2):nth-child(-n+5) {
     margin-left: 32px;
+}
+.prolist a img{
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    border-radius: 8px;
+ 
 }
 
 footer {
