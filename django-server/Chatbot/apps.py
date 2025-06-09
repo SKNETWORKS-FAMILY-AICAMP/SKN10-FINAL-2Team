@@ -39,4 +39,4 @@ class ChatbotConfig(AppConfig):
         
         # 시그널 핸들러 등록 (키보드 인터럽트 등)
         for sig in [signal.SIGINT, signal.SIGTERM]:
-            signal.signal(sig, lambda s, f: cleanup_resources())
+            signal.signal(sig, lambda s, f: (cleanup_resources(), sys.exit(0)))
