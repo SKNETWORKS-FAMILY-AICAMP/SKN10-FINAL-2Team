@@ -38,4 +38,24 @@
     .main-content {
         margin-left: 0;
     }
+}
+
+/* 설문조사 버튼 스타일 */
+.btn-primary {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #EADCA6;
+    color: #FFFFFF;
+    text-decoration: none;
+    border-radius: 6px;
+    font-family: 'Pretendard';
+    font-weight: 700;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background: #DCA628;
+    text-decoration: none;
+    color: #FFFFFF;
 } 

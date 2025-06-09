@@ -33,32 +33,11 @@ header.top-bar {
     color: #000000;
 }
 
-.top-bar .dropdown-arrow {
-    position: absolute;
-    width: 12px;
-    height: 7.5px;
-    left: 1658px;
-    top: 36px;
-}
-
-.arrow-line1 {
-    position: absolute;
-    width: 2.12px;
-    height: 8.49px;
-    left: 1658px;
-    top: 37.5px;
-    background: #5C6B73;
-    transform: rotate(-45deg);
-}
-
+/* 화살표 관련 CSS 제거 */
+.top-bar .dropdown-arrow,
+.arrow-line1,
 .arrow-line2 {
-    position: absolute;
-    width: 2.12px;
-    height: 8.49px;
-    left: 1664px;
-    top: 43.5px;
-    background: #5C6B73;
-    transform: rotate(-135deg);
+    display: none;
 }
 
 .nav-label {

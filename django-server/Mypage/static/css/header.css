@@ -200,14 +200,6 @@ nav {
     margin-right: 5px !important;
 }
 
-.dropdown-arrow {
-    width: 0 !important;
-    height: 0 !important;
-    border-left: 5px solid transparent !important;
-    border-right: 5px solid transparent !important;
-    border-top: 5px solid #333 !important;
-}
-
 main {
     margin-top: 80px;
     min-height: calc(100vh - 160px);
