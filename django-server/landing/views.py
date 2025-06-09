@@ -26,7 +26,7 @@ def get_top_products(request):
 
 # 가중 평균을 이용한 가성비 영양제 추천.
 from django.http import JsonResponse
-from .models import Product
+# from .models import Product
 from sklearn.preprocessing import MinMaxScaler
 import re
 import numpy as np
