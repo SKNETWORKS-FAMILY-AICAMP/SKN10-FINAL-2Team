@@ -19,3 +19,9 @@ djangorestframework-simplejwt
 scikit-learn
 pandas
 numpy
+langgraph-cli[inmem]
+langgraph-supervisor
+langchain-openai
+langchain-community
+langchain-openai
+langchain-core
