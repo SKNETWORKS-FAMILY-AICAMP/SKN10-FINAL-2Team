@@ -30,4 +30,5 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # <-- 이 URL이 필요
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('', include('landing.urls')), 
+    path('Chatbot/', include('Chatbot.urls')),
 ]

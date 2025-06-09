@@ -4,6 +4,13 @@ openai
 django-environ
 PyJWT
 psycopg2-binary
+langgraph
+psycopg-pool
+langgraph-checkpoint-postgres
+psycopg[binary]
+openai
+neo4j
+python-dotenv
 django-allauth
 requests
 cryptography
