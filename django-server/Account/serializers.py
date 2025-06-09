@@ -61,6 +61,7 @@ class SignupSerializer(serializers.ModelSerializer):
         gender = validated_data.pop('gender') 
 
         user = User.objects.create_user(
+            username=validated_data['email'],
             name=validated_data['name'],
             email=validated_data['email'],
             password=validated_data['password'],

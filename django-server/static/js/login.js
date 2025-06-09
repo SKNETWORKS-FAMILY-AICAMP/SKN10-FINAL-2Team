@@ -151,7 +151,7 @@ if (loginForm) {
                 localStorage.setItem('accessToken', result.access);
                 localStorage.setItem('refreshToken', result.refresh);
                 // Redirect to main page
-                window.location.href = '/main/'; // Change to your actual main page URL
+                window.location.href = '/'; // Change to your actual main page URL
             } else {
                 // Handle different error messages from the backend
                 let errorMessage = "알 수 없는 로그인 오류가 발생했습니다.";
@@ -201,7 +201,7 @@ if (signupSubmitButton) {
         }
         // 서버로 보낼 데이터 객체
         const userData = {
-            username: username,
+            name: username,
             email: email,
             password: password,
             birth_date: birth_date, // birthdate가 비어있으면 null로 전송될 것임 (Serializer 설정에 따라)
