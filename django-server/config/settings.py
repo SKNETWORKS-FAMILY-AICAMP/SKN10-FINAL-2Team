@@ -65,8 +65,15 @@ ROOT_URLCONF = 'config.urls'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'instance' / 'survey.db',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'skn10_db',
+        'USER': 'postgres',
+        'PASSWORD': 'a1234',
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
 }
 
