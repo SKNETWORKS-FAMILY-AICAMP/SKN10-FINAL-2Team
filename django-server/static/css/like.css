@@ -138,23 +138,26 @@ html, body {
     color: #DCA628;
 }
 .modal {
+    width: 400px;
+    display: none;
     position: fixed;
     z-index: 1000;
     left: 0; top: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.4);
-    display: flex;
+    background: rgba(0,0,0,0.25);
     align-items: center;
     justify-content: center;
 }
 .modal-content {
     background: #fff;
     border-radius: 8px;
-    padding: 32px 24px;
-    min-width: 280px;
+    padding: 32px 24px 56px 24px;
+    position: relative;
+    width: 200px;
+    min-width: 90vw;
     max-width: 90vw;
     max-height: 80vh;
     overflow-y: auto;
-    position: relative;
+    box-shadow: 0 0 8px 0 rgba(0,0,0,0.25);
 }
 .modal-close {
     position: absolute;

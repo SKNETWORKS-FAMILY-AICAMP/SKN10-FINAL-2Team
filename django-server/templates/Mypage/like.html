@@ -18,7 +18,7 @@
         <div class="like-list-container">
             {% if like_list %}
                 {% for like in like_list %}
-                <div class="like-item" data-product-id="{{ like.product.id }}">
+                <div class="like-item" data-product-id="{{ like.product.id }}" data-price="{{ like.product.total_price }}" data-url="{{ like.product.url }}">
                     <div class="product-container">
                         <img src="{{ like.product.image_link|default:'https://placehold.co/96x96?text=Image' }}" alt="Image"/>
                         <div class="item-info">
@@ -85,21 +85,35 @@
             if (e.target.classList.contains('heart-btn')) return;
 
             const item = container.closest('.like-item');
+            const productId = item.dataset.productId;
             const title = item.querySelector('.body-font').innerText;
             const manufacturer = item.querySelector('.caption-font').innerText;
-            const price = item.querySelector('.body-font[style*="color: #DCA628;"]')?.innerText || '';
+            const price = item.dataset.price || '';
             const rating = item.querySelector('.caption-font span')?.parentNode.innerText || '';
             const imgSrc = container.querySelector('img').src;
+            const url = item.dataset.url || '#';
 
             // 모달 내용 구성
             document.getElementById('modal-body').innerHTML = `
-                <img src="${imgSrc}" alt="상품 이미지" style="width:160px;height:160px;object-fit:contain;display:block;margin:0 auto 16px auto;">
-                <div style="font-size:20px;font-weight:700;margin-bottom:8px;">${title}</div>
-                <div style="color:#7D97A1;margin-bottom:8px;">${manufacturer}</div>
-                <div style="color:#DCA628;margin-bottom:8px;">${price}</div>
-                <div style="color:#7D97A1;">${rating}</div>
-            `;
+                <img src="${imgSrc}" alt="상품 이미지" style="width:160px;height:160px;object-fit:contain;display:block;margin:10px auto 10px auto;padding:10px;">
+                <div style="font-size:20px;font-weight:700;margin:10px 0 10px 0;">${title}</div>
+                <div style="font-size:16px;color:#7D97A1;margin:10px 0 10px 0;">${manufacturer}</div>
+                <div style="font-size:18px;color:#EADCA6;margin:10px 0 10px 0;">$ ${price}</div>
+                <div style="font-size:14px;color:#7D97A1;margin:10px 0 10px 0;">${rating}</div>
+                <a href="${url}" target="_blank"
+                style="position:absolute; right:24px; bottom:24px; display:inline-block; padding:10px 20px; background-color:#DDC66F; color:#333333; text-decoration:none; border-radius:4px; font-weight:600;">
+                구매하기
+                </a>`;
             document.getElementById('product-modal').style.display = 'flex';
+
+            fetch("{% url 'product_click' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "product_id=" + encodeURIComponent(productId)
+            });
         });
     });
     document.querySelector('.modal-close').onclick = function() {
