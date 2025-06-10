@@ -1,0 +1,172 @@
+@font-face {
+    font-family: 'Pretendard-Regular';
+    src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
+html, body {
+    font-family: 'Pretendard', 'Pretendard-Regular', sans-serif;
+}
+.h2 {
+    font-size: 24pt;
+    font-weight: 700;
+    line-height: auto;
+}
+.h2-1 {
+    font-size: 24pt;
+    font-weight: 400;
+    line-height: auto;
+}
+.h3 {
+    font-size: 18pt;
+    font-weight: 500;
+    line-height: auto;
+}
+.body-font {
+    font-size: 16pt;
+    font-weight: 400;
+    line-height: auto;
+}
+.caption-font {
+    font-size: 12pt;
+    font-weight: 300;
+    line-height: auto;
+}
+.h2, .h2-1, .h3, .body-font, .caption-font {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+.center-container {
+    width: 468px;
+    height: 780px;
+    margin: 120px auto 60px auto;
+    border-radius: 6px;
+    background: #fff;
+    box-sizing: border-box;
+    padding: 0 0 3px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 0 8px 0 rgba(0,0,0,0.25);
+    border: none;
+}
+.product-container {
+    width: 450px;
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+    box-shadow: 0 0 3px 0 rgba(0,0,0,0.25);
+    border-radius: 6px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    justify-content: space-between;
+}
+.product-container:hover {
+    box-shadow: 0 0 8px 0 rgba(0,0,0,0.25);
+}
+.like-list-container {
+    width: 100%;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    max-height: 680px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    scrollbar-width: none;
+}
+.like-item {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    position: relative;
+}
+.like-item img {
+    width: 160px;
+    height: 160px;
+    object-fit: contain;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0 10px 0;
+    margin: 10px;
+}
+.item-info {
+    height: 160px;
+    max-width: 220px;
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0 10px 0;
+    padding: 10px 0 10px 0;
+    justify-content: space-evenly;
+}
+.item-info > * {
+    margin: 5px 0 5px 0;
+}
+.item-info > *:first-child {
+    margin-top: 0;
+}
+.item-info > *:last-child {
+    margin-bottom: 0;
+}
+.empty-image {
+    width: 160px;
+    height: 160px;
+    background: #F7F4D4;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px;
+    padding: 10px;
+    font-size: 24px;
+}
+.heart-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    margin: 10px 10px 10px 0;
+    padding: 10px 10px 10px 0;
+    color: #DCA628;
+    outline: none;
+}
+.heart-btn.liked {
+    color: #DCA628;
+}
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-content {
+    background: #fff;
+    border-radius: 8px;
+    padding: 32px 24px 32px 24px;
+    position: relative;
+    width: 500px;
+    max-height: 800px;
+    overflow-y: auto;
+    box-shadow: 0 0 8px 0 rgba(0,0,0,0.25);
+    scrollbar-width: thin;
+}
+.modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 28px;
+    cursor: pointer;
+}
+@media (max-width: 500px) {
+    .center-container {
+        width: 100vw;
+        margin: 0;
+    }
+}
