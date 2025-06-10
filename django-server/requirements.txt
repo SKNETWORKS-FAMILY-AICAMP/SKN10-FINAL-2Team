@@ -19,3 +19,6 @@ djangorestframework-simplejwt
 scikit-learn
 pandas
 numpy
+Pillow
+pytesseract
+python-dateutil

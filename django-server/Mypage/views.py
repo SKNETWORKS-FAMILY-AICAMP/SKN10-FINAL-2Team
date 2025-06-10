@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime, timedelta
-from Product.models import Favorite, Products  # 파일 상단에 추가
+from Product.models import Products  # 파일 상단에 추가
 import pytesseract
 from PIL import Image
 import re

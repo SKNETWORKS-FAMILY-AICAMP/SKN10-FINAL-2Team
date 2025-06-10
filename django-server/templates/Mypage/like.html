@@ -61,7 +61,7 @@
             const likeItem = btn.closest('.like-item');
             const productId = likeItem.dataset.productId;
             const isLiked = btn.classList.contains('liked');
-            const url = isLiked ? "{% url 'like_delete' %}" : "{% url 'like_add' %}";
+            const url = isLiked ? "{% url 'mypage:like_delete' %}" : "{% url 'mypage:like_add' %}";
 
             fetch(url, {
                 method: "POST",
@@ -147,7 +147,7 @@
             document.getElementById('product-modal').style.display = 'flex';
             document.querySelector('.modal-content').scrollTop = 0;
 
-            fetch("{% url 'product_click' %}", {
+            fetch("{% url 'mypage:product_click' %}", {
                 method: "POST",
                 headers: {
                     "X-CSRFToken": "{{ csrf_token }}",

@@ -19,4 +19,3 @@ urlpatterns = [
     path('like/add/', views.like_add, name='like_add'),
     path('product/click/', views.product_click, name='product_click'),
 ]
-s
