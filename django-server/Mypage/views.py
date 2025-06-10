@@ -67,7 +67,7 @@ def mypage_view(request):
 @login_required
 def survey_view(request):
     # survey_questions.json 파일 경로
-    json_file_path = os.path.join(settings.BASE_DIR, 'Mypage', 'static', 'json', 'survey_questions.json')
+    json_file_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'survey_questions.json')
     print(f"Loading survey questions from: {json_file_path}")
     
     try:
@@ -249,16 +249,16 @@ def get_recommended_supplements(survey_result):
     if survey_result.answers.get('sitting_work') and survey_result.answers.get('exercise_frequency') in ['전혀 안함', '1-2회']:
         supplements.append({
             'name': '오메가-3',
-            'reason': '운동 빈도가 낮고 앉아서 일하는 시간이 많습니다.',
+            'reason': '장시간 앉아서 일하고 운동이 부족합니다.',
             'benefits': '심장 건강과 염증 감소에 도움을 줍니다.'
         })
     
-    # 마그네슘 추천 조건
-    if not survey_result.answers.get('sleep_well') or survey_result.answers.get('still_tired'):
+    # 비타민 B 복합체 추천 조건
+    if survey_result.answers.get('fatigue') or survey_result.answers.get('still_tired'):
         supplements.append({
-            'name': '마그네슘',
-            'reason': '수면의 질이 좋지 않고 피로감이 있습니다.',
-            'benefits': '수면 개선과 근육 이완에 도움을 줍니다.'
+            'name': '비타민 B 복합체',
+            'reason': '피로감이 심하고 수면의 질이 좋지 않습니다.',
+            'benefits': '에너지 대사와 신경계 건강에 도움을 줍니다.'
         })
     
     return supplements
@@ -266,34 +266,28 @@ def get_recommended_supplements(survey_result):
 def generate_recommendations(survey_result, health_score):
     recommendations = []
     answers = survey_result.answers
-
+    
     # 수면 관련 추천
     sleep_hours = answers.get('sleep_hours')
     if sleep_hours and float(sleep_hours) < 7:
-        recommendations.append('수면 시간을 7시간 이상 확보하세요.')
-
+        recommendations.append("수면 시간을 7시간 이상으로 늘리는 것을 권장합니다.")
+    
     # 운동 관련 추천
     exercise_frequency = answers.get('exercise_frequency')
     if exercise_frequency in ['전혀 안함', '1-2회']:
-        recommendations.append('주 3회 이상의 규칙적인 운동을 시작하세요.')
-
+        recommendations.append("주 3회 이상의 규칙적인 운동을 시작하는 것을 권장합니다.")
+    
     # 물 섭취 관련 추천
     water_intake = answers.get('water_intake')
     if water_intake and float(water_intake) < 8:
-        recommendations.append('하루 8잔 이상의 물을 마시세요.')
-
+        recommendations.append("하루 8잔 이상의 물을 마시는 것을 권장합니다.")
+    
     # 생활습관 관련 추천
     if answers.get('smoking'):
-        recommendations.append('금연을 시작하세요.')
+        recommendations.append("흡연을 줄이거나 중단하는 것을 권장합니다.")
     if answers.get('drinking'):
-        recommendations.append('음주를 줄이세요.')
-    if answers.get('fatigue'):
-        recommendations.append('충분한 휴식을 취하세요.')
-    if not answers.get('sleep_well'):
-        recommendations.append('수면의 질을 개선하기 위해 취침 전 전자기기 사용을 줄이세요.')
-    if answers.get('still_tired'):
-        recommendations.append('규칙적인 수면 패턴을 유지하세요.')
-
+        recommendations.append("음주를 줄이는 것을 권장합니다.")
+    
     return '\n'.join(recommendations)
 
 @login_required
@@ -301,22 +295,26 @@ def save_survey(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            responses = data.get('responses', {})
             
             # 설문 응답 저장
             survey_response = SurveyResponse.objects.create(
                 user=request.user,
-                responses=responses,
-                height=responses.get('height'),
-                weight=responses.get('weight'),
-                sitting_work=responses.get('sitting_work'),
-                indoor_daytime=responses.get('indoor_daytime'),
-                exercise=responses.get('exercise'),
-                smoking=responses.get('smoking'),
-                drinking=responses.get('drinking'),
-                fatigue=responses.get('fatigue'),
-                sleep_well=responses.get('sleep_well'),
-                still_tired=responses.get('still_tired')
+                responses=data if data else {},
+                answers=data if data else {},
+                height=data.get('height'),
+                weight=data.get('weight'),
+                sitting_work=data.get('sitting_work'),
+                indoor_daytime=data.get('indoor_daytime'),
+                exercise=data.get('exercise'),
+                smoking=data.get('smoking'),
+                drinking=data.get('drinking'),
+                fatigue=data.get('fatigue'),
+                sleep_well=data.get('sleep_well'),
+                still_tired=data.get('still_tired'),
+                sleep_hours=data.get('sleep_hours'),
+                exercise_frequency=data.get('exercise_frequency'),
+                water_intake=data.get('water_intake'),
+                health_status='completed'
             )
             
             # 설문 결과 생성
@@ -326,23 +324,24 @@ def save_survey(request):
             
             survey_result = SurveyResult.objects.create(
                 user=request.user,
-                answers=responses,
+                answers=data if data else {},
                 result={
                     'health_score': health_score,
                     'recommendations': recommendations,
                     'recommended_supplements': recommended_supplements
                 },
-                health_status='좋음' if health_score >= 80 else '보통' if health_score >= 60 else '나쁨'
+                health_status='좋음' if health_score >= 80 else '보통' if health_score >= 60 else '나쁨',
+                recommended_supplements=recommended_supplements
             )
             
             return JsonResponse({
                 'status': 'success',
                 'message': '설문이 저장되었습니다.',
-                'health_score': health_score,
-                'recommendations': recommendations,
-                'recommended_supplements': recommended_supplements
+                'redirect_url': '/mypage/survey-result/'  # 절대 경로로 수정
             })
+            
         except Exception as e:
+            print(f"Error saving survey: {str(e)}")
             return JsonResponse({
                 'status': 'error',
                 'message': str(e)

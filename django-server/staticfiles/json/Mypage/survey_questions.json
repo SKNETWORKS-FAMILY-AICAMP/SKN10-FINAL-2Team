@@ -1,0 +1,102 @@
+{
+  "questions": [
+    {
+      "name": "height",
+      "text": "Q. 키가 얼마나 되시나요?",
+      "type": "number"
+    },
+    {
+      "name": "weight",
+      "text": "Q. 몸무게를 알려주시겠어요?",
+      "type": "number"
+    },
+    {
+      "name": "sitting_work",
+      "text": "Q. 주로 앉아서 하는 일을 하시나요?",
+      "type": "select",
+      "options": ["예", "아니오"]
+    },
+    {
+      "name": "indoor_daytime",
+      "text": "Q. 낮에 실내에 주로 계신가요?",
+      "type": "select",
+      "options": ["예", "아니오"]
+    },
+    {
+      "name": "exercise",
+      "text": "Q. 규칙적으로 운동을 하시나요?",
+      "type": "select",
+      "options": ["예", "아니오"]
+    },
+    {
+      "name": "smoking",
+      "text": "Q. 담배를 피우시나요?",
+      "type": "select",
+      "options": ["예", "아니오"]
+    },
+    {
+      "name": "drinking",
+      "text": "Q. 일주일에 소주 2병 또는 맥주 8병을 초과하여 드시나요?",
+      "type": "select",
+      "options": ["예", "아니오"]
+    },
+    {
+      "name": "fatigue",
+      "text": "Q. 평상시에 피곤함을 많이 느끼시나요?",
+      "type": "select",
+      "options": ["예", "아니오"]
+    },
+    {
+      "name": "sleep_well",
+      "text": "Q. 잠을 개운하게 푹 주무시나요?",
+      "type": "select",
+      "options": ["예", "아니오"]
+    },
+    {
+      "name": "still_tired",
+      "text": "Q. 충분한 수면(7~8시간) 잠을 자도 피곤한가요?",
+      "type": "select",
+      "options": ["예", "아니오"]
+    },
+    {
+      "text": "현재 건강 상태는 어떠신가요?",
+      "type": "select",
+      "name": "health_status",
+      "options": ["매우 좋음", "좋음", "보통", "나쁨", "매우 나쁨"]
+    },
+    {
+      "text": "하루에 몇 시간 수면을 취하시나요?",
+      "type": "number",
+      "name": "sleep_hours"
+    },
+    {
+      "text": "일주일에 몇 번 운동하시나요?",
+      "type": "select",
+      "name": "exercise_frequency",
+      "options": ["전혀 안함", "1-2회", "3-4회", "5회 이상"]
+    },
+    {
+      "text": "하루에 물을 몇 잔 마시시나요?",
+      "type": "number",
+      "name": "water_intake"
+    },
+    {
+      "text": "현재 복용 중인 영양제가 있나요?",
+      "type": "select",
+      "name": "current_supplements",
+      "options": ["없음", "1-2개", "3-4개", "5개 이상"]
+    },
+    {
+      "text": "알레르기가 있으신가요?",
+      "type": "select",
+      "name": "allergies",
+      "options": ["없음", "음식 알레르기", "약물 알레르기", "기타"]
+    },
+    {
+      "text": "현재 특별히 관리하고 싶은 건강 상태가 있나요?",
+      "type": "select",
+      "name": "health_concerns",
+      "options": ["없음", "면역력", "피로", "수면", "소화", "기타"]
+    }
+  ]
+} 

@@ -2,6 +2,8 @@
 {% load static %}
 
 {% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/header.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/survey_result.css' %}">
 <style>
 .survey-result-container {
     position: absolute;
@@ -160,31 +162,35 @@
 <div class="survey-result-container">
     <h1 class="result-title">설문 결과</h1>
     
-    <div class="health-status">
-        <h2>현재 건강 상태</h2>
-        <p>{{ result.health_status }}</p>
-    </div>
-
-    <div class="supplements-section">
-        <h2>추천 영양제</h2>
-        {% for supplement in result.recommended_supplements %}
-        <div class="supplement-card">
-            <h3>{{ supplement.name }}</h3>
-            <p><strong>추천 이유:</strong> {{ supplement.reason }}</p>
-            <p><strong>효과:</strong> {{ supplement.benefits }}</p>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% else %}
+        <div class="health-status">
+            <h2>현재 건강 상태</h2>
+            <p>건강 점수: {{ health_score }}</p>
         </div>
-        {% endfor %}
-    </div>
 
-    <div class="lifestyle-section">
-        <h2>생활 습관 개선 제안</h2>
-        <ul class="lifestyle-list">
-            {% for recommendation in result.lifestyle_recommendations %}
-            <li>{{ recommendation }}</li>
+        <div class="supplements-section">
+            <h2>추천 영양제</h2>
+            {% for supplement in recommended_supplements %}
+            <div class="supplement-card">
+                <h3>{{ supplement.name }}</h3>
+                <p><strong>추천 이유:</strong> {{ supplement.reason }}</p>
+                <p><strong>효과:</strong> {{ supplement.benefits }}</p>
+            </div>
             {% endfor %}
-        </ul>
-    </div>
+        </div>
 
-    <button class="profile-btn" onclick="window.location.href='/profile/'">프로필로 이동</button>
+        <div class="lifestyle-section">
+            <h2>생활 습관 개선 제안</h2>
+            <ul class="lifestyle-list">
+                {% for recommendation in recommendations %}
+                <li>{{ recommendation }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <button class="profile-btn" onclick="window.location.href='/mypage/'">마이페이지로 이동</button>
+    {% endif %}
 </div>
 {% endblock %} 

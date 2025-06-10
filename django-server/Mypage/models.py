@@ -56,6 +56,7 @@ class NutrientAnalysis(models.Model):
 class SurveyResponse(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     responses = models.JSONField(default=dict)
+    answers = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
     height = models.FloatField(null=True, blank=True)
     weight = models.FloatField(null=True, blank=True)
