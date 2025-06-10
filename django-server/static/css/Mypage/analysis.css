@@ -1,0 +1,408 @@
+/* ⚠️ 이 파일은 영양제 분석 화면 전체 스타일링입니다 */
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+.my_healthy {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* Figma 기반 상단 바 */
+header.top-bar {
+    position: fixed;
+    width: 1920px;
+    height: 80px;
+    left: 0;
+    top: 0;
+    background: #FFFFFF;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+}
+
+.top-bar .username {
+    position: absolute;
+    left: 1580px;
+    top: 30px;
+    font-family: 'Pretendard';
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    color: #000000;
+}
+
+/* 화살표 관련 CSS 제거 */
+.top-bar .dropdown-arrow,
+.arrow-line1,
+.arrow-line2 {
+    display: none;
+}
+
+.nav-label {
+    position: absolute;
+    font-family: 'Pretendard';
+    font-size: 24px;
+    line-height: 29px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-label.chatbot {
+    left: 781px;
+    top: 26px;
+    color: #5C6B73;
+}
+
+.nav-label.mypage {
+    left: 898px;
+    top: 26px;
+    font-weight: 700;
+    color: #DDC66F;
+}
+
+.nav-label.products {
+    left: 1077px;
+    top: 26px;
+    color: #5C6B73;
+}
+
+/* 사이드 메뉴 카드 */
+.sidebar-menu {
+    position: absolute;
+    top: 83px;
+    left: 1236px;
+    width: 160px;
+    background: #FFFFFF;
+    border: 1px solid #E6E6E6;
+    border-radius: 6px;
+    z-index: 10;
+}
+
+.sidebar-item {
+    height: 60px;
+    font-family: 'Pretendard';
+    font-size: 20px;
+    line-height: 60px;
+    padding-left: 20px;
+    color: #5C6B73;
+    border-top: 1px solid #E6E6E6;
+}
+
+.sidebar-item:first-child {
+    border-top: none;
+    border-radius: 8px 8px 0 0;
+}
+
+.sidebar-item:last-child {
+    border-radius: 0 0 8px 8px;
+}
+
+.sidebar-item.active {
+    color: #DDC66F;
+}
+
+/* 카드 형태 컨테이너 */
+.card-row-flex {
+    display: flex;
+    gap: 32px;
+    width: auto;
+    margin: 0 auto;
+}
+
+/* 카드 공통 스타일 */
+.card-box {
+    width: 468px;
+    height: 840px;
+    background: #FFFFFF;
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    padding: 40px 32px 32px 32px;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.left-card .title {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 29px;
+    text-align: center;
+    color: #DDC66F;
+    margin-bottom: 48px;
+}
+
+.right-card .title {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 32px;
+    line-height: 38px;
+    text-align: center;
+    color: #31444E;
+    margin-bottom: 32px;
+}
+
+.product-image-box {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 32px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-image-line {
+    width: 404px;
+    height: 0px;
+    border-top: 1px solid #000000;
+    margin: 24px auto;
+}
+
+.upload-box {
+    width: 100%;
+    height: 48px;
+    background: #EADCA6;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.upload-box span {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: #FFFFFF;
+}
+
+.result-content {
+    padding: 20px;
+}
+
+.nutrition-item {
+    margin-bottom: 20px;
+}
+
+.nutrition-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.nutrition-bar {
+    width: 100%;
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.nutrition-bar-fill {
+    height: 100%;
+    background: #EADCA6;
+    transition: width 0.3s ease;
+}
+
+.nutrition-percent {
+    display: block;
+    margin-top: 5px;
+    text-align: right;
+    color: #666;
+}
+
+/* 추천 영양제 섹션 */
+.recommendation-section {
+    margin-top: 30px;
+}
+
+.favorites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.favorite-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.favorite-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 15px;
+}
+
+.favorite-info {
+    flex: 1;
+}
+
+.favorite-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.1em;
+}
+
+.favorite-info p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.remove-favorite {
+    padding: 5px 10px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.remove-favorite:hover {
+    background: #c82333;
+}
+
+/* 모달 스타일 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 8px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.favorite-products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.favorite-product-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.favorite-product-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.favorite-product-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.favorite-product-card h3 {
+    margin: 10px 0;
+    font-size: 1.1em;
+}
+
+.favorite-product-card p {
+    color: #666;
+    font-size: 0.9em;
+}
+
+@media (max-width: 1200px) {
+    .card-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 32px;
+    }
+
+    .card-box {
+        width: 100%;
+        max-width: 468px;
+        height: auto;
+        min-height: 840px;
+    }
+}
+
+@media (max-width: 480px) {
+    .nutrition-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nutrition-label {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .nutrition-bar {
+        margin: 8px 0;
+    }
+
+    .nutrition-percent {
+        width: 100%;
+        text-align: left;
+    }
+
+    .favorite-item {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .favorite-image {
+        margin: 0 auto;
+    }
+
+    .remove-favorite {
+        width: 100%;
+        margin-top: 16px;
+    }
+}
+  

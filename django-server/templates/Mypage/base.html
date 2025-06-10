@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}영양제 추천 서비스{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/header.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <span class="logo-t">T</span>
+                <span class="logo-p">P</span>
+                <div class="logo-rectangle"></div>
+                <div class="logo-rectangle-2"></div>
+            </div>
+            <div class="nav-label chatbot">챗봇</div>
+            <div class="nav-label mypage" onclick="toggleDropdown()">
+                마이페이지
+                <div class="dropdown-menu" id="mypageDropdown">
+                    <a href="{% url 'mypage:mypage' %}" class="dropdown-item">내 정보</a>
+                    <a href="{% url 'mypage:survey' %}" class="dropdown-item">설문 조사</a>
+                    <a href="{% url 'mypage:favorite' %}" class="dropdown-item">좋아요</a>
+                    <a href="{% url 'mypage:analysis' %}" class="dropdown-item">영양 분석</a>
+                </div>
+            </div>
+            <div class="nav-label products">영양제</div>
+            <div class="login-item">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'account:logout' %}">로그아웃</a>
+                {% else %}
+                    <a href="{% url 'account:login' %}">로그인</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2024 영양제 추천 서비스. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function toggleDropdown() {
+            const dropdown = document.getElementById('mypageDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // 드롭다운 외부 클릭 시 닫기
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('mypageDropdown');
+            const mypageMenu = document.querySelector('.nav-label.mypage');
+            if (!mypageMenu.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

@@ -1,0 +1,347 @@
+{% extends 'Mypage/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/header.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/analysis.css' %}">
+{% endblock %}
+
+{% block content %}
+<div id="favoriteModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>좋아요한 영양제</h2>
+        <div id="favorite-products" class="favorite-products-grid"></div>
+    </div>
+</div>
+
+<div class="my_healthy">
+    <div class="card-row-flex">
+        <!-- Lewa karta -->
+        <div class="card-box left-card">
+            <div class="title">영양제 추가하기</div>
+            <input type="file" id="ocr-upload" accept="image/*" style="display:none" onchange="handleOcrUpload(event)">
+            <div class="upload-box" onclick="document.getElementById('ocr-upload').click()">
+                <span>이미지 업로드하기</span>
+            </div>
+            <div class="upload-box" onclick="loadFavoriteProducts()">
+                <span>좋아요한 영양제 불러오기</span>
+            </div>
+            <div class="upload-box" onclick="showManualInput()">
+                <span>직접 입력하기</span>
+            </div>
+            <div id="product-details" class="product-details">
+                <!-- Tutaj pojawią się szczegóły wybranego produktu -->
+            </div>
+            <div id="ocr-error" style="color:red; margin-top:10px;"></div>
+        </div>
+
+        <!-- Prawa karta -->
+        <div class="card-box right-card">
+            <div class="title">{{ user.username }}님의 영양분석</div>
+            <div class="product-image-line"></div>
+            <div class="product-image-box">
+                <img src="{% static 'images/product1.jpg' %}" alt="제품 이미지" class="product-image">
+            </div>
+            <div class="product-image-line"></div>
+            <div class="result-content">
+                <h2>권장섭취량 대비 섭취량 분석</h2>
+                <div class="nutrition-item">
+                    <span class="nutrition-label">단백질</span>
+                    <div class="nutrition-bar">
+                        <div class="nutrition-bar-fill" style="width: 80%"></div>
+                    </div>
+                    <span class="nutrition-percent">80%</span>
+                </div>
+                <div class="nutrition-item">
+                    <span class="nutrition-label">비타민</span>
+                    <div class="nutrition-bar">
+                        <div class="nutrition-bar-fill" style="width: 60%"></div>
+                    </div>
+                    <span class="nutrition-percent">60%</span>
+                </div>
+                <div class="nutrition-item">
+                    <span class="nutrition-label">미네랄</span>
+                    <div class="nutrition-bar">
+                        <div class="nutrition-bar-fill" style="width: 70%"></div>
+                    </div>
+                    <span class="nutrition-percent">70%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 이미지 업로드 모달 -->
+<div id="imageUploadModal" class="modal">
+    <div class="modal-content">
+        <h2>이미지 업로드</h2>
+        <input type="file" id="imageInput" accept="image/*">
+        <button onclick="uploadImage()">업로드</button>
+        <button onclick="closeModal('imageUploadModal')">취소</button>
+    </div>
+</div>
+
+<!-- 직접 입력 모달 -->
+<div id="manualInputModal" class="modal">
+    <div class="modal-content">
+        <h2>영양소 직접 입력</h2>
+        <div>
+            <label>단백질 (%)</label>
+            <input type="number" id="proteinInput" min="0" max="100">
+        </div>
+        <div>
+            <label>비타민 (%)</label>
+            <input type="number" id="vitaminInput" min="0" max="100">
+        </div>
+        <div>
+            <label>미네랄 (%)</label>
+            <input type="number" id="mineralInput" min="0" max="100">
+        </div>
+        <button onclick="saveManualInput()">저장</button>
+        <button onclick="closeModal('manualInputModal')">취소</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function navigateTo(page) {
+    switch(page) {
+        case 'mypage':
+            window.location.href = "{% url 'mypage:mypage' %}";
+            break;
+        case 'survey':
+            window.location.href = "{% url 'mypage:survey' %}";
+            break;
+        case 'favorite':
+            window.location.href = "{% url 'mypage:favorite' %}";
+            break;
+        case 'analysis':
+            window.location.href = "{% url 'mypage:analysis' %}";
+            break;
+    }
+}
+
+// CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 이미지 업로드 처리
+function handleOcrUpload(event) {
+    const file = event.target.files[0];
+    console.log('Plik wybrany:', file);
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+    document.getElementById('ocr-error').innerText = '';
+    fetch('/mypage/ocr_extract/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => {
+        console.log('OCR response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Odpowiedź OCR:', data);
+        if (data.status === 'success') {
+            showProductDetails({ingredients: data.ingredients});
+        } else if (data.status === 'debug') {
+            document.getElementById('ocr-error').innerText = 'OCR raw text: ' + (data.raw_text || 'brak');
+        } else {
+            document.getElementById('ocr-error').innerText = data.message || '성분 인식에 실패했습니다.';
+        }
+    })
+    .catch((err) => {
+        document.getElementById('ocr-error').innerText = '서버 오류가 발생했습니다.';
+        console.error('OCR fetch error:', err);
+    });
+}
+
+// Dodaj zmienne dla modalu
+const modal = document.getElementById("favoriteModal");
+const span = document.getElementsByClassName("close")[0];
+
+// Zamknij modal po kliknięciu X
+span.onclick = function() {
+    modal.style.display = "none";
+}
+
+// Zamknij modal po kliknięciu poza nim
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+
+function loadFavoriteProducts() {
+    fetch('/mypage/get_favorite_products/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const favoritesList = document.querySelector('.favorites-list');
+                favoritesList.innerHTML = '';
+                
+                data.products.forEach(product => {
+                    const favoriteItem = document.createElement('div');
+                    favoriteItem.className = 'favorite-item';
+                    favoriteItem.innerHTML = `
+                        <img src="${product.image_link}" alt="${product.title}" class="favorite-image">
+                        <div class="favorite-info">
+                            <h3>${product.title}</h3>
+                            <p>${product.ingredients}</p>
+                        </div>
+                        <button class="remove-favorite" onclick="removeFavorite(${product.id})">삭제</button>
+                    `;
+                    favoritesList.appendChild(favoriteItem);
+                });
+                
+                // Pokaż modal
+                modal.style.display = "block";
+            } else {
+                console.error('Error loading favorites:', data.message);
+                alert('좋아요한 영양제를 불러오는데 실패했습니다.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('좋아요한 영양제를 불러오는데 실패했습니다.');
+        });
+}
+
+function removeFavorite(productId) {
+    fetch('/mypage/toggle_like/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            supplement_id: productId,
+            is_liked: false
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            loadFavoriteProducts();
+        } else {
+            console.error('Error removing favorite:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('영양제 삭제에 실패했습니다.');
+    });
+}
+
+// 직접 입력 모달
+function showManualInput() {
+    const modal = document.getElementById('manualInputModal');
+    modal.classList.add('show');
+}
+
+function saveManualInput() {
+    const protein = document.getElementById('proteinInput').value;
+    const vitamin = document.getElementById('vitaminInput').value;
+    const mineral = document.getElementById('mineralInput').value;
+    
+    if (protein && vitamin && mineral) {
+        // TODO: 입력값 저장 API 호출
+        console.log('Saving manual input:', { protein, vitamin, mineral });
+        closeModal('manualInputModal');
+    } else {
+        alert('모든 값을 입력해주세요.');
+    }
+}
+
+// 모달 닫기
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.remove('show');
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Pobierz dane o składnikach odżywczych
+    fetch('/mypage/get_nutrient_data/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Przygotuj dane do wykresu
+                const labels = Object.keys(data.nutrients);
+                const actualValues = labels.map(nutrient => data.nutrients[nutrient].actual_amount);
+                const recommendedValues = labels.map(nutrient => data.nutrients[nutrient].recommended_amount);
+
+                // Stwórz wykres
+                const ctx = document.getElementById('nutrientChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '실제 섭취량',
+                                data: actualValues,
+                                backgroundColor: 'rgba(76, 175, 80, 0.5)',
+                                borderColor: 'rgba(76, 175, 80, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: '권장 섭취량',
+                                data: recommendedValues,
+                                backgroundColor: 'rgba(33, 150, 243, 0.5)',
+                                borderColor: 'rgba(33, 150, 243, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+});
+
+function showProductDetails(product) {
+    const detailsDiv = document.getElementById('product-details');
+    if (!product) {
+        detailsDiv.innerHTML = '';
+        return;
+    }
+    let html = '<h3>제품 성분</h3><ul>';
+    for (const [key, value] of Object.entries(product.ingredients)) {
+        html += `<li><strong>${key}</strong>: ${value}</li>`;
+    }
+    html += '</ul>';
+    detailsDiv.innerHTML = html;
+}
+</script>
+{% endblock %} 

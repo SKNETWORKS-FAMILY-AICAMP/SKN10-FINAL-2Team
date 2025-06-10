@@ -1,0 +1,196 @@
+{% extends 'Mypage/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/header.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/survey_result.css' %}">
+<style>
+.survey-result-container {
+    position: absolute;
+    width: 468px;
+    height: 840px;
+    left: calc(50% - 468px/2);
+    top: 180px;
+    background: #FFFFFF;
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.result-title {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 29px;
+    text-align: center;
+    color: #DDC66F;
+    margin-bottom: 30px;
+    padding-top: 20px;
+}
+
+.health-status {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.health-status h2 {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 24px;
+    color: #31444E;
+    margin-bottom: 10px;
+}
+
+.health-status p {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 24px;
+    color: #31444E;
+}
+
+.supplements-section {
+    margin-bottom: 30px;
+}
+
+.supplements-section h2 {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 24px;
+    color: #31444E;
+    margin-bottom: 20px;
+}
+
+.supplement-card {
+    background: #FDFBF5;
+    border: 1px solid #EADCA6;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.supplement-card h3 {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: #31444E;
+    margin-bottom: 10px;
+}
+
+.supplement-card p {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #31444E;
+    margin-bottom: 5px;
+}
+
+.lifestyle-section {
+    margin-bottom: 30px;
+}
+
+.lifestyle-section h2 {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 24px;
+    color: #31444E;
+    margin-bottom: 20px;
+}
+
+.lifestyle-list {
+    list-style: none;
+    padding: 0;
+}
+
+.lifestyle-list li {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #31444E;
+    margin-bottom: 10px;
+    padding-left: 20px;
+    position: relative;
+}
+
+.lifestyle-list li:before {
+    content: "•";
+    color: #DDC66F;
+    position: absolute;
+    left: 0;
+}
+
+.profile-btn {
+    width: 436px;
+    height: 48px;
+    background: #EADCA6;
+    border-radius: 6px;
+    border: none;
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin: 0 auto;
+    display: block;
+}
+
+.profile-btn:hover {
+    background: #DCA628;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="survey-result-container">
+    <h1 class="result-title">설문 결과</h1>
+    
+    {% if message %}
+        <p>{{ message }}</p>
+    {% else %}
+        <div class="health-status">
+            <h2>현재 건강 상태</h2>
+            <p>건강 점수: {{ health_score }}</p>
+        </div>
+
+        <div class="supplements-section">
+            <h2>추천 영양제</h2>
+            {% for supplement in recommended_supplements %}
+            <div class="supplement-card">
+                <h3>{{ supplement.name }}</h3>
+                <p><strong>추천 이유:</strong> {{ supplement.reason }}</p>
+                <p><strong>효과:</strong> {{ supplement.benefits }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="lifestyle-section">
+            <h2>생활 습관 개선 제안</h2>
+            <ul class="lifestyle-list">
+                {% for recommendation in recommendations %}
+                <li>{{ recommendation }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <button class="profile-btn" onclick="window.location.href='/mypage/'">마이페이지로 이동</button>
+    {% endif %}
+</div>
+{% endblock %} 
