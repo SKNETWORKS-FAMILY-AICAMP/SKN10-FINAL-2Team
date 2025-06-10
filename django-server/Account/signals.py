@@ -22,3 +22,14 @@ def update_user_is_verified(sender, request, email_address, **kwargs):
         print(f"Error: User with email {email_address.email} not found for verification.")
     except Exception as e:
         print(f"Error updating is_verified for {email_address.email}: {e}")
+from allauth.account.signals import user_logged_in
+from rest_framework_simplejwt.tokens import RefreshToken
+@receiver(user_logged_in)
+def post_login_token(sender, request, user, **kwargs):
+    refresh = RefreshToken.for_user(user)
+    
+    # request에 JWT를 저장해둡니다 (후속 처리에 활용 가능)
+    request.jwt_token = {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }

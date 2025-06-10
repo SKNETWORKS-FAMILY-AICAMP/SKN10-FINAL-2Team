@@ -192,7 +192,7 @@ ACCOUNT_USERNAME_REQUIRED = False        # 사용자 이름 필드 필수로 만
 # 이메일 확인 후 리다이렉트될 URL (선택 사항)
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3 # 이메일 인증 링크 유효 기간 (기본값)
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
-
+SOCIALACCOUNT_ADAPTER ='Account.adapters.CustomSocialAccountAdapter'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
