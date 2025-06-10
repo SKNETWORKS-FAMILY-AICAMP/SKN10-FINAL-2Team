@@ -10,7 +10,10 @@ from django.views.decorators.csrf import csrf_exempt
 from Account.models import CustomUser
 import json
 from .models import ChatRooms, ChatMessages
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
+@permission_classes([IsAuthenticated])
 class ChatWithNutiAPIView(APIView):
     def get(self, request, *args, **kwargs):
         # GET 요청 시 HTML 템플릿 렌더링
@@ -19,7 +22,7 @@ class ChatWithNutiAPIView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             # 채팅방 관리
-            user_id = request.data.get('user_id', 1)  # 임시로 user_id 1 사용
+            #user_id = request.data.get('user_id', 1)  # 임시로 user_id 1 사용
             chat_room_id = request.data.get('chat_room_id')
             user_query = request.data.get('user_query')
 
@@ -27,7 +30,7 @@ class ChatWithNutiAPIView(APIView):
                 return Response({"error": "사용자 쿼리가 제공되지 않았습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
             # 사용자 정보 가져오기
-            user = CustomUser.objects.get(id=user_id)
+            user = request.user
 
             # 새 채팅방 생성 또는 기존 채팅방 가져오기
             if not chat_room_id:
@@ -151,10 +154,13 @@ class ChatWithNutiAPIView(APIView):
                 {"error": f"An error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_chat_rooms(request):
     # Temporary: Get rooms for user_id 1
-    rooms = ChatRooms.objects.filter(user_id=1).order_by('-created_at')
+    rooms = ChatRooms.objects.filter(user=request.user).order_by('-created_at')
+    
+
     return JsonResponse([{
         'id': room.id,
         'title': room.title,

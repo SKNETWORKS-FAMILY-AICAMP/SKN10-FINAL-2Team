@@ -231,7 +231,9 @@
         </main>
     </div>
 
-    <script>
+    <script type="module">
+        import { checkUserAuthentication, logoutUser, redirectToLogin } from '{% static "js/auth.js" %}';
+
         document.addEventListener('DOMContentLoaded', function() {
             const chatContainer = document.getElementById('chat-container');
             const userInput = document.getElementById('user-input');
@@ -245,8 +247,20 @@
             let currentChatRoomId = null;
 
             // Load existing chat rooms
-            function loadChatRooms() {
-                fetch('/Chatbot/chat-rooms/')
+            async function loadChatRooms() {
+                const isAuthenticated = await checkUserAuthentication();
+                if (!isAuthenticated) {
+                    // 이미 checkUserAuthentication에서 로그아웃 처리되었을 것임
+                    window.location.href = '/login/';
+                    return; 
+                }
+                const accessToken = localStorage.getItem('accessToken');
+                fetch('/Chatbot/chat-rooms/',{
+                    headers:{ 'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`,
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
                 .then(response => response.json())
                 .then(data => {
                     const chatRoomsContainer = document.getElementById('chat-rooms-container');
@@ -487,7 +501,7 @@
             }
 
             // Modified sendMessage function
-            function sendMessage() {
+            async function sendMessage() {
                 const message = userInput.value.trim();
                 if (message === '') return;
 
@@ -502,11 +516,18 @@
                     chat_room_id: currentChatRoomId,
                     user_id: 1  // Temporary user ID
                 };
-
+                const isAuthenticated = await checkUserAuthentication();
+                if (!isAuthenticated) {
+                    // 이미 checkUserAuthentication에서 로그아웃 처리되었을 것임
+                    window.location.href = '/login/';
+                    return; 
+                }
+                const accessToken = localStorage.getItem('accessToken');
                 fetch('/Chatbot/ChatWithNuti/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`,
                         'X-CSRFToken': getCookie('csrftoken')
                     },
                     body: JSON.stringify(messageData)

@@ -14,10 +14,10 @@
           <img src="{% static 'image/Logo.png' %}" alt="Logo">
         </a>
       <ul>
-        <li><a href="#">챗봇</a></li>
+        <li><a id="chatbot-link" href="">챗봇</a></li>
         <li><a href="#">마이페이지</a></li>
       </ul>
-      <button>로그인</button>
+      <a id="auth-button"></a>
     </nav>
   </header>
   <div class="content">
@@ -60,31 +60,77 @@
     <!-- Footer 내용 -->
   </footer>
 
-  <script>
+  <script type="module">
 
- // 상품리스트탭
-document.querySelectorAll('.recoti li').forEach(li => {
-  if (li.textContent.trim() === '가성비순') {
-    li.addEventListener('click', () => {
-      fetch('/get_weighted_scores/', {
-        headers: {'X-Requested-With': 'XMLHttpRequest'}
-      })
-      .then(res => res.json())
-      .then(data => {
-        const target = document.querySelector('.prolist');
-        target.innerHTML = '';
-        data.results.forEach(item => {
-          const el = document.createElement('div');
-          el.className = 'pro-item';
-          el.innerHTML = `<strong>${item.title}</strong><br>평점: ${item.average_rating} | 가격: ${item.price} | 점수: ${item.score.toFixed(3)}`;
-          target.appendChild(el);
+    // 상품리스트탭
+    import { checkUserAuthentication, logoutUser, redirectToLogin } from '{% static "js/auth.js" %}';
+    document.querySelectorAll('.recoti li').forEach(li => {
+      if (li.textContent.trim() === '가성비순') {
+        li.addEventListener('click', () => {
+          fetch('/get_weighted_scores/', {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+          })
+          .then(res => res.json())
+          .then(data => {
+            const target = document.querySelector('.prolist');
+            target.innerHTML = '';
+            data.results.forEach(item => {
+              const el = document.createElement('div');
+              el.className = 'pro-item';
+              el.innerHTML = `<strong>${item.title}</strong><br>평점: ${item.average_rating} | 가격: ${item.price} | 점수: ${item.score.toFixed(3)}`;
+              target.appendChild(el);
+            });
+          });
         });
-      });
+      }
     });
-  }
-});
-// 상품리스트탭 끝
-</script>
+    // 상품리스트탭 끝
+    async function updateAuthButton() {
+        const authButton = document.getElementById('auth-button');
+
+        if (!authButton) {
+            console.warn("Authentication button not found.");
+            return;
+        }
+        const userisAuthenticated = await checkUserAuthentication();
+        if (userisAuthenticated) {
+            
+            authButton.textContent = '로그아웃';
+            authButton.onclick = logoutUser; // Assign the imported logout function
+        } else {
+            
+            authButton.textContent = '로그인';
+            authButton.onclick = redirectToLogin; // Assign the imported redirect function
+        }
+    }
+    async function setupChatbotLink() {
+        const chatbotLink = document.getElementById('chatbot-link');
+        if (!chatbotLink) {
+            console.warn("Chatbot link not found.");
+            return;
+        }
+
+        const userIsAuthenticated = await checkUserAuthentication(); // Check auth status
+
+        chatbotLink.addEventListener('click', function(event) {
+            event.preventDefault(); // Prevent default link behavior
+
+            if (userIsAuthenticated) {
+                console.log("User is logged in, redirecting to chatbot page.");
+                window.location.href = '/Chatbot/ChatWithNuti/'; // Replace with your actual chatbot page URL
+            } else {
+                console.log("User not logged in, redirecting to login page.");
+                window.location.href = '/login/'; // Replace with your actual login page URL
+            }
+        });
+    }
+
+    // Call both setup functions when the DOM is loaded
+    document.addEventListener('DOMContentLoaded', async () => {
+        await updateAuthButton(); // Ensure button is updated first
+        await setupChatbotLink(); // Then set up the chatbot link's behavior
+    });
+  </script>
 
 </body>
 </html>
