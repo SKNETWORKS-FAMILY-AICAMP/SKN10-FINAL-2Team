@@ -10,7 +10,7 @@
 <br/>
 
 <p align="center">
-    <img src="https://github.com/user-attachments/assets/6ad3954d-1179-48f4-9c1c-d9a6be950dad" width="800"/>
+    <img src="https://github.com/user-attachments/assets/f777114d-4026-40ea-a38a-05aed93903a6" width="600"/>
     <br/>
     <em>상품별 리뷰 기반 인기 점수 산출 플로우</em>
 </p>
