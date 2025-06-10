@@ -61,7 +61,8 @@ def mypage_view(request):
             'survey_history': []
         }
     
-    return render(request, 'mypage.html', context)
+    context['user'] = request.user
+    return render(request, 'Mypage/mypage.html', context)
 
 @login_required
 def survey_view(request):
@@ -85,13 +86,14 @@ def survey_view(request):
         print(f"Unexpected error: {str(e)}")
     
     context = {
+        'user': request.user,
         'survey_questions': survey_questions,
         'debug_info': {
             'file_path': json_file_path,
             'questions_count': len(survey_questions)
         }
     }
-    return render(request, 'survey.html', context)
+    return render(request, 'Mypage/survey.html', context)
 
 @login_required
 def favorite_view(request):
@@ -110,7 +112,7 @@ def favorite_view(request):
         'liked_supplements': liked_supplements,
         'recommended_supplements': recommended_supplements
     }
-    return render(request, 'favorite.html', context)
+    return render(request, 'Mypage/favorite.html', context)
 
 @login_required
 def toggle_like(request):
@@ -185,7 +187,12 @@ def analysis_view(request):
             'message': '아직 설문 결과가 없습니다. 설문을 먼저 진행해주세요.'
         }
     
-    return render(request, 'analysis.html', context)
+    context['user'] = request.user
+    context['debug_info'] = {
+        'file_path': os.path.join(settings.STATIC_ROOT, 'json', 'Mypage', 'nutrient_standards.json'),
+        'questions_count': 0
+    }
+    return render(request, 'Mypage/analysis.html', context)
 
 def calculate_health_score(survey_result):
     score = 100
@@ -363,7 +370,8 @@ def survey_result(request):
             'message': '아직 설문 결과가 없습니다.'
         }
     
-    return render(request, 'survey_result.html', context)
+    context['user'] = request.user
+    return render(request, 'Mypage/survey_result.html', context)
 
 @login_required
 def nutrient_analysis_view(request):

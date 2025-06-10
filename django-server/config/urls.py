@@ -10,4 +10,4 @@ urlpatterns = [
     path('account/', include('Account.urls')),
     path('favorite/', RedirectView.as_view(url='/mypage/favorite/', permanent=True)),
     path('', RedirectView.as_view(url='/mypage/', permanent=True)),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 
