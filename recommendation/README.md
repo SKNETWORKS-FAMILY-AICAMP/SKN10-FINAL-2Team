@@ -52,7 +52,7 @@ $$
 > 상품별 인기 점수 정규화(MinMaxScaling)
   
 $$
-score' = \frac{score - min(score)}{max(score) - min(score)}
+popularity_score = \frac{score - min(score)}{max(score) - min(score)}
 $$
 
 <br/>
