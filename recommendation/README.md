@@ -21,13 +21,13 @@
 
 - 기존 별점이 주관적일 수 있으므로, 리뷰 텍스트에 대해 LLM 기반 감성 분석을 수행하여 긍정/부정 분류
 
+> 일부 4-5점 리뷰에도 부정적인 감성 존재
+
 <p align="center">
     <img src="https://github.com/user-attachments/assets/295fdbbf-1511-44b0-a989-6f7ea1f4c969" width="600"/>
     <br/>
     <em>기존 별점별 긍정/부정 비율</em>
 </p>
-
-> 일부 4-5점 리뷰에도 부정적인 감성 존재
 
 <br/>
 
