@@ -89,10 +89,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'topDB',    # 데이터베이스 이름.
-        "USER": "topAdmin",  # 사용자 이름.
-        "PASSWORD": "root1234",    # 비밀번호
-        "HOST": "127.0.0.1",    # 호스트명
+        'NAME': 'postgre',    # 데이터베이스 이름.
+        "USER": "postgres",  # 사용자 이름.
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),    # 비밀번호
+        "HOST": os.environ.get("POSTGRES_HOST"),    # 호스트명
         "PORT": "5432"          # 포트번호
     }
 }
