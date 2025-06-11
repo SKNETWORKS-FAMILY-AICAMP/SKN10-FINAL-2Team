@@ -590,21 +590,21 @@ def ocr_extract(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}) 
 
-# @login_required
+@login_required
 def like_list(request):
     User = get_user_model()
-    user = User.objects.get(pk=1)
-    # user = request.user
+    # user = User.objects.get(pk=1)
+    user = request.user
     like_list = Like.objects.filter(user=user).select_related('product')
     return render(request, 'Mypage/like.html', {'user': user, 'like_list': like_list})
 
 @require_POST
-# @login_required
+@login_required
 def like_delete(request):
     product_id = request.POST.get('product_id')
     User = get_user_model()
-    user = User.objects.get(pk=1)  # 실제 서비스에서는 request.user 사용
-    # user = request.user
+    # user = User.objects.get(pk=1)
+    user = request.user
     try:
         product = Products.objects.get(pk=product_id)
         like = Like.objects.get(user=user, product_id=product_id)
@@ -615,12 +615,12 @@ def like_delete(request):
         return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
 
 @require_POST
-# @login_required
+@login_required
 def like_add(request):
     product_id = request.POST.get('product_id')
     User = get_user_model()
-    user = User.objects.get(pk=1)  # 실제 서비스에서는 request.user 사용
-    # user = request.user
+    # user = User.objects.get(pk=1)
+    user = request.user
     try:
         product = Products.objects.get(pk=product_id)
         Like.objects.get_or_create(user=user, product_id=product_id)
@@ -630,11 +630,12 @@ def like_add(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @require_POST
-# @login_required
+@login_required
 def product_click(request):
     product_id = request.POST.get('product_id')
     User = get_user_model()
-    user = User.objects.get(pk=1)
+    # user = User.objects.get(pk=1)
+    user = request.user
     try:
         product = Products.objects.get(pk=product_id)
         # UserLog 저장 (click)
