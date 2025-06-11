@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from Product.models import Products
 
 class Supplement(models.Model):
     name = models.CharField(max_length=100)
@@ -256,4 +257,25 @@ class UserLog(models.Model):
         ordering = ['-timestamp'] # Order by latest logs first
     def __str__(self):
         return f"{self.user.email} - {self.action} - {self.product.title}"
+    
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='favorites'
+    )
+    product = models.ForeignKey(
+        Products,
+        on_delete=models.CASCADE,
+        related_name='favorites'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'product')
+        verbose_name = '즐겨찾기'
+        verbose_name_plural = '즐겨찾기'
+
+    def __str__(self):
+        return f"{self.user.email}의 {self.product.title} 즐겨찾기"
     

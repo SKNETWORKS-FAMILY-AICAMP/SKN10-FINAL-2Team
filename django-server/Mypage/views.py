@@ -5,7 +5,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
-from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient, UserNutrientIntake, NutrientAnalysis, Like, UserLog
+from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient, UserNutrientIntake, NutrientAnalysis, Like, UserLog, Favorite
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.db.models import Q
@@ -15,6 +15,7 @@ from Product.models import Products  # 파일 상단에 추가
 import pytesseract
 from PIL import Image
 import re
+from django.contrib import messages
 
 @login_required
 def mypage_view(request):
@@ -98,22 +99,26 @@ def survey_view(request):
 
 @login_required
 def favorite_view(request):
-    # 사용자가 좋아요한 영양제 가져오기
-    favorites = Favorite.objects.filter(user=request.user).select_related('product')
-    liked_supplements = [fav.product for fav in favorites]
+    try:
+        # 사용자가 좋아요한 영양제 가져오기
+        likes = Like.objects.filter(user=request.user).select_related('product')
+        liked_supplements = [like.product for like in likes]
 
-    # 추천 영양제 가져오기
-    latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
-    if latest_survey:
-        recommended_supplements = get_recommended_supplements(latest_survey)
-    else:
-        recommended_supplements = []
-    
-    context = {
-        'liked_supplements': liked_supplements,
-        'recommended_supplements': recommended_supplements
-    }
-    return render(request, 'Mypage/favorite.html', context)
+        # 추천 영양제 가져오기
+        latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
+        if latest_survey:
+            recommended_supplements = get_recommended_supplements(latest_survey)
+        else:
+            recommended_supplements = []
+        
+        context = {
+            'liked_supplements': liked_supplements,
+            'recommended_supplements': recommended_supplements
+        }
+        return render(request, 'Mypage/like.html', context)
+    except Exception as e:
+        messages.error(request, f'즐겨찾기 목록을 불러오는 중 오류가 발생했습니다: {str(e)}')
+        return redirect('mypage')
 
 @login_required
 def toggle_like(request):
@@ -152,48 +157,43 @@ def toggle_like(request):
 
 @login_required
 def analysis_view(request):
-    # 사용자의 최근 설문 결과 가져오기
-    latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
-    
-    if latest_survey:
-        # 건강 점수 계산
-        health_score = calculate_health_score(latest_survey)
+    try:
+        # 사용자의 최신 영양소 분석 결과 가져오기
+        latest_analysis = NutrientAnalysis.objects.filter(user=request.user).order_by('-date').first()
         
+        # 사용자가 좋아요한 영양제 가져오기
+        likes = Like.objects.filter(user=request.user).select_related('product')
+        liked_supplements = [like.product for like in likes]
+
         # 추천 영양제 가져오기
-        recommended_supplements = get_recommended_supplements(latest_survey)
+        latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
+        if latest_survey:
+            recommended_supplements = get_recommended_supplements(latest_survey)
+        else:
+            recommended_supplements = []
         
-        # 건강 리포트 생성 또는 업데이트
-        health_report, created = UserHealthReport.objects.get_or_create(
-            user=request.user,
-            survey_result=latest_survey,
-            defaults={
-                'health_score': health_score,
-                'recommendations': generate_recommendations(latest_survey, health_score)
-            }
-        )
-        
-        if not created:
-            health_report.health_score = health_score
-            health_report.recommendations = generate_recommendations(latest_survey, health_score)
-            health_report.save()
+        # 영양소 기준치 데이터 로드
+        json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                nutrient_standards = json.load(f)
+        except Exception as e:
+            nutrient_standards = {}
+            print(f"영양소 기준치 파일 로드 실패: {str(e)}")
         
         context = {
-            'health_score': health_score,
-            'recommendations': health_report.recommendations,
+            'latest_analysis': latest_analysis,
+            'nutrient_standards': nutrient_standards,
+            'liked_supplements': liked_supplements,
             'recommended_supplements': recommended_supplements,
-            'survey_result': latest_survey
+            'debug_info': {
+                'file_path': json_path,
+            }
         }
-    else:
-        context = {
-            'message': '아직 설문 결과가 없습니다. 설문을 먼저 진행해주세요.'
-        }
-    
-    context['user'] = request.user
-    context['debug_info'] = {
-        'file_path': os.path.join(settings.STATIC_ROOT, 'json', 'Mypage', 'nutrient_standards.json'),
-        'questions_count': 0
-    }
-    return render(request, 'Mypage/analysis.html', context)
+        return render(request, 'Mypage/analysis.html', context)
+    except Exception as e:
+        messages.error(request, f'영양소 분석 결과를 불러오는 중 오류가 발생했습니다: {str(e)}')
+        return redirect('mypage')
 
 def calculate_health_score(survey_result):
     score = 100
@@ -501,19 +501,26 @@ def analyze_nutrients(request):
         }, status=400)
 
 @login_required
-def get_favorite_products(request):
+def get_nutrient_data(request):
     try:
-        favorites = Favorite.objects.filter(user=request.user).select_related('product')
-        products = [{
-            'id': fav.product.id,
-            'name': fav.product.title,
-            'description': fav.product.ingredients,
-            'image_url': fav.product.image_link
-        } for fav in favorites]
+        # 사용자의 최신 영양소 분석 결과 가져오기
+        latest_analysis = NutrientAnalysis.objects.filter(user=request.user).order_by('-date').first()
+        
+        if not latest_analysis:
+            return JsonResponse({
+                'status': 'error',
+                'message': '영양소 분석 결과가 없습니다.'
+            })
         
         return JsonResponse({
             'status': 'success',
-            'products': products
+            'data': {
+                'total_nutrients': latest_analysis.total_nutrients,
+                'analysis_result': latest_analysis.analysis_result,
+                'overall_score': latest_analysis.overall_score,
+                'details': latest_analysis.details,
+                'recommendations': latest_analysis.recommendations
+            }
         })
     except Exception as e:
         return JsonResponse({
@@ -522,37 +529,26 @@ def get_favorite_products(request):
         }, status=500)
 
 @login_required
-def get_nutrient_data(request):
+def get_favorite_products(request):
     try:
-        # Wczytaj standardy żywieniowe
-        with open(os.path.join(settings.BASE_DIR, 'Product', 'data', 'nutrient_standards.json'), 'r', encoding='utf-8') as f:
-            standards = json.load(f)
+        # 사용자가 좋아요한 영양제 가져오기
+        likes = Like.objects.filter(user=request.user).select_related('product')
+        liked_products = []
         
-        # Pobierz ulubione produkty użytkownika
-        favorites = Favorite.objects.filter(user=request.user)
-        
-        # Przygotuj dane o składnikach
-        nutrient_data = {}
-        for nutrient, standard in standards.items():
-            actual_amount = 0
-            for favorite in favorites:
-                product = favorite.product
-                if hasattr(product, 'ingredients') and nutrient in product.ingredients:
-                    actual_amount += float(product.ingredients[nutrient])
-            
-            percentage = min(100, (actual_amount / standard['recommended_amount']) * 100)
-            
-            nutrient_data[nutrient] = {
-                'actual_amount': round(actual_amount, 2),
-                'recommended_amount': standard['recommended_amount'],
-                'unit': standard['unit'],
-                'description': standard['description'],
-                'percentage': round(percentage, 1)
-            }
+        for like in likes:
+            product = like.product
+            liked_products.append({
+                'id': product.id,
+                'title': product.title,
+                'description': product.description,
+                'image_url': product.image_url,
+                'price': product.price,
+                'created_at': like.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
         
         return JsonResponse({
             'status': 'success',
-            'nutrients': nutrient_data
+            'data': liked_products
         })
     except Exception as e:
         return JsonResponse({
@@ -642,3 +638,13 @@ def product_click(request):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+def chatbot_view(request):
+    try:
+        return render(request, 'Chatbot/ChatNuti.html', {
+            'user': request.user
+        })
+    except Exception as e:
+        messages.error(request, f'챗봇 페이지를 불러오는 중 오류가 발생했습니다: {str(e)}')
+        return redirect('mypage')

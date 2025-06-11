@@ -4,209 +4,14 @@
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/header.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/survey.css' %}">
-<style>
-/* Nadpisujemy style, aby upewnić się, że są zastosowane */
-.survey-container {
-    position: absolute !important;
-    width: 468px !important;
-    height: 840px !important;
-    left: calc(50% - 468px/2) !important;
-    top: 180px !important;
-    background: #FFFFFF !important;
-    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25) !important;
-    border-radius: 6px !important;
-    padding: 20px !important;
-    overflow-y: auto !important;
-}
-
-.initial-survey-page {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    padding: 20px !important;
-    margin-top: 20px !important;
-}
-
-.start-survey-btn, .next-btn {
-    width: 436px !important;
-    height: 48px !important;
-    background: #EADCA6 !important;
-    border-radius: 6px !important;
-    border: none !important;
-    font-family: 'Pretendard' !important;
-    font-style: normal !important;
-    font-weight: 700 !important;
-    font-size: 16px !important;
-    line-height: 24px !important;
-    color: #FFFFFF !important;
-    cursor: pointer !important;
-    transition: background-color 0.2s !important;
-    margin: 0 auto !important;
-}
-
-.start-survey-btn:hover, .next-btn:hover {
-    background: #DCA628 !important;
-}
-
-.survey-title {
-    font-family: 'Pretendard' !important;
-    font-style: normal !important;
-    font-weight: 700 !important;
-    font-size: 24px !important;
-    line-height: 29px !important;
-    text-align: center !important;
-    color: #DDC66F !important;
-    margin-bottom: 20px !important;
-    padding-top: 20px !important;
-}
-
-.survey-desc {
-    font-family: 'Pretendard' !important;
-    font-style: normal !important;
-    font-weight: 400 !important;
-    font-size: 16px !important;
-    line-height: 24px !important;
-    color: #31444E !important;
-    margin-bottom: 30px !important;
-    text-align: center !important;
-    max-width: 400px !important;
-}
-
-.question-group {
-    margin-bottom: 30px !important;
-    padding: 0 20px !important;
-}
-
-.question-group h2 {
-    font-family: 'Pretendard' !important;
-    font-style: normal !important;
-    font-weight: 700 !important;
-    font-size: 18px !important;
-    line-height: 24px !important;
-    color: #31444E !important;
-    margin-bottom: 20px !important;
-}
-
-.option-row {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-    margin-bottom: 20px !important;
-}
-
-.option-box {
-    width: 100% !important;
-    height: 48px !important;
-    background: #FFFFFF !important;
-    border: 1px solid #E6E6E6 !important;
-    border-radius: 6px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    transition: all 0.2s !important;
-}
-
-.option-box:hover {
-    border-color: #EADCA6 !important;
-    background: #FDFBF5 !important;
-}
-
-.option-box.active {
-    border-color: #EADCA6 !important;
-    background: #FDFBF5 !important;
-}
-
-.option-box span {
-    font-family: 'Pretendard' !important;
-    font-style: normal !important;
-    font-weight: 500 !important;
-    font-size: 16px !important;
-    line-height: 24px !important;
-    color: #31444E !important;
-}
-
-input[type="number"] {
-    width: 100% !important;
-    height: 48px !important;
-    background: #FFFFFF !important;
-    border: 1px solid #E6E6E6 !important;
-    border-radius: 6px !important;
-    padding: 0 16px !important;
-    font-family: 'Pretendard' !important;
-    font-style: normal !important;
-    font-weight: 500 !important;
-    font-size: 16px !important;
-    line-height: 24px !important;
-    color: #31444E !important;
-    margin-bottom: 20px !important;
-}
-
-input[type="number"]:focus {
-    outline: none !important;
-    border-color: #EADCA6 !important;
-}
-
-.error-message {
-    text-align: center !important;
-    color: #FF4B4B !important;
-    padding: 20px !important;
-}
-
-.error-message ul {
-    list-style: none !important;
-    padding: 0 !important;
-    margin: 10px 0 !important;
-}
-
-.error-message li {
-    margin: 5px 0 !important;
-    font-size: 14px !important;
-}
-
-.survey-buttons {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.prev-btn, .next-btn {
-    width: 213px !important;
-    height: 48px !important;
-    background: #EADCA6 !important;
-    border-radius: 6px !important;
-    border: none !important;
-    font-family: 'Pretendard' !important;
-    font-style: normal !important;
-    font-weight: 700 !important;
-    font-size: 16px !important;
-    line-height: 24px !important;
-    color: #FFFFFF !important;
-    cursor: pointer !important;
-    transition: background-color 0.2s !important;
-}
-
-.prev-btn:hover, .next-btn:hover {
-    background: #DCA628 !important;
-}
-
-.error-message {
-    color: #FF4B4B;
-    font-size: 14px;
-    margin-top: 10px;
-    text-align: center;
-    display: none;
-}
-</style>
 {% endblock %}
 
 {% block content %}
   <div class="survey-container">
     <div class="initial-survey-page">
       <h1 class="survey-title">건강 설문조사</h1>
-      <p class="survey-desc">안녕하세요, {{ user.name }}님! 설문조사를 통해 건강 상태와 생활 습관을 바탕으로 필요한 영양제를 추천해 드립니다.</p>
-      <button type="button" class="start-survey-btn">시작하기</button>
+      <p class="survey-desc">안녕하세요, {{ user.username }}님! 설문조사를 통해 건강 상태와 생활 습관을 바탕으로 필요한 영양제를 추천해 드립니다.</p>
+      <button type="button" class="start-survey-btn" id="startButton">시작하기</button>
     </div>
 
     <form method="post" class="survey-form" style="display: none;">
@@ -248,163 +53,116 @@ input[type="number"]:focus {
           <p>디버그 정보:</p>
           <ul>
             <li>파일 경로: {{ debug_info.file_path }}</li>
-            <li>질문 개수: {{ debug_info.questions_count }}</li>
           </ul>
           {% endif %}
         </div>
       {% endif %}
     </form>
   </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const initialPage = document.querySelector('.initial-survey-page');
-  const surveyForm = document.querySelector('.survey-form');
-  const startButton = document.querySelector('.start-survey-btn');
-  const questionGroups = document.querySelectorAll('.question-group');
-  let currentQuestionIndex = 0;
-
-  console.log('Question groups:', questionGroups.length);
-
-  startButton.addEventListener('click', function() {
-    initialPage.remove();
-    surveyForm.style.display = 'block';
-    if (questionGroups.length > 0) {
-      showQuestion(currentQuestionIndex);
+    console.log('DOM loaded');
+    
+    // 시작하기 버튼 클릭 이벤트
+    const startButton = document.getElementById('startButton');
+    if (startButton) {
+        console.log('Start button found');
+        startButton.onclick = function() {
+            console.log('Start button clicked');
+            
+            // 초기 페이지 숨기기
+            const initialPage = document.querySelector('.initial-survey-page');
+            if (initialPage) {
+                initialPage.style.display = 'none';
+                console.log('Initial page hidden');
+            }
+            
+            // 설문 폼 표시
+            const surveyForm = document.querySelector('.survey-form');
+            if (surveyForm) {
+                surveyForm.style.display = 'block';
+                console.log('Survey form shown');
+            }
+            
+            // 첫 번째 질문 표시
+            const firstQuestion = document.querySelector('.question-group');
+            if (firstQuestion) {
+                firstQuestion.style.display = 'block';
+                console.log('First question displayed');
+            } else {
+                console.error('First question not found');
+            }
+        };
     } else {
-      console.error('No question groups found');
-    }
-  });
-
-  function showQuestion(index) {
-    console.log('Showing question:', index);
-    questionGroups.forEach((group, i) => {
-      group.style.display = i === index ? 'block' : 'none';
-    });
-  }
-
-  function validateQuestion(index) {
-    const currentGroup = questionGroups[index];
-    const hiddenInput = currentGroup.querySelector('input[type="hidden"]');
-    const numberInput = currentGroup.querySelector('input[type="number"]');
-    const errorMessage = currentGroup.querySelector('.error-message');
-    
-    if (hiddenInput && !hiddenInput.value) {
-      errorMessage.style.display = 'block';
-      return false;
-    } else if (numberInput && !numberInput.value) {
-      errorMessage.style.display = 'block';
-      return false;
+        console.error('Start button not found');
     }
     
-    errorMessage.style.display = 'none';
-    return true;
-  }
-
-  surveyForm.querySelectorAll('.next-btn').forEach(button => {
-    if (button.type === 'button') {
-      button.addEventListener('click', function() {
-        if (!validateQuestion(currentQuestionIndex)) {
-          return;
-        }
-        currentQuestionIndex++;
-        if (currentQuestionIndex < questionGroups.length) {
-          showQuestion(currentQuestionIndex);
-        }
-      });
-    }
-  });
-
-  surveyForm.querySelectorAll('.prev-btn').forEach(button => {
-    button.addEventListener('click', function() {
-      currentQuestionIndex--;
-      if (currentQuestionIndex >= 0) {
-        showQuestion(currentQuestionIndex);
-      }
+    // 다음 버튼 클릭 이벤트
+    document.querySelectorAll('.next-btn').forEach(button => {
+        button.onclick = function() {
+            const currentGroup = this.closest('.question-group');
+            const selectedOption = currentGroup.querySelector('.option-box.active');
+            const numberInput = currentGroup.querySelector('input[type="number"]');
+            const errorMessage = currentGroup.querySelector('.error-message');
+            
+            // 유효성 검사
+            if (numberInput && !numberInput.value) {
+                errorMessage.style.display = 'block';
+                return;
+            }
+            if (!numberInput && !selectedOption) {
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // 현재 질문 숨기기
+            currentGroup.style.display = 'none';
+            
+            // 다음 질문 표시
+            const nextGroup = currentGroup.nextElementSibling;
+            if (nextGroup && nextGroup.classList.contains('question-group')) {
+                nextGroup.style.display = 'block';
+            }
+        };
     });
-  });
-
-  document.querySelectorAll('.option-box').forEach(option => {
-    option.addEventListener('click', function() {
-      const value = this.getAttribute('data-value');
-      const inputName = this.getAttribute('data-input');
-      const hiddenInput = document.querySelector(`input[name="${inputName}"]`);
-      if (hiddenInput) hiddenInput.value = value;
-
-      const parentRow = this.closest('.option-row');
-      parentRow.querySelectorAll('.option-box').forEach(opt => opt.classList.remove('active'));
-      this.classList.add('active');
-
-      const errorMessage = this.closest('.question-group').querySelector('.error-message');
-      if (errorMessage) {
-        errorMessage.style.display = 'none';
-      }
-    });
-  });
-
-  document.querySelectorAll('input[type="number"]').forEach(input => {
-    input.addEventListener('input', function() {
-      const errorMessage = this.closest('.question-group').querySelector('.error-message');
-      if (errorMessage) {
-        errorMessage.style.display = 'none';
-      }
-    });
-  });
-
-  surveyForm.addEventListener('submit', function(e) {
-    e.preventDefault();
     
-    if (!validateQuestion(currentQuestionIndex)) {
-      return;
-    }
-    
-    const formData = new FormData(this);
-    const data = {};
-    let hasEmptyFields = false;
-    
-    formData.forEach((value, key) => {
-      data[key] = value;
-      if (!value) {
-        hasEmptyFields = true;
-      }
+    // 이전 버튼 클릭 이벤트
+    document.querySelectorAll('.prev-btn').forEach(button => {
+        button.onclick = function() {
+            const currentGroup = this.closest('.question-group');
+            currentGroup.style.display = 'none';
+            const prevGroup = currentGroup.previousElementSibling;
+            if (prevGroup && prevGroup.classList.contains('question-group')) {
+                prevGroup.style.display = 'block';
+            }
+        };
     });
-
-    if (hasEmptyFields) {
-      alert('모든 질문에 답변해주세요.');
-      return;
-    }
-
-    const submitButton = this.querySelector('button[type="submit"]');
-    const originalText = submitButton.textContent;
-    submitButton.textContent = '제출 중...';
-    submitButton.disabled = true;
-
-    fetch('{% url "mypage:save_survey" %}', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-      },
-      body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === 'success') {
-        alert(data.message);
-        window.location.href = '{% url "mypage:survey_result" %}';
-      } else {
-        alert('오류가 발생했습니다: ' + data.message);
-        submitButton.textContent = originalText;
-        submitButton.disabled = false;
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('오류가 발생했습니다. 다시 시도해주세요.');
-      submitButton.textContent = originalText;
-      submitButton.disabled = false;
+    
+    // 옵션 박스 클릭 이벤트
+    document.querySelectorAll('.option-box').forEach(box => {
+        box.onclick = function() {
+            const questionGroup = this.closest('.question-group');
+            const allBoxes = questionGroup.querySelectorAll('.option-box');
+            const inputName = this.dataset.input;
+            const input = questionGroup.querySelector(`input[name="${inputName}"]`);
+            const errorMessage = questionGroup.querySelector('.error-message');
+            
+            // 모든 박스에서 active 클래스 제거
+            allBoxes.forEach(b => b.classList.remove('active'));
+            
+            // 클릭된 박스에 active 클래스 추가
+            this.classList.add('active');
+            
+            // hidden input 값 설정
+            input.value = this.dataset.value;
+            
+            // 에러 메시지 숨기기
+            errorMessage.style.display = 'none';
+        };
     });
-  });
 });
 </script>
 {% endblock %}
