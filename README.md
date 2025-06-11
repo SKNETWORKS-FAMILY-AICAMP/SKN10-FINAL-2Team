@@ -1,4 +1,4 @@
-# TOP (Trend of Pill)
+# ![](https://github.com/user-attachments/assets/ebd8dcb5-ee11-4023-a599-734e11db04ff) (Trend of Pill)
 
 **TOP**는 넘쳐나는 정보 속에서 어떤 영양제를 선택해야 할지 고민하는 분들을 위해 탄생한 **AI 기반 대화형 맞춤 영양제 추천 챗봇 서비스**입니다.
 
