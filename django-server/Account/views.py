@@ -196,3 +196,20 @@ class SetNewPasswordAPIView(generics.GenericAPIView):
         return Response({
             "message": "비밀번호가 성공적으로 재설정되었습니다.",
         }, status=status.HTTP_200_OK)
+
+
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+
+def custom_logout_view(request):
+    """
+    사용자를 로그아웃시키고 홈(/)으로 리디렉션
+    """
+    logout(request)  # 세션 삭제
+    response = redirect('/')  # 홈 또는 원하는 경로로 리디렉션
+
+    # (선택) localStorage에 저장된 토큰을 삭제하도록 JS 포함된 로그아웃 완료 페이지를 리턴해도 됨
+    return response
+
+def login_success_view(request):
+    return render(request, 'login/login_success.html')

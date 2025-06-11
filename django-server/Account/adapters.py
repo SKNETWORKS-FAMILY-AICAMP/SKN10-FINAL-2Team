@@ -4,7 +4,7 @@ from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.contrib.auth import get_user_model
 from django.shortcuts import render
 User = get_user_model()
-
+from rest_framework_simplejwt.tokens import RefreshToken
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def save_user(self, request, sociallogin, form=None):
         """
@@ -37,11 +37,24 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             user.save(update_fields=['name']) # 변경된 필드만 저장
 
         return user
+    def get_login_redirect_url(self, request):
+        return '/login/success/'
     def respond_social_login_success(self, request, sociallogin):
         user = sociallogin.user
-        from rest_framework_simplejwt.tokens import RefreshToken
+        
         refresh = RefreshToken.for_user(user)
-
+        print("social login")
+        return render(request, 'login/login_success.html', {
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        })
+from allauth.account.adapter import DefaultAccountAdapter
+class CustomAccountAdapter(DefaultAccountAdapter):
+    def get_login_redirect_url(self, request):
+        return '/login/success/'
+    def respond_user_logged_in(self, request, user):
+        print("✅ respond_user_logged_in called")
+        refresh = RefreshToken.for_user(user)
         return render(request, 'login/login_success.html', {
             'access': str(refresh.access_token),
             'refresh': str(refresh),

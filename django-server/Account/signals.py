@@ -25,11 +25,20 @@ def update_user_is_verified(sender, request, email_address, **kwargs):
 from allauth.account.signals import user_logged_in
 from rest_framework_simplejwt.tokens import RefreshToken
 @receiver(user_logged_in)
-def post_login_token(sender, request, user, **kwargs):
+def issue_jwt_on_login(sender, request, user, **kwargs):
     refresh = RefreshToken.for_user(user)
-    
-    # request에 JWT를 저장해둡니다 (후속 처리에 활용 가능)
-    request.jwt_token = {
-        'refresh': str(refresh),
+    request.session['jwt'] = {
         'access': str(refresh.access_token),
+        'refresh': str(refresh),
     }
+    print("✅ JWT issued via user_logged_in signal")
+# @receiver(user_logged_in)
+# def post_login_token(sender, request, user, **kwargs):
+#     refresh = RefreshToken.for_user(user)
+    
+#     # request에 JWT를 저장해둡니다 (후속 처리에 활용 가능)
+#     request.jwt_token = {
+#         'refresh': str(refresh),
+#         'access': str(refresh.access_token),
+#     }
+#     print("token")

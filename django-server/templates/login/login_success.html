@@ -1,25 +1,32 @@
-<!-- templates/login_success.html -->
+<!-- templates/login/login_success.html -->
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>Login Success</title>
+  <meta charset="UTF-8">
+  <title>로그인 성공</title>
 </head>
 <body>
-    <h1>로그인 성공!</h1>
-    <script>
-        const access = "{{ access }}";
-        const refresh = "{{ refresh }}";
+  <h1>로그인 중입니다...</h1>
 
-        if (access && refresh) {
-            // 브라우저에 저장 (주의: refresh는 cookie에 저장하는 게 더 안전합니다)
-            localStorage.setItem("access_token", access);
-            localStorage.setItem("refresh_token", refresh);
+  <!-- ✅ 여기에서는 필터만 사용 -->
+  {{ request.session.jwt|json_script:"jwt-data" }}
 
-            // 이후 홈으로 이동
-            window.location.href = "/";
-        } else {
-            alert("토큰 발급 실패");
-        }
-    </script>
+  <script>
+    try {
+      const token = JSON.parse(document.getElementById('jwt-data').textContent);
+      if (token.access && token.refresh) {
+        localStorage.setItem("accessToken", token.access);
+        localStorage.setItem("refreshToken", token.refresh);
+        console.log("✅ JWT 저장 완료");
+      } else {
+        console.warn("⚠️ 토큰이 없습니다.");
+      }
+    } catch (e) {
+      console.error("🚨 토큰 파싱 중 오류:", e);
+    }
+
+    // 홈으로 이동
+    window.location.href = "/";
+  </script>
 </body>
 </html>

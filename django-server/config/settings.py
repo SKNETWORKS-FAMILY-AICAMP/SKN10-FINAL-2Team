@@ -135,7 +135,9 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 import os
-LOGIN_REDIRECT_URL = '/' # 로그인 성공 후 리다이렉트될 URL
+SOCIALACCOUNT_ADAPTER ='Account.adapters.CustomSocialAccountAdapter'
+ACCOUNT_ADAPTER = 'Account.adapters.CustomAccountAdapter'
+LOGIN_REDIRECT_URL = '/login/success/' # 로그인 성공 후 리다이렉트될 URL
 ACCOUNT_LOGOUT_REDIRECT_URL = '/' # 로그아웃 후 리다이렉트될 URL
 SOCIALACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_EMAIL_VERIFICATION = 'none' # 'none'으로 설정하면 이메일 인증 불필요
@@ -192,7 +194,7 @@ ACCOUNT_USERNAME_REQUIRED = False        # 사용자 이름 필드 필수로 만
 # 이메일 확인 후 리다이렉트될 URL (선택 사항)
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3 # 이메일 인증 링크 유효 기간 (기본값)
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
-SOCIALACCOUNT_ADAPTER ='Account.adapters.CustomSocialAccountAdapter'
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

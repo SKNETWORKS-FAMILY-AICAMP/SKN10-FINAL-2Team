@@ -61,7 +61,13 @@
   </footer>
 
   <script type="module">
-
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
+      console.log("✅ 로그인 상태 유지됨");
+      // 이 토큰을 이용해 API 요청 등 처리 가능
+    } else {
+      console.warn("❗ 로그인되지 않음");
+    }
     // 상품리스트탭
     import { checkUserAuthentication, logoutUser, redirectToLogin } from '{% static "js/auth.js" %}';
     document.querySelectorAll('.recoti li').forEach(li => {
@@ -110,18 +116,21 @@
             return;
         }
 
-        const userIsAuthenticated = await checkUserAuthentication(); // Check auth status
+        chatbotLink.addEventListener('click', async function(event) {
+          event.preventDefault(); // 기본 동작 방지
 
-        chatbotLink.addEventListener('click', function(event) {
-            event.preventDefault(); // Prevent default link behavior
+          // 클릭하는 시점에 인증 상태를 확인합니다.
+          const userIsAuthenticated = await checkUserAuthentication();
 
-            if (userIsAuthenticated) {
-                console.log("User is logged in, redirecting to chatbot page.");
-                window.location.href = '/Chatbot/ChatWithNuti/'; // Replace with your actual chatbot page URL
-            } else {
-                console.log("User not logged in, redirecting to login page.");
-                window.location.href = '/login/'; // Replace with your actual login page URL
-            }
+          if (userIsAuthenticated) {
+              console.log("User is logged in, redirecting to chatbot page.");
+              window.location.href = '/Chatbot/ChatWithNuti/';
+          } else {
+              console.log("User not logged in, redirecting to login page.");
+              // checkUserAuthentication 내부에서 이미 로그아웃 처리 및 알림을 할 수 있으므로,
+              // 경우에 따라 여기서는 로그인 페이지로 보내기만 해도 됩니다.
+              window.location.href = '/login/';
+          }
         });
     }
 
