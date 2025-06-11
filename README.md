@@ -40,33 +40,33 @@
 
 ### 기술 스택
 
-**화면 설계**
+#### 화면 설계
 
 ![](https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=figma&logoColor=white)
 
-**웹**
+#### 웹
 
 ![](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white) ![](https://img.shields.io/badge/HTML-E34F26?style=for-the-badge&logo=html5&logoColor=white) ![](https://img.shields.io/badge/CSS-663399?style=for-the-badge&logo=css&logoColor=white) ![](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=white) ![](https://img.shields.io/badge/google_oauth-4285F4?style=for-the-badge&logo=google&logoColor=white)
 
-**데이터 수집 및 전처리**
+#### 데이터 수집 및 전처리
 
 ![](https://img.shields.io/badge/python-3776AB?style=for-the-badge&logo=python&logoColor=white) ![](https://img.shields.io/badge/selenium-43B02A?style=for-the-badge&logo=selenium&logoColor=white) ![](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
 
 
-**데이터베이스**
+#### 데이터베이스
 
 ![](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![](https://img.shields.io/badge/neo4j-4581C3?style=for-the-badge&logo=neo4j&logoColor=white)
 
-**LLM**
+#### LLM
 
 ![](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white) ![](https://img.shields.io/badge/langgraph-1C3C3C?style=for-the-badge&logo=langgraph&logoColor=white)
 
 
-**인프라**
+#### 인프라
 
 ![](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![](https://img.shields.io/badge/Amazon_AWS-FF9900?style=for-the-badge&logo=aws&logoColor=white)
 
-**버전 관리**
+#### 버전 관리
 
 ![](https://img.shields.io/badge/git-F05032?style=for-the-badge&logo=git&logoColor=white)
  ![](https://img.shields.io/badge/github-181717?style=for-the-badge&logo=github&logoColor=white)
@@ -86,37 +86,37 @@ SKN10-FINAL-2TEAM/
 
 ### 문제 정의
 
-**1. 정보 과잉**
+#### 1. 정보 과잉
 
 - 수많은 영양제 정보와 광고 속에서 어떤 제품이 실제로 효과가 있는지 판단하기 어렵다.
 - 인터넷 후기나 마케팅 광고에 의존한 비체계적 정보 소비가 많아, 잘못된 제품 선택으로 이어질 수 있다.
 
-**2. 개인 맞춤 정보 부족**
+#### 2. 개인 맞춤 정보 부족
 
 - 개인의 질병 이력, 복용 약물, 건강 상태, 생활 습관, 영양 불균형 등을 고려한 맞춤형 정보가 부족하여 개인에게 맞는 영양제를 찾기 어렵다.
 - 사용자는 본인에게 맞는 영양제를 정확히 파악하지 못해 성분 중복, 부작용 등 건강 리스크가 존재한다.
 
-**3. 성분 및 효능에 대한 이해 부족**
+#### 3. 성분 및 효능에 대한 이해 부족
 
 - 일반 사용자들이 영양제 성분표를 정확히 이해하고 자신에게 필요한 성분을 파악하기 어렵다.
 - 정보 없이 건강기능식품을 선택하는 소비자가 많아 올바른 정보 제공이 필요하다.
 
 ### 기대 효과
 
-**1. 시간 절약 및 효율적인 정보 습득**
+#### 1. 시간 절약 및 효율적인 정보 습득
 
 - 챗봇과의 자연스러운 대화를 통해 개인에게 최적화된 영양제 정보를 신속하게 얻고, 탐색 시간을 대폭 줄일 수 있다.
 - 체계적이고 정확한 정보 기반으로 영양제를 추천하여 사용자에게 신뢰성 있는 추천을 제공한다.
 
-**2. 오류 없는 맞춤형 영양제 선택**
+#### 2. 오류 없는 맞춤형 영양제 선택
 
 - 개인의 건강 상태, 생활 습관, 복용 약물 등을 종합적으로 고려한 추천을 통해 불필요하거나 부작용의 위험이 있는 영양제 선택을 방지하고, 건강 개선 효과를 극대화할 수 있다.
 
-**3. 데이터 기반 추천 시스템 고도화**
+#### 3. 데이터 기반 추천 시스템 고도화
 
 - 사용자들의 질문 및 선택 데이터를 축적하여 추천 알고리즘을 지속적으로 개선하고 LLM 챗봇 기반 개인 맞춤형 상품 추천 시스템을 고도화할 수 있다.
 
-**4. 고객 만족도 및 신뢰도 향상**
+#### 4. 고객 만족도 및 신뢰도 향상
 
 - 정확하고 개인화된 상품 정보 제공을 통해 사용자 만족도를 높이고, 상품 추천에 대한 신뢰를 구축하여 서비스 재이용률을 높일 수 있다.
 
