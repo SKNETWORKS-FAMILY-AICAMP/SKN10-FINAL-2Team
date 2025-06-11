@@ -1,0 +1,126 @@
+{% comment %}
+Product detail modal component template
+Usage:
+- Include this template at the bottom of your page:
+  {% include 'Product/product_detail_modal.html' %}
+- Initialize the modal with JS and CSS from product_modal.js and product_modal.css
+{% endcomment %}
+
+<!-- 상품 상세 정보 모달 -->
+<div id="product-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden modal-overlay">
+    <div class="bg-yellow-50 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto modal-content" onclick="event.stopPropagation();">
+        <div class="flex justify-between items-center p-4 border-b border-yellow-200 bg-yellow-100">
+            <h2 class="text-xl font-bold text-yellow-800 flex items-center" id="modal-title">
+                <span class="material-icons mr-2">shopping_bag</span>
+                상품 상세 정보
+            </h2>
+            <button onclick="closeProductDetail(); event.stopPropagation();" class="text-yellow-600 hover:text-yellow-800 bg-yellow-50 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        
+        <div class="p-6" id="modal-content">
+            <!-- 상품 ID를 저장하기 위한 히든 필드 -->
+            <input type="hidden" id="detail-product-id" value="">
+            
+            <!-- 1행: 이미지와 구매버튼(1열) + 상품 기본 정보(2열) -->
+            <div class="flex flex-col md:flex-row gap-6 mb-6">
+                <!-- 1열: 상품 이미지와 구매 버튼 -->
+                <div class="w-full md:w-1/3 flex flex-col">
+                    <div class="detail-image-container bg-white border border-yellow-200 rounded-lg shadow-sm mb-4 relative">
+                        <button id="detail-like-button" class="like-button" onclick="event.stopPropagation();">
+                            <span class="material-icons text-gray-400">favorite</span>
+                        </button>
+                        <img id="detail-image" src="" alt="상품 이미지" class="w-full h-auto rounded-lg">
+                    </div>
+                    <a id="detail-url" href="#" target="_blank" class="inline-flex items-center justify-center px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md transition-colors">
+                        <span class="material-icons mr-1 text-sm">shopping_cart</span>
+                        구매하기
+                    </a>
+                </div>
+                
+                <!-- 2열: 상품 기본 정보 -->
+                <div class="w-full md:w-2/3">
+                    <h1 id="detail-title" class="text-2xl font-bold text-yellow-900 mb-2"></h1>
+                    <p id="detail-brand" class="text-lg text-yellow-700 mb-4"></p>
+                    
+                    <div class="flex items-center mb-4">
+                        <div id="detail-rating" class="flex items-center">
+                            <div id="detail-stars" class="flex">
+                                <span class="material-icons text-yellow-200">star</span>
+                                <span class="material-icons text-yellow-200">star</span>
+                                <span class="material-icons text-yellow-200">star</span>
+                                <span class="material-icons text-yellow-200">star</span>
+                                <span class="material-icons text-yellow-200">star</span>
+                            </div>
+                            <span id="detail-rating-value" class="ml-2 mr-2"></span>
+                        </div>
+                        <span id="detail-reviews" class="text-gray-600"></span>
+                    </div>
+                    
+                    <div class="bg-yellow-100 rounded-lg p-4 mb-4 shadow-sm border border-yellow-200">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2 md:col-span-1">
+                                <div class="flex flex-col">
+                                    <div class="flex justify-between py-2 border-b border-yellow-200">
+                                        <span class="text-yellow-800 text-sm">총 가격:</span>
+                                        <p id="detail-total-price" class="font-bold text-yellow-900"></p>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-yellow-200">
+                                        <span class="text-yellow-800 text-sm">개당 가격:</span>
+                                        <p id="detail-unit-price" class="font-medium text-yellow-800"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-span-2 md:col-span-1">
+                                <div class="flex flex-col">
+                                    <div class="flex justify-between py-2 border-b border-yellow-200">
+                                        <span class="text-yellow-800 text-sm">제품 형태:</span>
+                                        <p id="detail-product-form" class="font-medium text-yellow-900"></p>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-yellow-200">
+                                        <span class="text-yellow-800 text-sm">수량:</span>
+                                        <p id="detail-quantity" class="font-medium text-yellow-900"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        <span id="detail-vegan" class="px-3 py-1 rounded-full text-sm font-medium bg-yellow-200 text-yellow-800 hidden">비건</span>
+                        <span id="detail-supplement-type" class="px-3 py-1 rounded-full text-sm font-medium bg-yellow-200 text-yellow-800"></span>
+                        <span id="detail-diet-type" class="px-3 py-1 rounded-full text-sm font-medium bg-yellow-200 text-yellow-800 hidden"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 2행: 상품 상세 정보 (전체 너비) -->
+            <div class="border-t border-yellow-200 pt-4">
+                <div class="mb-6">
+                    <h3 class="font-bold mb-3 text-yellow-800 flex items-center">
+                        <span class="material-icons mr-1 text-sm">science</span>
+                        성분
+                    </h3>
+                    <p id="detail-ingredients" class="text-yellow-900 bg-yellow-50 p-3 rounded-md border border-yellow-200"></p>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="font-bold mb-3 text-yellow-800 flex items-center">
+                        <span class="material-icons mr-1 text-sm">medical_services</span>
+                        복용법
+                    </h3>
+                    <p id="detail-directions" class="text-yellow-900 bg-yellow-50 p-3 rounded-md border border-yellow-200"></p>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="font-bold mb-3 text-yellow-800 flex items-center">
+                        <span class="material-icons mr-1 text-sm">security</span>
+                        안전 정보
+                    </h3>
+                    <p id="detail-safety" class="text-yellow-900 bg-yellow-50 p-3 rounded-md border border-yellow-200"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

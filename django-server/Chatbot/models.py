@@ -70,6 +70,7 @@ class ChatMessages(models.Model):
     
     sender_type = models.CharField(max_length=20)  # 예: 'user', 'assistant'
     message = models.TextField()
+    product_ids = models.JSONField(blank=True, null=True)  # 추천된 상품 ID 리스트를 저장
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
