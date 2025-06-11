@@ -193,14 +193,7 @@ git clone https://github.com/SKNETWORKS-FAMILY-AICAMP/SKN10-FINAL-2Team.git
 cd SKN10-FINAL-2Team
 ```
 
-### 2. Docker 구축
-
-```bash
-cd db
-docker-compose up --d
-```
-
-### 3. 가상환경 생성 및 라이브러리 설치
+### 2. 가상환경 생성 및 라이브러리 설치
 
 ```bash
 cd ../django-server
@@ -209,15 +202,13 @@ uv venv .venv -p 3.13
 uv pip install -r requirements.txt
 ```
 
-### 4. 서비스 실행
+### 3. 서비스 실행
 
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 python manage.py runserver
 ```
-
-### ⇒ 추후 AWS 연결 예정
 
 <br/>
 
