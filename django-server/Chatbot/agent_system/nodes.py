@@ -22,6 +22,7 @@ class AgentState(TypedDict):
     rerank_results: List[any]
     final_results: List[any]
     final_recommendation: str
+    product_ids: List[Dict[str, Any]]
 
 
 # --------------------------
@@ -218,103 +219,60 @@ def extract_comprehensive_info(state: AgentState) -> Dict[str, Any]:
 # 4. build_kag_query
 # --------------------------
 import re
+import os
+from langchain_neo4j import Neo4jGraph, GraphCypherQAChain
+from langchain_openai import ChatOpenAI
+
 def build_kag_query(state: AgentState) -> Dict[str, Any]:
     """
     extracted_info를 바탕으로 그래프 DB Cypher 쿼리를 생성하는 Agent
+    LangChain의 GraphCypherQAChain을 사용하여 Neo4j 그래프 DB 구조를 자동으로 추출하고 LLM에게 제공
     """
-
     extracted_info = state.get("extracted_info", {})
 
-    # 그래프 DB 구조 설명
-    graph_schema = """
-    === Neo4j 그래프 DB 구조 ===
-
-    **노드 타입:**
-    1. Supplement: 영양제 제품
-       - 속성: name, rating, review_count, price, is_vegan, quantity
-
-    2. Nutrient: 영양소/성분
-       - 속성: name, efficacy (효능 설명)
-
-    3. Tag: 건강 목적 태그
-       - 속성: name
-
-    4. Form: 제형 (알약, 캡슐 등)
-       - 속성: name
-
-    5. Flavor: 맛 (딸기, 오렌지 등)
-       - 속성: name
-
-    6. Country: 원산지 국가
-       - 속성: name
-
-    7. Category: 제품 카테고리
-       - 속성: name
-
-    **관계 타입:**
-    1. (:Supplement)-[:CONTAINS {amount: float, unit: string}]->(:Nutrient)
-       - 영양제가 특정 영양소를 포함하는 관계
-       - amount: 함유량, unit: 단위 (mg, μg 등)
-
-    2. (:Supplement)-[:BELONGS_TO]->(:Category)
-       - 영양제가 특정 카테고리에 속하는 관계
-
-    3. (:Supplement)-[:HAS_FORM]->(:Form)
-       - 영양제의 제형 관계
-
-    4. (:Supplement)-[:HAS_FLAVOR]->(:Flavor)
-       - 영양제의 맛 관계
-
-    5. (:Nutrient)-[:HAS_TAG]->(:Tag)
-       - 영양소가 특정 건강 목적 태그를 가지는 관계
-
-    6. (:Supplement)-[:MADE_IN]->(:Country)
-       - 영양제의 원산지 관계
-
-    **주요 속성 값 예시:**
-    - Supplement: is_vegan (true/false), rating (1.0-5.0), review_count (숫자), price (숫자), quantity (숫자)
-    - Country.name: "독일", "미국", "한국" 등
-    - Flavor.name: "딸기", "오렌지", "베리" 등
-    - Form.name: "알약", "캡슐", "젤리" 등
-    - Tag.name: "면역", "피로회복", "뼈건강" 등
-    - Category.name: "멀티비타민", "비타민C" 등
-    """
-
-    # 쿼리 생성을 위한 시스템 프롬프트
-    system_prompt = f"""{graph_schema}
-
-위 그래프 DB 구조를 기반으로, 사용자의 요구사항에 맞는 Cypher 쿼리를 생성해주세요.
-
-**쿼리 생성 규칙:**
-1. MATCH 절에서 필요한 노드와 관계를 정의
-2. WHERE 절에서 필터링 조건 적용:
-   - nutrients: (:Supplement)-[:CONTAINS]->(:Nutrient) 관계로 특정 영양소 포함 필터링
-   - supplement_types: (:Supplement)-[:BELONGS_TO]->(:Category) 관계로 카테고리 필터링
-   - purpose_tag: (:Supplement)-[:CONTAINS]->(:Nutrient)-[:HAS_TAG]->(:Tag) 관계로 건강 목적 필터링
-   - origins: (:Supplement)-[:MADE_IN]->(:Country) 관계로 원산지 필터링
-   - flavors: (:Supplement)-[:HAS_FLAVOR]->(:Flavor) 관계로 맛 필터링
-   - forms: (:Supplement)-[:HAS_FORM]->(:Form) 관계로 제형 필터링
-   - quantities: Supplement.quantity 속성으로 수량 필터링
-   - is_vegan: Supplement.is_vegan 속성으로 비건 여부 필터링
-   - order_ratings: true면 높은 별점 우선 정렬
-   - order_reviewcnt: true면 많은 리뷰수 우선 정렬
-   - prices: "저렴한", "비싼" 등 텍스트를 가격 정렬로 변환
-
-3. ORDER BY 절에서 우선순위 정렬:
-   - order_ratings가 true면 s.rating DESC 추가
-   - order_reviewcnt가 true면 s.review_count DESC 추가
-   - prices 조건에 따라 s.price ASC/DESC 추가
-
-4. LIMIT으로 결과 수 제한 (기본 20개)
-
-5. RETURN 절에서 Supplement 속성 및 연결된 노드 정보 반환
-   - 기본: s.name, s.rating, s.review_count, s.price, s.price_unit, s.is_vegan, s.quantity
-   - 추가: 연결된 Country.name, Form.name, Flavor.name, Tag.name, Category.name 정보
-
-**응답 형식:**
-순수한 Cypher 쿼리문만 반환하세요. 설명이나 추가 텍스트 없이 쿼리만 작성해주세요.
-"""
-
+    # Neo4j 연결 설정
+    uri = "neo4j+ssc://4d5cd572.databases.neo4j.io"
+    username = "neo4j"
+    password = "Zx86I42iwxvqd5G2SUKdrLgDHuY62vhl037CfwnpgwY"
+    
+    # Neo4j 그래프 객체 생성 (최신 버전)
+    try:
+        graph = Neo4jGraph(
+            url=uri,
+            username=username,
+            password=password
+        )
+        
+        # 스키마 정보 출력
+        print("Neo4j 스키마 정보 추출 중...")
+        schema_info = graph.get_schema
+        print(f"Neo4j 스키마: {schema_info}")
+    except Exception as e:
+        print(f"Neo4j 연결 오류: {str(e)}")
+        # 기본 쿼리 반환
+        return {"kag_query": "MATCH (s:Supplement) RETURN s.id LIMIT 20"}
+    
+    # LLM 설정 (OpenAI API 키 사용)
+    llm = ChatOpenAI(
+        model="gpt-4o",
+        temperature=0.1,
+        api_key=os.getenv("OPENAI_API_KEY")
+    )
+    
+    # GraphCypherQAChain 생성 (최신 버전)
+    try:
+        chain = GraphCypherQAChain.from_llm(
+            llm=llm,
+            graph=graph,
+            verbose=True,
+            return_intermediate_steps=True,
+            allow_dangerous_requests=True  # 필수 파라미터 추가
+        )
+    except Exception as e:
+        print(f"GraphCypherQAChain 생성 오류: {str(e)}")
+        # 기본 쿼리 반환
+        return {"kag_query": "MATCH (s:Supplement) RETURN s.id LIMIT 20"}
+    
     # 사용자 요구사항을 텍스트로 변환
     requirements = []
 
@@ -349,22 +307,81 @@ def build_kag_query(state: AgentState) -> Dict[str, Any]:
     if extracted_info.get("order_reviewcnt"):
         requirements.append("많은 리뷰수 우선")
 
-    if extracted_info.get("prices"):
-        requirements.append(f"가격 조건: {', '.join(extracted_info['prices'])}")
-
+    # 사용자 요구사항 텍스트 생성
     user_requirements = "사용자 요구사항:\n" + "\n".join(f"- {req}" for req in requirements)
+    print(user_requirements)
+    # 쿼리 생성을 위한 질문 구성
+    query_question = f"""
+다음 사용자 요구사항에 맞는 Cypher 쿼리를 생성해주세요:
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_requirements}
-        ],
-        temperature=0.1
-    )
+{user_requirements}
 
-    cypher_query = response.choices[0].message.content.strip()
-    cypher_query = cypher_query.replace('```cypher', '').replace('```sql', '').replace('```', '').replace('`', '').strip()
+쿼리 생성 규칙:
+1. MATCH 절에서 필요한 노드와 관계를 정의 (MATCH (s:Supplement) 필수)
+2. MATCH 절에서 반드시 아래 명시되어 있는 필터링 조건만 적용(여러 조건이 있을경우 모두 적용)
+ - 영양소(nutrients) 필터링: (s:Supplement)-[:CONTAINS]->(:Nutrient {{name: 영양소}})
+ - 영양제 종류(Category) 필터링: (s:Supplement)-[:BELONGS_TO]->(:Category {{name: 영양제 종류}})
+ - 건강 목적(purpose_tag) 필터링: (s:Supplement)-[:HAS_TAG]->(:Tag {{name: 건강 목적}})
+ - 원산지(Country) 필터링: (s:Supplement)-[:MADE_IN]->(:Country {{name: 원산지}})
+ - 맛(flavors) 필터링: (s:Supplement)-[:HAS_FLAVOR]->(:Flavor {{name: 맛}})
+ - 형태(forms) 필터링: (s:Supplement)-[:HAS_FORM]->(:Form {{name: 형태}})
+ - 수량(quantities) 필터링: s.quantity = 해당 수량에서 +20 또는 -20 범위 내에 있는 상품
+ - 비건 여부(is_vegan) 필터링: s.vegan = true/false
+3. ORDER BY 절에서 우선순위 정렬(사용자가 직접적으로 요구할 경우만)
+ - 높은 별점 우선: ORDER BY s.rating DESC
+ - 많은 리뷰수 우선: ORDER BY s.review_count DESC
+ - 랜덤 샘플링: 사용자가 특별한 정렬 순서를 요구하지 않았거나, 20개 이상의 결과에서 랜덤으로 선택하려면 ORDER BY rand()를 사용
+4. LIMIT 20으로 결과 수 제한
+5. RETURN 절에서 Supplement 노드의 id 속성(s.id)만 반환
+
+주의사항:
+- 속성 이름을 정확히 사용하세요
+- 실제 데이터 구조에 없는 관계나 속성을 사용하지 마세요.
+- 사용자가 특정 정렬 기준을 명시하지 않은 경우, ORDER BY rand()를 사용하여 랜덤 샘플링을 적용하세요
+
+순수한 Cypher 쿼리문만 반환하세요. 설명이나 추가 텍스트 없이 쿼리만 작성해주세요.
+"""
+
+    try:
+        # GraphCypherQAChain을 사용하여 쿼리 생성
+        result = chain.invoke({"query": query_question})
+        print(f"GraphCypherQAChain 결과: {result}")
+        
+        # 중간 단계에서 생성된 Cypher 쿼리 추출
+        if 'intermediate_steps' in result and len(result['intermediate_steps']) >= 1:
+            # 최신 버전에서는 첫 번째 중간 단계에서 'query' 키로 Cypher 쿼리를 제공
+            cypher_query = result['intermediate_steps'][0]['query']
+            print(f"중간 단계에서 추출한 쿼리: {cypher_query}")
+        else:
+            # 중간 단계가 없는 경우 최종 결과에서 쿼리 추출 시도
+            cypher_query = result.get('result', '')
+            print(f"결과에서 추출한 텍스트: {cypher_query}")
+            
+            # 결과에서 Cypher 쿼리 부분만 추출 (마크다운 코드 블록 제거)
+            cypher_match = re.search(r'```(?:cypher|sql)?\s*(.*?)```', cypher_query, re.DOTALL)
+            if cypher_match:
+                cypher_query = cypher_match.group(1).strip()
+                print(f"마크다운에서 추출한 쿼리: {cypher_query}")
+            else:
+                # 마크다운 코드 블록이 없는 경우 전체 텍스트 사용
+                cypher_query = result.get('result', '').strip()
+                print("마크다운이 없어 전체 텍스트를 사용합니다")
+        
+        # 쿼리 정리 (코드 블록 마크다운 제거)
+        cypher_query = cypher_query.replace('```cypher', '').replace('```sql', '').replace('```', '').replace('`', '').strip()
+        
+        print(f"최종 Cypher 쿼리: {cypher_query}")
+        
+    except Exception as e:
+        print(f"GraphCypherQAChain 오류: {str(e)}")
+        
+        # 오류 발생 시 기본 쿼리 생성
+        cypher_query = """
+        MATCH (s:Supplement)
+        RETURN s.id
+        LIMIT 20
+        """
+        print(f"기본 쿼리 사용: {cypher_query}")
 
     # 변경된 상태 필드만 반환
     return {"kag_query": cypher_query}
@@ -420,6 +437,7 @@ def final_answer(state: AgentState) -> Dict[str, Any]:
     """
     모든 처리된 정보를 바탕으로 최종 영양제 추천 답변을 생성하는 Agent
     """
+    from Product.models import Products
 
     # 상태에서 필요한 정보 추출
     user_query = state.get("user_query", "")
@@ -430,49 +448,58 @@ def final_answer(state: AgentState) -> Dict[str, Any]:
     rerank_results = state.get("rerank_results", {})
     final_results = state.get("final_results", {})
 
-    # KAG 검색 결과를 문자열로 변환
-    kag_results_text = ""
+    # KAG 검색 결과에서 상품 ID를 추출
+    product_ids = []
+    simplified_product_details = []
+    
     if kag_results:
-        kag_results_text = "검색된 영양제 제품:\n"
-        for i, record in enumerate(kag_results[:10], 1):  # 상위 10개만
+        for result in kag_results:
             try:
-                # Neo4j 레코드에서 데이터 추출
-                supplement_data = dict(record)
-                kag_results_text += f"{i}. {supplement_data}\n"
+                product_id = result.get('s.id')
+                if product_id:
+                    # 상품 ID 리스트에 추가
+                    product_ids.append(product_id)
+                    
+                    # Products 모델에서 해당 ID의 상품 정보 조회 (LLM 응답 생성용)
+                    product = Products.objects.get(id=product_id)
+                    # LLM에게 전달할 간소화된 product_details (필요한 정보만 포함)
+                    simplified_product_details.append({
+                        'title': product.title,
+                        'brand': product.brand,
+                        'average_rating': product.average_rating,
+                        'total_reviews': product.total_reviews,
+                        'ingredients': product.ingredients,
+                        'supplement_type': product.supplement_type,
+                        'product_form': product.product_form,
+                        'vegan': product.vegan,
+                        'directions': product.directions,
+                        'safety_info': product.safety_info
+                    })
+            except Products.DoesNotExist:
+                print(f"상품 ID {product_id}에 해당하는 제품을 찾을 수 없습니다.")
             except Exception as e:
-                kag_results_text += f"{i}. 데이터 파싱 오류: {e}\n"
-    else:
-        kag_results_text = "검색된 제품이 없습니다."
-
+                print(f"상품 정보 조회 중 오류 발생: {e}")
+    
     # 최종 답변 생성을 위한 시스템 프롬프트
     system_prompt = f"""당신은 개인 맞춤형 영양제 추천 전문가입니다.
 
 **역할**: 사용자의 건강 상태와 요구사항을 종합적으로 분석하여 최적의 영양제를 추천하고, 그 이유를 명확하게 설명해주세요.
 
-**추천 가이드라인**:
-1. 사용자의 건강 정보와 생활 습관을 우선 고려
-2. 알레르기와 복용 중인 약물과의 상호작용 주의
-3. 사용자의 구체적인 요구사항 반영
-4. 검색된 제품 중에서 가장 적합한 제품 선별
-5. 복용법과 주의사항도 함께 안내
+**출력 형식**:
+1. **인사말**: "[사용자 이름]님, 건강 상태와 요구사항을 분석한 결과 다음 영양제를 추천해 드립니다." 로 시작하세요.
 
-**답변 구조**:
-1. **추천 제품** (상위 3-5개)
-   - 제품명, 주요 성분, 별점
-   - 왜 이 제품을 추천하는지 구체적 이유
-
-2. **추천 이유**
-   - 사용자 건강 상태 분석 결과
+2. **추천 이유**:
+   - 사용자의 건강 상태 분석 결과
    - 요구사항과의 부합도
-   - 제품의 장점
+   - 기대 효과
 
-3. **복용 가이드**
-   - 권장 복용법
-   - 주의사항 (알레르기, 약물 상호작용 등)
-   - 기대 효과와 소요 시간
-
-4. **추가 조언**
+3. **추가 조언**:
    - 생활 습관 개선 제안
+
+**중요 사항**:
+- 제품에 대한 설명은 생략하세요
+- 간결하고 명확하게 작성하세요
+- 사용자의 건강 정보를 반영한 맞춤형 조언을 제공하세요
 
 **톤**: 친근하고 전문적이며, 사용자가 이해하기 쉽게 설명해주세요."""
 
@@ -483,14 +510,8 @@ def final_answer(state: AgentState) -> Dict[str, Any]:
 **건강 정보 요약**:
 {json.dumps(user_health_info, ensure_ascii=False, indent=2)}
 
-**추출된 요구사항**:
-{json.dumps(extracted_info, ensure_ascii=False, indent=2)}
-
-**생성된 검색 쿼리**:
-{kag_query}
-
-**검색 결과 리랭크 및 최종 필터링 결과**:
-{json.dumps(final_results, ensure_ascii=False, indent=2) if final_results else "최종 결과 없음"}
+**검색 결과 상세 정보**:
+{json.dumps(simplified_product_details, ensure_ascii=False, indent=2) if simplified_product_details else "검색된 제품 정보 없음"}
 """
 
     try:
@@ -512,10 +533,10 @@ def final_answer(state: AgentState) -> Dict[str, Any]:
 
 **사용자 요구사항 분석 결과**:
 - 추출된 정보: {json.dumps(extracted_info, ensure_ascii=False)}
-- 검색 결과: {len(kag_results)}개 제품 발견
+- 검색 결과: {len(product_ids)}개 제품 발견
 
 전문 상담을 위해 약사나 의료진과 상의하시기 바랍니다."""
 
-    # 변경된 상태 필드만 반환
-    return {"final_recommendation": final_recommendation}
+    # 변경된 상태 필드만 반환 (상품 상세 정보 대신 상품 ID 리스트만 반환)
+    return {"final_recommendation": final_recommendation, "product_ids": product_ids}
 

@@ -8,6 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- 상품 관련 CSS 및 JS 파일 -->
+    <link rel="stylesheet" href="{% static 'css/product_styles.css' %}"/>
+    <script src="{% static 'js/product_modal.js' %}" defer></script>
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
@@ -175,6 +179,44 @@
         .message-animation.bot-message:nth-child(3) {
             animation-delay: 0.2s;
         }
+
+        /* 타이핑 표시기 */
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            margin-right: 4px;
+            border-radius: 50%;
+            background-color: #888;
+            display: block;
+            animation: typing 1s infinite ease-in-out;
+        }
+        
+        .typing-indicator span:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.3s;
+            margin-right: 0;
+        }
+        
+        @keyframes typing {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* 상품 캐러셀 스타일 - product_styles.css로 이동됨 */
+        /* 모달 애니메이션 스타일 - product_styles.css로 이동됨 */
     </style>
 </head>
 <body class="bg-yellow-50">
@@ -231,9 +273,13 @@
         </main>
     </div>
 
-    <script type="module">
-        import { checkUserAuthentication, logoutUser, redirectToLogin } from '{% static "js/auth.js" %}';
+    <!-- auth.js 스크립트를 먼저 로드 -->
+    <script src="{% static 'js/auth.js' %}"></script>
+    
+    <!-- 상품 상세 정보 모달 -->
+    {% include 'Product/product_detail_modal.html' %}
 
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const chatContainer = document.getElementById('chat-container');
             const userInput = document.getElementById('user-input');
@@ -245,6 +291,8 @@
             let loadingElement = null;
             let resizeTimer;
             let currentChatRoomId = null;
+            let currentCarouselPosition = 0;
+            let productDetailsCache = {};
 
             // Load existing chat rooms
             async function loadChatRooms() {
@@ -493,7 +541,7 @@
                 .then(data => {
                     chatContainer.innerHTML = '';
                     data.forEach(message => {
-                        addMessage(message.message, message.sender_type === 'user');
+                        addMessage(message.message, message.sender_type === 'user', message.product_ids);
                     });
                     loadChatRooms(); // Refresh room list to update active state
                 })
@@ -537,7 +585,7 @@
                     hideLoading();
                     
                     if (data.final_recommendation) {
-                        addMessage(data.final_recommendation, false);
+                        addMessage(data.final_recommendation, false, data.product_ids);
                         if (data.chat_room_id) {
                             currentChatRoomId = data.chat_room_id;
                             loadChatRooms();
@@ -662,29 +710,134 @@
                 }
             }
 
-            function addMessage(message, isUser) {
+            // 수정된 addMessage 함수 - 상품 데이터를 먼저 불러온 후 챗봇 메시지를 출력
+            function addMessage(message, isUser, productIds = null) {
+                if (isUser) {
+                    // 사용자 메시지는 즉시 표시
                 const messageDiv = document.createElement('div');
-                messageDiv.className = isUser ? 'flex justify-end mb-6' : 'flex flex-col items-start space-y-4 mb-6';
+                    messageDiv.className = 'flex justify-end mb-6';
                 
                 const innerDiv = document.createElement('div');
-                innerDiv.className = `${isUser ? 'bg-yellow-200 text-yellow-800' : 'bg-white text-gray-700'} p-4 rounded-lg shadow max-w-xl message-animation ${isUser ? 'user-message' : 'bot-message'}`;
-                
-                if (isUser) {
+                    innerDiv.className = `bg-yellow-200 text-yellow-800 p-4 rounded-lg shadow max-w-xl message-animation user-message`;
                     innerDiv.textContent = message;
+                    messageDiv.appendChild(innerDiv);
+                    
+                    chatContainer.appendChild(messageDiv);
+                    document.querySelector('.main-content').scrollTop = document.querySelector('.main-content').scrollHeight;
+                    
+                    // 애니메이션 클래스 제거
+                    setTimeout(() => {
+                        const animatedElements = messageDiv.querySelectorAll('.message-animation');
+                        animatedElements.forEach(el => {
+                            el.classList.remove('message-animation');
+                        });
+                    }, 500);
                 } else {
-                    const markdownContent = document.createElement('div');
-                    markdownContent.className = 'markdown-content';
-                    markdownContent.innerHTML = marked.parse(message);
-                    innerDiv.appendChild(markdownContent);
+                    // 챗봇 메시지는 상품 데이터를 먼저 불러온 후 표시
+                    if (productIds && productIds.length > 0) {
+                        // 상품 데이터 먼저 가져오기
+                        fetch(`/Product/details/?ids=${productIds.join(',')}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('상품 정보를 가져오는데 실패했습니다.');
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                // 상품 정보 캐싱
+                                productDetailsCache = {};
+                                if (data.products && data.products.length > 0) {
+                                    data.products.forEach(product => {
+                                        productDetailsCache[product.id] = product;
+                                    });
+                                }
+                                
+                                // 상품 데이터를 불러온 후 챗봇 메시지 표시
+                                displayBotMessage(message, data.products || []);
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                // 에러 발생 시에도 메시지는 표시
+                                displayBotMessage(message, []);
+                            });
+                    } else {
+                        // 상품 ID가 없는 경우 바로 메시지 표시
+                        displayBotMessage(message, []);
+                    }
+                }
+            }
+            
+            // 챗봇 메시지 표시 함수
+            function displayBotMessage(message, products) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'flex flex-col items-start space-y-4 mb-6';
+                
+                const innerDiv = document.createElement('div');
+                innerDiv.className = 'bg-white text-gray-700 p-4 rounded-lg shadow max-w-xl message-animation bot-message';
+                
+                // 챗봇 메시지 파싱
+                const markdownContent = marked.parse(message);
+                
+                // 첫 번째 문단과 나머지 부분으로 분리
+                const firstParagraphMatch = markdownContent.match(/<p>(.*?)<\/p>/);
+                
+                if (firstParagraphMatch) {
+                    const firstParagraph = firstParagraphMatch[0];
+                    const remainingContent = markdownContent.replace(firstParagraphMatch[0], '');
+                    
+                    // 첫 번째 문단 추가
+                    const firstPartMarkdown = document.createElement('div');
+                    firstPartMarkdown.className = 'markdown-content mb-4';
+                    firstPartMarkdown.innerHTML = firstParagraph;
+                    innerDiv.appendChild(firstPartMarkdown);
+                    
+                    // 상품 정보가 있으면 캐러셀 추가
+                    if (products && products.length > 0) {
+                        // 모듈화된 함수를 사용하여 캐러셀 생성
+                        createProductCarousel(products, innerDiv);
+                        
+                        // 상품 정보 캐싱
+                        products.forEach(product => {
+                            productDetailsCache[product.id] = product;
+                        });
+                    }
+                    
+                    // 나머지 내용이 있으면 추가
+                    if (remainingContent.trim()) {
+                        const secondPartMarkdown = document.createElement('div');
+                        secondPartMarkdown.className = 'markdown-content';
+                        secondPartMarkdown.innerHTML = remainingContent;
+                        innerDiv.appendChild(secondPartMarkdown);
+                    }
+                } else {
+                    // 분리할 수 없는 경우 전체 메시지를 표시하고 그 뒤에 캐러셀 추가
+                    const markdownDiv = document.createElement('div');
+                    markdownDiv.className = 'markdown-content';
+                    markdownDiv.innerHTML = markdownContent;
+                    innerDiv.appendChild(markdownDiv);
+                    
+                    // 상품 정보가 있으면 캐러셀 추가
+                    if (products && products.length > 0) {
+                        // 모듈화된 함수를 사용하여 캐러셀 생성
+                        createProductCarousel(products, innerDiv);
+                        
+                        // 상품 정보 캐싱
+                        products.forEach(product => {
+                            productDetailsCache[product.id] = product;
+                        });
+                    }
                 }
                 
                 messageDiv.appendChild(innerDiv);
                 chatContainer.appendChild(messageDiv);
                 document.querySelector('.main-content').scrollTop = document.querySelector('.main-content').scrollHeight;
 
-                // Remove animation class after it completes to prevent interference with future animations
+                // 애니메이션 클래스 제거
                 setTimeout(() => {
-                    innerDiv.classList.remove('message-animation');
+                    const animatedElements = messageDiv.querySelectorAll('.message-animation');
+                    animatedElements.forEach(el => {
+                        el.classList.remove('message-animation');
+                    });
                 }, 500);
             }
 
@@ -739,6 +892,35 @@
                     alert('채팅방 삭제 중 오류가 발생했습니다.');
                 });
             }
+
+            // 캐러셀 이동 함수
+            window.moveCarousel = function(direction) {
+                const carouselInner = document.querySelector('.carousel-inner');
+                if (!carouselInner) return;
+                
+                const productCards = carouselInner.querySelectorAll('.product-card');
+                const cardWidth = productCards[0].offsetWidth + 16; // 카드 너비 + 마진
+                const visibleCards = Math.floor(carouselInner.offsetWidth / cardWidth);
+                
+                currentCarouselPosition += direction;
+                
+                // 범위 제한
+                if (currentCarouselPosition < 0) currentCarouselPosition = 0;
+                if (currentCarouselPosition > productCards.length - visibleCards) {
+                    currentCarouselPosition = productCards.length - visibleCards;
+                }
+                
+                carouselInner.style.transform = `translateX(-${currentCarouselPosition * cardWidth}px)`;
+            };
+
+            // 상품 상세 정보 모달 표시 함수
+            window.showProductDetail = showProductDetail;
+
+            // 상품 상세 정보 모달 닫기 함수
+            window.closeProductDetail = closeProductDetail;
+
+            // 캐러셀 이동 함수
+            window.moveCarousel = moveCarousel;
 
             // Initial load of chat rooms
             loadChatRooms();

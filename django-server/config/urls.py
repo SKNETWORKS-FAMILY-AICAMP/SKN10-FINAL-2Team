@@ -22,6 +22,8 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 from landing.views import landing
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -32,4 +34,7 @@ urlpatterns = [
     path('', include('landing.urls')), 
     path('Chatbot/', include('Chatbot.urls')),
     path('mypage/', include('Mypage.urls')),
+    path('Product/', include('Product.urls')),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

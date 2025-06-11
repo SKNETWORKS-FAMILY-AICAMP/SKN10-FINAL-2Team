@@ -1,0 +1,50 @@
+{% comment %}
+Product card component template
+Usage:
+- Include this template with the product context:
+  {% include 'Product/product_card.html' with product=product %}
+{% endcomment %}
+{% load humanize %}
+
+<div class="product-card" data-product-id="{{ product.id }}">
+    <div class="product-image">
+        <button class="like-button" data-product-id="{{ product.id }}" onclick="toggleLike(event, '{{ product.id }}')">
+            <span class="material-icons {% if product.is_liked %}text-red-500{% else %}text-gray-400{% endif %}">favorite</span>
+        </button>
+        {% if product.image_link %}
+            <img src="{{ product.image_link }}" alt="{{ product.title }}" onerror="this.src='/static/image/Logo.png'">
+        {% else %}
+            <div class="no-image">이미지 없음</div>
+        {% endif %}
+    </div>
+    <div class="product-info">
+        <h3 class="product-title">{{ product.title }}</h3>
+        <p class="product-brand">{{ product.brand|default:'' }}</p>
+        <div class="product-price mb-1">
+            {% if product.total_price %}
+                <span class="total-price">${{ product.total_price|floatformat:2|intcomma }}</span>
+            {% endif %}
+        </div>
+        <div class="product-rating">
+            <span class="stars">
+                {% for i in '12345'|make_list %}
+                    {% if forloop.counter <= product.average_rating|floatformat:'0' %}
+                        <span class="material-icons text-yellow-500">star</span>
+                    {% else %}
+                        <span class="material-icons text-yellow-200">star</span>
+                    {% endif %}
+                {% endfor %}
+            </span>
+            <span class="rating-value">{{ product.average_rating|floatformat:1|default:'N/A' }}</span>
+            <span class="review-count">({{ product.total_reviews|default:'0' }})</span>
+        </div>
+        <div class="product-tags mt-2">
+            {% if product.supplement_type %}
+                <span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-200 text-yellow-800 inline-block mr-1">{{ product.supplement_type }}</span>
+            {% endif %}
+            {% if product.vegan == 'Yes' or product.vegan == '예' %}
+                <span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-200 text-yellow-800 inline-block">비건</span>
+            {% endif %}
+        </div>
+    </div>
+</div> 

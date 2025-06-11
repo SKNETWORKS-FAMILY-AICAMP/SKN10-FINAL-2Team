@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   {% load static %}
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+  <link rel="stylesheet" href="{% static 'css/product_styles.css' %}">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <title>NutriNavi</title>
 </head>
 <body>
   <header>
@@ -14,8 +19,8 @@
           <img src="{% static 'image/Logo.png' %}" alt="Logo">
         </a>
       <ul>
-        <li><a id="chatbot-link" href="">챗봇</a></li>
-        <li><a href="#">마이페이지</a></li>
+        <li><a id="chatbot-link">챗봇</a></li>
+        <li><a id="mypage-link">마이페이지</a></li>
       </ul>
       <a id="auth-button"></a>
     </nav>
@@ -42,24 +47,27 @@
         <li data-type="sales">판매량순</li>
       </ul>
     </div>
-    <div class="prolist" id="prolist">
+    <div id="products-container" class="mb-6">
+      <!-- 상품 캐러셀이 여기에 생성됩니다 -->
+    </div>
+
+    <!-- 이전 상품 리스트 (숨김 처리) -->
+    <div class="prolist hidden" id="prolist">
       {% for product in products|slice:":5" %}
       <a href="{{ product.url }}" target="_blank">
       <img src="{{ product.image_link|default:'https://via.placeholder.com/150' }}" alt="{{ product.title }}" >
       </a>
       {% endfor %}
     </div>
-
-    </div>
-    <div>
-      <img src="#" alt="">
-    </div>
   </div>
+
+  <!-- 상품 상세 모달 포함 -->
+  {% include 'Product/product_detail_modal.html' %}
 
   <footer>
     <!-- Footer 내용 -->
   </footer>
-
+  <script src="{% static 'js/auth.js' %}"></script>
   <script type="module">
     const accessToken = localStorage.getItem("accessToken");
     if (accessToken) {
@@ -69,7 +77,7 @@
       console.warn("❗ 로그인되지 않음");
     }
     // 상품리스트탭
-    import { checkUserAuthentication, logoutUser, redirectToLogin } from '{% static "js/auth.js" %}';
+    // import { checkUserAuthentication, logoutUser, redirectToLogin } from '{% static "js/auth.js" %}';
     document.querySelectorAll('.recoti li').forEach(li => {
       if (li.textContent.trim() === '가성비순') {
         li.addEventListener('click', () => {
@@ -110,36 +118,234 @@
         }
     }
     async function setupChatbotLink() {
-        const chatbotLink = document.getElementById('chatbot-link');
-        if (!chatbotLink) {
-            console.warn("Chatbot link not found.");
-            return;
+      const chatbotLink = document.getElementById('chatbot-link');
+      if (!chatbotLink) {
+          console.warn("Chatbot link not found.");
+          return;
+      }
+
+      chatbotLink.addEventListener('click', async function(event) {
+        event.preventDefault(); // 기본 동작 방지
+
+        // 클릭하는 시점에 인증 상태를 확인합니다.
+        const userIsAuthenticated = await checkUserAuthentication();
+
+        if (userIsAuthenticated) {
+            console.log("User is logged in, redirecting to chatbot page.");
+            window.location.href = '/Chatbot/ChatWithNuti/';
+        } else {
+            console.log("User not logged in, redirecting to login page.");
+            // checkUserAuthentication 내부에서 이미 로그아웃 처리 및 알림을 할 수 있으므로,
+            // 경우에 따라 여기서는 로그인 페이지로 보내기만 해도 됩니다.
+            window.location.href = '/login/';
         }
+      });
+    }
 
-        chatbotLink.addEventListener('click', async function(event) {
-          event.preventDefault(); // 기본 동작 방지
+    async function setupMypageLink() {
+      const mypageLink = document.getElementById('mypage-link');
+      if (!mypageLink) {
+          console.warn("Mypage link not found.");
+          return;
+      }
 
-          // 클릭하는 시점에 인증 상태를 확인합니다.
-          const userIsAuthenticated = await checkUserAuthentication();
+      mypageLink.addEventListener('click', async function(event) {
+        event.preventDefault(); // 기본 동작 방지
 
-          if (userIsAuthenticated) {
-              console.log("User is logged in, redirecting to chatbot page.");
-              window.location.href = '/Chatbot/ChatWithNuti/';
-          } else {
-              console.log("User not logged in, redirecting to login page.");
-              // checkUserAuthentication 내부에서 이미 로그아웃 처리 및 알림을 할 수 있으므로,
-              // 경우에 따라 여기서는 로그인 페이지로 보내기만 해도 됩니다.
-              window.location.href = '/login/';
-          }
-        });
+        // 클릭하는 시점에 인증 상태를 확인합니다.
+        const userIsAuthenticated = await checkUserAuthentication();
+
+        if (userIsAuthenticated) {
+            console.log("User is logged in, redirecting to mypage page.");
+            window.location.href = '/mypage/';
+        } else {
+            console.log("User not logged in, redirecting to login page.");
+            // checkUserAuthentication 내부에서 이미 로그아웃 처리 및 알림을 할 수 있으므로,
+            // 경우에 따라 여기서는 로그인 페이지로 보내기만 해도 됩니다.
+            window.location.href = '/login/';
+        }
+      });
     }
 
     // Call both setup functions when the DOM is loaded
     document.addEventListener('DOMContentLoaded', async () => {
         await updateAuthButton(); // Ensure button is updated first
         await setupChatbotLink(); // Then set up the chatbot link's behavior
+        await setupMypageLink(); // Then set up the mypage link's behavior
     });
   </script>
 
+  <!-- 필요한 JavaScript 파일 포함 -->
+  <script src="{% static 'js/product_modal.js' %}"></script>
+  <script>
+    // 페이지 로드 시 실행
+    document.addEventListener('DOMContentLoaded', function() {
+      // 전역 변수 대신 기존 변수를 사용하도록 수정
+      // 기존 변수가 없으면 새로 생성하기 위한 체크
+      if (typeof productDetailsCache === 'undefined') {
+        window.productDetailsCache = {};
+      }
+      
+      if (typeof likedProductsCache === 'undefined') {
+        window.likedProductsCache = {};
+      }
+      
+      // 모달 초기화
+      if (document.getElementById('product-detail-modal')) {
+        initProductModal();
+      }
+      
+      // 상품 데이터 가져오기
+      fetchProducts();
+      
+      // 상품 데이터 가져오는 함수
+      function fetchProducts() {
+        // 추가된 ID가 있는 JSON 파일을 로드
+        fetch('/static/data/json/processed_data.json')
+          .then(response => response.json())
+          .then(products => {
+            console.log("products",products);
+            // 판매량 순으로 정렬 (기본 정렬)
+            products.sort((a, b) => a.sales_rank - b.sales_rank);
+            console.log("products",products);
+            // 상위 10개 상품만 선택
+            const topProducts = products.slice(0, 10);
+            console.log("topProducts",topProducts);
+            // 상품 ID 목록 생성
+            const productIds = topProducts.map(product => product.id);
+            console.log("productIds",productIds);
+            // get_product_details API 사용 (여러 상품 조회)
+            fetch(`/Product/details/?ids=${productIds.join(',')}`)
+              .then(response => response.json())
+              .then(data => {
+                // 상품 정보 캐싱
+                if (data.products) {
+                  data.products.forEach(product => {
+                    productDetailsCache[product.id] = product;
+                    likedProductsCache[product.id] = product.is_liked || false;
+                  });
+                  
+                  // 캐러셀 생성
+                  const container = document.getElementById('products-container');
+                  container.innerHTML = ''; // 기존 내용 비우기
+                  
+                  if (data.products.length === 0) {
+                    container.innerHTML = '<div class="text-center py-10 text-gray-500">표시할 상품이 없습니다.</div>';
+                    return;
+                  }
+                  
+                  // productIds 순서대로 상품 정렬
+                  const sortedProducts = [];
+                  productIds.forEach(id => {
+                    const product = data.products.find(p => p.id === id);
+                    if (product) {
+                      sortedProducts.push(product);
+                    }
+                  });
+                  console.log("sortedProducts", sortedProducts);
+                  
+                  // 캐러셀 생성 (정렬된 상품 사용)
+                  createProductCarousel(sortedProducts, container);
+                  
+                  // 상품 카드에 이벤트 리스너 추가
+                  attachProductCardListeners();
+                }
+              })
+              .catch(error => {
+                console.error('상품 데이터를 가져오는 중 오류 발생:', error);
+                const container = document.getElementById('products-container');
+                container.innerHTML = '<div class="text-center py-10 text-red-500">상품 데이터를 가져오는 중 오류가 발생했습니다.</div>';
+              });
+          })
+          .catch(error => {
+            console.error('JSON 파일을 로드하는 중 오류 발생:', error);
+            const container = document.getElementById('products-container');
+            container.innerHTML = '<div class="text-center py-10 text-red-500">상품 데이터 파일을 로드하는 중 오류가 발생했습니다.</div>';
+          });
+      }
+      
+      // 정렬 탭 클릭 이벤트 처리
+      const sortTabs = document.querySelectorAll('.recoti ul li');
+      sortTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          const sortType = this.getAttribute('data-type');
+          
+          // 모든 탭에서 active 클래스 제거
+          sortTabs.forEach(t => t.classList.remove('active'));
+          
+          // 현재 탭에 active 클래스 추가
+          this.classList.add('active');
+          
+          // 정렬 타입에 따라 상품 정렬 및 표시
+          loadSortedProducts(sortType);
+        });
+      });
+      
+      // 정렬 타입에 따라 상품 정렬 및 표시하는 함수
+      function loadSortedProducts(sortType) {
+        fetch('/static/data/json/processed_data.json')
+          .then(response => response.json())
+          .then(products => {
+            // 정렬 타입에 따라 정렬
+            switch(sortType) {
+              case 'cheap':
+                // 가격 정보가 없으면 임의로 정렬 (실제로는 가격 데이터가 필요)
+                products.sort((a, b) => (a.price_value || 0) - (b.price_value || 0));
+                break;
+              case 'popular':
+                // 인기순 (평균 평점으로 정렬, 없으면 판매 순위로 대체)
+                products.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
+                break;
+              case 'sales':
+              default:
+                // 판매량순 (sales_rank가 낮을수록 판매량이 높음)
+                products.sort((a, b) => a.sales_rank - b.sales_rank);
+                break;
+            }
+            
+            // 상위 10개 상품만 선택
+            const topProducts = products.slice(0, 10);
+            
+            // 상품 ID 목록 생성
+            const productIds = topProducts.map(product => product.id);
+            
+            // get_product_details API 사용 (여러 상품 조회)
+            fetch(`/Product/details/?ids=${productIds.join(',')}`)
+              .then(response => response.json())
+              .then(data => {
+                // 캐러셀 생성
+                const container = document.getElementById('products-container');
+                container.innerHTML = ''; // 기존 내용 비우기
+                
+                if (data.products.length === 0) {
+                  container.innerHTML = '<div class="text-center py-10 text-gray-500">표시할 상품이 없습니다.</div>';
+                  return;
+                }
+                
+                // productIds 순서대로 상품 정렬
+                const sortedProducts = [];
+                productIds.forEach(id => {
+                  const product = data.products.find(p => p.id === id);
+                  if (product) {
+                    sortedProducts.push(product);
+                  }
+                });
+                
+                // 캐러셀 생성 (정렬된 상품 사용)
+                createProductCarousel(sortedProducts, container);
+                
+                // 상품 카드에 이벤트 리스너 추가
+                attachProductCardListeners();
+              })
+              .catch(error => {
+                console.error('상품 데이터를 가져오는 중 오류 발생:', error);
+              });
+          })
+          .catch(error => {
+            console.error('JSON 파일을 로드하는 중 오류 발생:', error);
+          });
+      }
+    });
+  </script>
 </body>
 </html>

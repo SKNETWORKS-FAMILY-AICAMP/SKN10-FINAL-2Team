@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient, UserNutrientIntake, NutrientAnalysis
+from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient_daily, UserNutrientIntake, NutrientAnalysis
 
 @admin.register(SurveyResponse)
 class SurveyResponseAdmin(admin.ModelAdmin):
@@ -25,7 +25,7 @@ class UserHealthReportAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'recommendations')
     list_filter = ('created_at', 'health_score')
 
-@admin.register(Nutrient)
+@admin.register(Nutrient_daily)
 class NutrientAdmin(admin.ModelAdmin):
     list_display = ('name', 'unit', 'daily_recommended')
     search_fields = ('name', 'description')

@@ -16,7 +16,7 @@ class Supplement(models.Model):
     def __str__(self):
         return self.name
 
-class Nutrient(models.Model):
+class Nutrient_daily(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
     daily_recommended = models.FloatField()
@@ -30,7 +30,7 @@ class Nutrient(models.Model):
 
 class UserNutrientIntake(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    nutrient = models.ForeignKey(Nutrient, on_delete=models.CASCADE)
+    nutrient = models.ForeignKey(Nutrient_daily, on_delete=models.CASCADE)
     amount = models.FloatField()
     date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
