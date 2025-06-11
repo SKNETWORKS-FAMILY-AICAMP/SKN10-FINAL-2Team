@@ -5,7 +5,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
-from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient, UserNutrientIntake, NutrientAnalysis, Like, UserLog
+from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient, UserNutrientIntake, NutrientAnalysis, Like, UserLog, Favorite
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.db.models import Q
@@ -15,6 +15,7 @@ from Product.models import Products  # 파일 상단에 추가
 import pytesseract
 from PIL import Image
 import re
+from django.contrib import messages
 
 @login_required
 def mypage_view(request):
@@ -74,16 +75,16 @@ def survey_view(request):
     try:
         with open(json_file_path, 'r', encoding='utf-8') as f:
             survey_questions = json.load(f)
-            print(f"Loaded {len(survey_questions)} questions")
+            print(f"Loaded {len(survey_questions.get('questions', []))} questions")
             print("Questions:", survey_questions)
     except FileNotFoundError:
-        survey_questions = []
+        survey_questions = {'questions': []}
         print(f"Error: {json_file_path} not found")
     except json.JSONDecodeError as e:
-        survey_questions = []
+        survey_questions = {'questions': []}
         print(f"Error: Invalid JSON in {json_file_path}: {str(e)}")
     except Exception as e:
-        survey_questions = []
+        survey_questions = {'questions': []}
         print(f"Unexpected error: {str(e)}")
     
     context = {
@@ -91,29 +92,33 @@ def survey_view(request):
         'survey_questions': survey_questions,
         'debug_info': {
             'file_path': json_file_path,
-            'questions_count': len(survey_questions)
+            'questions_count': len(survey_questions.get('questions', []))
         }
     }
     return render(request, 'Mypage/survey.html', context)
 
 @login_required
 def favorite_view(request):
-    # 사용자가 좋아요한 영양제 가져오기
-    favorites = Favorite.objects.filter(user=request.user).select_related('product')
-    liked_supplements = [fav.product for fav in favorites]
+    try:
+        # 사용자가 좋아요한 영양제 가져오기
+        likes = Like.objects.filter(user=request.user).select_related('product')
+        liked_supplements = [like.product for like in likes]
 
-    # 추천 영양제 가져오기
-    latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
-    if latest_survey:
-        recommended_supplements = get_recommended_supplements(latest_survey)
-    else:
-        recommended_supplements = []
-    
-    context = {
-        'liked_supplements': liked_supplements,
-        'recommended_supplements': recommended_supplements
-    }
-    return render(request, 'Mypage/favorite.html', context)
+        # 추천 영양제 가져오기
+        latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
+        if latest_survey:
+            recommended_supplements = get_recommended_supplements(latest_survey)
+        else:
+            recommended_supplements = []
+        
+        context = {
+            'liked_supplements': liked_supplements,
+            'recommended_supplements': recommended_supplements
+        }
+        return render(request, 'Mypage/like.html', context)
+    except Exception as e:
+        messages.error(request, f'즐겨찾기 목록을 불러오는 중 오류가 발생했습니다: {str(e)}')
+        return redirect('mypage')
 
 @login_required
 def toggle_like(request):
@@ -152,48 +157,43 @@ def toggle_like(request):
 
 @login_required
 def analysis_view(request):
-    # 사용자의 최근 설문 결과 가져오기
-    latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
-    
-    if latest_survey:
-        # 건강 점수 계산
-        health_score = calculate_health_score(latest_survey)
+    try:
+        # 사용자의 최신 영양소 분석 결과 가져오기
+        latest_analysis = NutrientAnalysis.objects.filter(user=request.user).order_by('-date').first()
         
+        # 사용자가 좋아요한 영양제 가져오기
+        likes = Like.objects.filter(user=request.user).select_related('product')
+        liked_supplements = [like.product for like in likes]
+
         # 추천 영양제 가져오기
-        recommended_supplements = get_recommended_supplements(latest_survey)
+        latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
+        if latest_survey:
+            recommended_supplements = get_recommended_supplements(latest_survey)
+        else:
+            recommended_supplements = []
         
-        # 건강 리포트 생성 또는 업데이트
-        health_report, created = UserHealthReport.objects.get_or_create(
-            user=request.user,
-            survey_result=latest_survey,
-            defaults={
-                'health_score': health_score,
-                'recommendations': generate_recommendations(latest_survey, health_score)
-            }
-        )
-        
-        if not created:
-            health_report.health_score = health_score
-            health_report.recommendations = generate_recommendations(latest_survey, health_score)
-            health_report.save()
+        # 영양소 기준치 데이터 로드
+        json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                nutrient_standards = json.load(f)
+        except Exception as e:
+            nutrient_standards = {}
+            print(f"영양소 기준치 파일 로드 실패: {str(e)}")
         
         context = {
-            'health_score': health_score,
-            'recommendations': health_report.recommendations,
+            'latest_analysis': latest_analysis,
+            'nutrient_standards': nutrient_standards,
+            'liked_supplements': liked_supplements,
             'recommended_supplements': recommended_supplements,
-            'survey_result': latest_survey
+            'debug_info': {
+                'file_path': json_path,
+            }
         }
-    else:
-        context = {
-            'message': '아직 설문 결과가 없습니다. 설문을 먼저 진행해주세요.'
-        }
-    
-    context['user'] = request.user
-    context['debug_info'] = {
-        'file_path': os.path.join(settings.STATIC_ROOT, 'json', 'Mypage', 'nutrient_standards.json'),
-        'questions_count': 0
-    }
-    return render(request, 'Mypage/analysis.html', context)
+        return render(request, 'Mypage/analysis.html', context)
+    except Exception as e:
+        messages.error(request, f'영양소 분석 결과를 불러오는 중 오류가 발생했습니다: {str(e)}')
+        return redirect('mypage')
 
 def calculate_health_score(survey_result):
     score = 100
@@ -295,83 +295,122 @@ def generate_recommendations(survey_result, health_score):
 def save_survey(request):
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
+            print("POST data received:", request.POST)
             
-            # 설문 응답 저장
+            # POST 데이터에서 응답 가져오기
+            responses = request.POST.get('responses', '{}')
+            answers = request.POST.get('answers', '{}')
+            height = float(request.POST.get('height', 0))
+            weight = float(request.POST.get('weight', 0))
+            sitting_work = request.POST.get('sitting_work', '')
+            indoor_daytime = request.POST.get('indoor_daytime', '')
+            exercise = request.POST.get('exercise', '')
+            smoking = request.POST.get('smoking', '')
+            drinking = request.POST.get('drinking', '')
+            fatigue = request.POST.get('fatigue', '')
+            sleep_well = request.POST.get('sleep_well', '')
+            still_tired = request.POST.get('still_tired', '')
+            sleep_hours = float(request.POST.get('sleep_hours', 0))
+            exercise_frequency = request.POST.get('exercise_frequency', '')
+            water_intake = float(request.POST.get('water_intake', 0))
+            health_status = request.POST.get('health_status', '보통')
+
+            # SurveyResponse 객체 생성 및 저장
             survey_response = SurveyResponse.objects.create(
                 user=request.user,
-                responses=data if data else {},
-                answers=data if data else {},
-                height=data.get('height'),
-                weight=data.get('weight'),
-                sitting_work=data.get('sitting_work'),
-                indoor_daytime=data.get('indoor_daytime'),
-                exercise=data.get('exercise'),
-                smoking=data.get('smoking'),
-                drinking=data.get('drinking'),
-                fatigue=data.get('fatigue'),
-                sleep_well=data.get('sleep_well'),
-                still_tired=data.get('still_tired'),
-                sleep_hours=data.get('sleep_hours'),
-                exercise_frequency=data.get('exercise_frequency'),
-                water_intake=data.get('water_intake'),
-                health_status='completed'
+                responses=responses,
+                answers=answers,
+                height=height,
+                weight=weight,
+                sitting_work=sitting_work,
+                indoor_daytime=indoor_daytime,
+                exercise=exercise,
+                smoking=smoking,
+                drinking=drinking,
+                fatigue=fatigue,
+                sleep_well=sleep_well,
+                still_tired=still_tired,
+                sleep_hours=sleep_hours,
+                exercise_frequency=exercise_frequency,
+                water_intake=water_intake
             )
-            
-            # 설문 결과 생성
-            health_score = calculate_health_score(survey_response)
-            recommended_supplements = get_recommended_supplements(survey_response)
-            recommendations = generate_recommendations(survey_response, health_score)
-            
+
+            # SurveyResult 객체 생성 및 저장
             survey_result = SurveyResult.objects.create(
                 user=request.user,
-                answers=data if data else {},
-                result={
-                    'health_score': health_score,
-                    'recommendations': recommendations,
-                    'recommended_supplements': recommended_supplements
-                },
-                health_status='좋음' if health_score >= 80 else '보통' if health_score >= 60 else '나쁨',
-                recommended_supplements=recommended_supplements
+                survey_response=survey_response,
+                answers={
+                    'height': height,
+                    'weight': weight,
+                    'sitting_work': sitting_work,
+                    'indoor_daytime': indoor_daytime,
+                    'exercise': exercise,
+                    'smoking': smoking,
+                    'drinking': drinking,
+                    'fatigue': fatigue,
+                    'sleep_well': sleep_well,
+                    'still_tired': still_tired,
+                    'sleep_hours': sleep_hours,
+                    'exercise_frequency': exercise_frequency,
+                    'water_intake': water_intake,
+                    'health_status': health_status
+                }
             )
-            
-            return JsonResponse({
-                'status': 'success',
-                'message': '설문이 저장되었습니다.',
-                'redirect_url': '/mypage/survey-result/'  # 절대 경로로 수정
-            })
-            
+
+            print(f"Survey response saved: {survey_response.id}")
+            print(f"Survey result saved: {survey_result.id}")
+            return redirect('mypage:survey_result')
         except Exception as e:
-            print(f"Error saving survey: {str(e)}")
+            print(f"Error saving survey response: {str(e)}")
             return JsonResponse({
                 'status': 'error',
-                'message': str(e)
+                'message': '설문 응답을 저장하는 중 오류가 발생했습니다.'
             }, status=500)
-    
-    return JsonResponse({
-        'status': 'error',
-        'message': '잘못된 요청입니다.'
-    }, status=400)
+    return redirect('mypage:survey')
 
 @login_required
 def survey_result(request):
-    # 가장 최근 설문 결과 가져오기
-    latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
-    
-    if latest_survey:
+    try:
+        # 가장 최근 설문 결과 가져오기
+        survey_result = SurveyResult.objects.filter(user=request.user).latest('created_at')
+        
+        # 건강 점수 계산
+        health_score = calculate_health_score(survey_result)
+        
+        # 추천 영양제 가져오기
+        recommended_supplements = get_recommended_supplements(survey_result)
+        
+        # 건강 리포트 생성 또는 업데이트
+        health_report, created = UserHealthReport.objects.get_or_create(
+            user=request.user,
+            survey_result=survey_result,
+            defaults={
+                'health_score': health_score,
+                'recommendations': generate_recommendations(survey_result, health_score)
+            }
+        )
+        
+        if not created:
+            health_report.health_score = health_score
+            health_report.recommendations = generate_recommendations(survey_result, health_score)
+            health_report.save()
+        
         context = {
-            'survey_result': latest_survey,
-            'health_score': latest_survey.result.get('health_score', 0),
-            'recommendations': latest_survey.result.get('recommendations', '').split('\n'),
-            'recommended_supplements': latest_survey.result.get('recommended_supplements', [])
+            'survey_result': survey_result,
+            'health_score': health_score,
+            'recommended_supplements': recommended_supplements,
+            'recommendations': health_report.recommendations.split('\n')
         }
-    else:
-        context = {
-            'message': '아직 설문 결과가 없습니다.'
-        }
-    
-    context['user'] = request.user
-    return render(request, 'Mypage/survey_result.html', context)
+        return render(request, 'Mypage/survey_result.html', context)
+    except SurveyResult.DoesNotExist:
+        return render(request, 'Mypage/survey_result.html', {
+            'message': '설문 응답이 없습니다. 먼저 설문을 완료해주세요.'
+        })
+    except Exception as e:
+        print(f"Error in survey_result view: {str(e)}")
+        return render(request, 'Mypage/survey_result.html', {
+            'message': '설문 결과를 불러오는 중 오류가 발생했습니다.'
+        })
 
 @login_required
 def nutrient_analysis_view(request):
@@ -501,19 +540,26 @@ def analyze_nutrients(request):
         }, status=400)
 
 @login_required
-def get_favorite_products(request):
+def get_nutrient_data(request):
     try:
-        favorites = Favorite.objects.filter(user=request.user).select_related('product')
-        products = [{
-            'id': fav.product.id,
-            'name': fav.product.title,
-            'description': fav.product.ingredients,
-            'image_url': fav.product.image_link
-        } for fav in favorites]
+        # 사용자의 최신 영양소 분석 결과 가져오기
+        latest_analysis = NutrientAnalysis.objects.filter(user=request.user).order_by('-date').first()
+        
+        if not latest_analysis:
+            return JsonResponse({
+                'status': 'error',
+                'message': '영양소 분석 결과가 없습니다.'
+            })
         
         return JsonResponse({
             'status': 'success',
-            'products': products
+            'data': {
+                'total_nutrients': latest_analysis.total_nutrients,
+                'analysis_result': latest_analysis.analysis_result,
+                'overall_score': latest_analysis.overall_score,
+                'details': latest_analysis.details,
+                'recommendations': latest_analysis.recommendations
+            }
         })
     except Exception as e:
         return JsonResponse({
@@ -522,37 +568,26 @@ def get_favorite_products(request):
         }, status=500)
 
 @login_required
-def get_nutrient_data(request):
+def get_favorite_products(request):
     try:
-        # Wczytaj standardy żywieniowe
-        with open(os.path.join(settings.BASE_DIR, 'Product', 'data', 'nutrient_standards.json'), 'r', encoding='utf-8') as f:
-            standards = json.load(f)
+        # 사용자가 좋아요한 영양제 가져오기
+        likes = Like.objects.filter(user=request.user).select_related('product')
+        liked_products = []
         
-        # Pobierz ulubione produkty użytkownika
-        favorites = Favorite.objects.filter(user=request.user)
-        
-        # Przygotuj dane o składnikach
-        nutrient_data = {}
-        for nutrient, standard in standards.items():
-            actual_amount = 0
-            for favorite in favorites:
-                product = favorite.product
-                if hasattr(product, 'ingredients') and nutrient in product.ingredients:
-                    actual_amount += float(product.ingredients[nutrient])
-            
-            percentage = min(100, (actual_amount / standard['recommended_amount']) * 100)
-            
-            nutrient_data[nutrient] = {
-                'actual_amount': round(actual_amount, 2),
-                'recommended_amount': standard['recommended_amount'],
-                'unit': standard['unit'],
-                'description': standard['description'],
-                'percentage': round(percentage, 1)
-            }
+        for like in likes:
+            product = like.product
+            liked_products.append({
+                'id': product.id,
+                'title': product.title,
+                'description': product.description,
+                'image_url': product.image_url,
+                'price': product.price,
+                'created_at': like.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
         
         return JsonResponse({
             'status': 'success',
-            'nutrients': nutrient_data
+            'data': liked_products
         })
     except Exception as e:
         return JsonResponse({
@@ -643,3 +678,13 @@ def product_click(request):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+def chatbot_view(request):
+    try:
+        return render(request, 'Chatbot/ChatNuti.html', {
+            'user': request.user
+        })
+    except Exception as e:
+        messages.error(request, f'챗봇 페이지를 불러오는 중 오류가 발생했습니다: {str(e)}')
+        return redirect('mypage')

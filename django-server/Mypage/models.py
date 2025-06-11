@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from Product.models import Products
 
 class Supplement(models.Model):
     name = models.CharField(max_length=100)
@@ -43,16 +44,19 @@ class UserNutrientIntake(models.Model):
 
 class NutrientAnalysis(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    date = models.DateField()
+    total_nutrients = models.JSONField(default=dict)
+    analysis_result = models.TextField()
     overall_score = models.IntegerField()
     details = models.TextField()
     recommendations = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        verbose_name_plural = "Nutrient Analyses"
 
     def __str__(self):
-        return f"{self.user.username}'s nutrient analysis - {self.created_at}"
+        return f"{self.user.username}'s nutrient analysis - {self.date}"
 
 class SurveyResponse(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
@@ -81,7 +85,7 @@ class SurveyResult(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     answers = models.JSONField(default=dict)
     result = models.JSONField(default=dict)
-    health_status = models.CharField(max_length=100, default='')
+    health_status = models.CharField(max_length=100, null=True, blank=True)
     recommended_supplements = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -253,4 +257,25 @@ class UserLog(models.Model):
         ordering = ['-timestamp'] # Order by latest logs first
     def __str__(self):
         return f"{self.user.email} - {self.action} - {self.product.title}"
+    
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='favorites'
+    )
+    product = models.ForeignKey(
+        Products,
+        on_delete=models.CASCADE,
+        related_name='favorites'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'product')
+        verbose_name = '즐겨찾기'
+        verbose_name_plural = '즐겨찾기'
+
+    def __str__(self):
+        return f"{self.user.email}의 {self.product.title} 즐겨찾기"
     
