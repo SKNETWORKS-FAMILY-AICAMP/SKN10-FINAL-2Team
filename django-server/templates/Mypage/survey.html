@@ -14,22 +14,22 @@
       <button type="button" class="start-survey-btn" id="startButton">시작하기</button>
     </div>
 
-    <form method="post" class="survey-form" style="display: none;">
+    <form method="post" action="{% url 'mypage:save_survey' %}" class="survey-form" style="display: none;">
       {% csrf_token %}
 
-      {% if survey_questions %}
+      {% if survey_questions.questions %}
         {% for question in survey_questions.questions %}
         <div class="question-group" style="display: none;">
           <h2>{{ question.text }}</h2>
           {% if question.type == 'select' %}
-          <input type="hidden" name="{{ question.name }}" value="">
+          <input type="hidden" name="{{ question.name }}" value="" required>
           <div class="option-row">
             {% for option in question.options %}
             <div class="option-box" data-value="{{ option }}" data-input="{{ question.name }}"><span>{{ option }}</span></div>
             {% endfor %}
           </div>
           {% elif question.type == 'number' %}
-          <input type="number" name="{{ question.name }}" placeholder="숫자 입력" required>
+          <input type="number" name="{{ question.name }}" placeholder="숫자 입력" required min="1">
           {% endif %}
           <div class="error-message">이 질문에 답변해주세요.</div>
           <div class="survey-buttons">
@@ -53,6 +53,7 @@
           <p>디버그 정보:</p>
           <ul>
             <li>파일 경로: {{ debug_info.file_path }}</li>
+            <li>질문 수: {{ debug_info.questions_count }}</li>
           </ul>
           {% endif %}
         </div>
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const startButton = document.getElementById('startButton');
     if (startButton) {
         console.log('Start button found');
-        startButton.onclick = function() {
+        startButton.addEventListener('click', function() {
             console.log('Start button clicked');
             
             // 초기 페이지 숨기기
@@ -91,59 +92,82 @@ document.addEventListener('DOMContentLoaded', function() {
             const firstQuestion = document.querySelector('.question-group');
             if (firstQuestion) {
                 firstQuestion.style.display = 'block';
+                firstQuestion.classList.add('active');
                 console.log('First question displayed');
             } else {
                 console.error('First question not found');
             }
-        };
+        });
     } else {
         console.error('Start button not found');
     }
     
     // 다음 버튼 클릭 이벤트
     document.querySelectorAll('.next-btn').forEach(button => {
-        button.onclick = function() {
+        button.addEventListener('click', function(e) {
+            e.preventDefault(); // 모든 클릭 이벤트의 기본 동작 방지
+            
             const currentGroup = this.closest('.question-group');
             const selectedOption = currentGroup.querySelector('.option-box.active');
             const numberInput = currentGroup.querySelector('input[type="number"]');
             const errorMessage = currentGroup.querySelector('.error-message');
             
             // 유효성 검사
-            if (numberInput && !numberInput.value) {
-                errorMessage.style.display = 'block';
-                return;
+            let isValid = true;
+            
+            if (numberInput) {
+                if (!numberInput.value) {
+                    isValid = false;
+                    errorMessage.textContent = '숫자를 입력해주세요.';
+                } else {
+                    const value = parseInt(numberInput.value);
+                    if (isNaN(value) || value <= 0) {
+                        isValid = false;
+                        errorMessage.textContent = '0보다 큰 숫자를 입력해주세요.';
+                    }
+                }
+            } else if (!selectedOption) {
+                isValid = false;
+                errorMessage.textContent = '옵션을 선택해주세요.';
             }
-            if (!numberInput && !selectedOption) {
+            
+            if (!isValid) {
                 errorMessage.style.display = 'block';
+                errorMessage.classList.add('show');
                 return;
             }
             
             // 현재 질문 숨기기
             currentGroup.style.display = 'none';
+            currentGroup.classList.remove('active');
             
             // 다음 질문 표시
             const nextGroup = currentGroup.nextElementSibling;
             if (nextGroup && nextGroup.classList.contains('question-group')) {
                 nextGroup.style.display = 'block';
+                nextGroup.classList.add('active');
             }
-        };
+        });
     });
     
     // 이전 버튼 클릭 이벤트
     document.querySelectorAll('.prev-btn').forEach(button => {
-        button.onclick = function() {
+        button.addEventListener('click', function() {
             const currentGroup = this.closest('.question-group');
             currentGroup.style.display = 'none';
+            currentGroup.classList.remove('active');
+            
             const prevGroup = currentGroup.previousElementSibling;
             if (prevGroup && prevGroup.classList.contains('question-group')) {
                 prevGroup.style.display = 'block';
+                prevGroup.classList.add('active');
             }
-        };
+        });
     });
     
     // 옵션 박스 클릭 이벤트
     document.querySelectorAll('.option-box').forEach(box => {
-        box.onclick = function() {
+        box.addEventListener('click', function() {
             const questionGroup = this.closest('.question-group');
             const allBoxes = questionGroup.querySelectorAll('.option-box');
             const inputName = this.dataset.input;
@@ -161,7 +185,82 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 에러 메시지 숨기기
             errorMessage.style.display = 'none';
-        };
+            errorMessage.classList.remove('show');
+        });
+    });
+    
+    // 제출 버튼 클릭 이벤트
+    document.querySelectorAll('button[type="submit"]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Submit button clicked');
+            
+            const form = this.closest('form');
+            const questionGroups = form.querySelectorAll('.question-group');
+            let isValid = true;
+            
+            // 각 질문 그룹의 응답 확인
+            questionGroups.forEach(group => {
+                const selectedOption = group.querySelector('.option-box.active');
+                const numberInput = group.querySelector('input[type="number"]');
+                const errorMessage = group.querySelector('.error-message');
+                
+                if (numberInput) {
+                    if (!numberInput.value) {
+                        isValid = false;
+                        errorMessage.textContent = '숫자를 입력해주세요.';
+                        errorMessage.style.display = 'block';
+                        errorMessage.classList.add('show');
+                    }
+                } else if (!selectedOption) {
+                    isValid = false;
+                    errorMessage.textContent = '옵션을 선택해주세요.';
+                    errorMessage.style.display = 'block';
+                    errorMessage.classList.add('show');
+                }
+            });
+            
+            if (isValid) {
+                console.log('Form is valid, submitting...');
+                const formData = new FormData(form);
+                
+                // 모든 질문의 응답을 수집
+                questionGroups.forEach(group => {
+                    const selectedOption = group.querySelector('.option-box.active');
+                    const numberInput = group.querySelector('input[type="number"]');
+                    const inputName = selectedOption ? selectedOption.dataset.input : numberInput.name;
+                    const value = selectedOption ? selectedOption.dataset.value : numberInput.value;
+                    
+                    if (inputName && value) {
+                        formData.append(inputName, value);
+                    }
+                });
+                
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    console.log('Response received:', response);
+                    if (response.ok) {
+                        console.log('Redirecting to survey result page');
+                        window.location.href = "{% url 'mypage:survey_result' %}";
+                    } else {
+                        throw new Error('설문 제출 중 오류가 발생했습니다.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('설문 제출 중 오류가 발생했습니다. 다시 시도해주세요.');
+                });
+            } else {
+                console.log('Form validation failed');
+            }
+        });
     });
 });
 </script>

@@ -75,16 +75,16 @@ def survey_view(request):
     try:
         with open(json_file_path, 'r', encoding='utf-8') as f:
             survey_questions = json.load(f)
-            print(f"Loaded {len(survey_questions)} questions")
+            print(f"Loaded {len(survey_questions.get('questions', []))} questions")
             print("Questions:", survey_questions)
     except FileNotFoundError:
-        survey_questions = []
+        survey_questions = {'questions': []}
         print(f"Error: {json_file_path} not found")
     except json.JSONDecodeError as e:
-        survey_questions = []
+        survey_questions = {'questions': []}
         print(f"Error: Invalid JSON in {json_file_path}: {str(e)}")
     except Exception as e:
-        survey_questions = []
+        survey_questions = {'questions': []}
         print(f"Unexpected error: {str(e)}")
     
     context = {
@@ -92,7 +92,7 @@ def survey_view(request):
         'survey_questions': survey_questions,
         'debug_info': {
             'file_path': json_file_path,
-            'questions_count': len(survey_questions)
+            'questions_count': len(survey_questions.get('questions', []))
         }
     }
     return render(request, 'Mypage/survey.html', context)
@@ -295,83 +295,122 @@ def generate_recommendations(survey_result, health_score):
 def save_survey(request):
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
+            print("POST data received:", request.POST)
             
-            # 설문 응답 저장
+            # POST 데이터에서 응답 가져오기
+            responses = request.POST.get('responses', '{}')
+            answers = request.POST.get('answers', '{}')
+            height = float(request.POST.get('height', 0))
+            weight = float(request.POST.get('weight', 0))
+            sitting_work = request.POST.get('sitting_work', '')
+            indoor_daytime = request.POST.get('indoor_daytime', '')
+            exercise = request.POST.get('exercise', '')
+            smoking = request.POST.get('smoking', '')
+            drinking = request.POST.get('drinking', '')
+            fatigue = request.POST.get('fatigue', '')
+            sleep_well = request.POST.get('sleep_well', '')
+            still_tired = request.POST.get('still_tired', '')
+            sleep_hours = float(request.POST.get('sleep_hours', 0))
+            exercise_frequency = request.POST.get('exercise_frequency', '')
+            water_intake = float(request.POST.get('water_intake', 0))
+            health_status = request.POST.get('health_status', '보통')
+
+            # SurveyResponse 객체 생성 및 저장
             survey_response = SurveyResponse.objects.create(
                 user=request.user,
-                responses=data if data else {},
-                answers=data if data else {},
-                height=data.get('height'),
-                weight=data.get('weight'),
-                sitting_work=data.get('sitting_work'),
-                indoor_daytime=data.get('indoor_daytime'),
-                exercise=data.get('exercise'),
-                smoking=data.get('smoking'),
-                drinking=data.get('drinking'),
-                fatigue=data.get('fatigue'),
-                sleep_well=data.get('sleep_well'),
-                still_tired=data.get('still_tired'),
-                sleep_hours=data.get('sleep_hours'),
-                exercise_frequency=data.get('exercise_frequency'),
-                water_intake=data.get('water_intake'),
-                health_status='completed'
+                responses=responses,
+                answers=answers,
+                height=height,
+                weight=weight,
+                sitting_work=sitting_work,
+                indoor_daytime=indoor_daytime,
+                exercise=exercise,
+                smoking=smoking,
+                drinking=drinking,
+                fatigue=fatigue,
+                sleep_well=sleep_well,
+                still_tired=still_tired,
+                sleep_hours=sleep_hours,
+                exercise_frequency=exercise_frequency,
+                water_intake=water_intake
             )
-            
-            # 설문 결과 생성
-            health_score = calculate_health_score(survey_response)
-            recommended_supplements = get_recommended_supplements(survey_response)
-            recommendations = generate_recommendations(survey_response, health_score)
-            
+
+            # SurveyResult 객체 생성 및 저장
             survey_result = SurveyResult.objects.create(
                 user=request.user,
-                answers=data if data else {},
-                result={
-                    'health_score': health_score,
-                    'recommendations': recommendations,
-                    'recommended_supplements': recommended_supplements
-                },
-                health_status='좋음' if health_score >= 80 else '보통' if health_score >= 60 else '나쁨',
-                recommended_supplements=recommended_supplements
+                survey_response=survey_response,
+                answers={
+                    'height': height,
+                    'weight': weight,
+                    'sitting_work': sitting_work,
+                    'indoor_daytime': indoor_daytime,
+                    'exercise': exercise,
+                    'smoking': smoking,
+                    'drinking': drinking,
+                    'fatigue': fatigue,
+                    'sleep_well': sleep_well,
+                    'still_tired': still_tired,
+                    'sleep_hours': sleep_hours,
+                    'exercise_frequency': exercise_frequency,
+                    'water_intake': water_intake,
+                    'health_status': health_status
+                }
             )
-            
-            return JsonResponse({
-                'status': 'success',
-                'message': '설문이 저장되었습니다.',
-                'redirect_url': '/mypage/survey-result/'  # 절대 경로로 수정
-            })
-            
+
+            print(f"Survey response saved: {survey_response.id}")
+            print(f"Survey result saved: {survey_result.id}")
+            return redirect('mypage:survey_result')
         except Exception as e:
-            print(f"Error saving survey: {str(e)}")
+            print(f"Error saving survey response: {str(e)}")
             return JsonResponse({
                 'status': 'error',
-                'message': str(e)
+                'message': '설문 응답을 저장하는 중 오류가 발생했습니다.'
             }, status=500)
-    
-    return JsonResponse({
-        'status': 'error',
-        'message': '잘못된 요청입니다.'
-    }, status=400)
+    return redirect('mypage:survey')
 
 @login_required
 def survey_result(request):
-    # 가장 최근 설문 결과 가져오기
-    latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
-    
-    if latest_survey:
+    try:
+        # 가장 최근 설문 결과 가져오기
+        survey_result = SurveyResult.objects.filter(user=request.user).latest('created_at')
+        
+        # 건강 점수 계산
+        health_score = calculate_health_score(survey_result)
+        
+        # 추천 영양제 가져오기
+        recommended_supplements = get_recommended_supplements(survey_result)
+        
+        # 건강 리포트 생성 또는 업데이트
+        health_report, created = UserHealthReport.objects.get_or_create(
+            user=request.user,
+            survey_result=survey_result,
+            defaults={
+                'health_score': health_score,
+                'recommendations': generate_recommendations(survey_result, health_score)
+            }
+        )
+        
+        if not created:
+            health_report.health_score = health_score
+            health_report.recommendations = generate_recommendations(survey_result, health_score)
+            health_report.save()
+        
         context = {
-            'survey_result': latest_survey,
-            'health_score': latest_survey.result.get('health_score', 0),
-            'recommendations': latest_survey.result.get('recommendations', '').split('\n'),
-            'recommended_supplements': latest_survey.result.get('recommended_supplements', [])
+            'survey_result': survey_result,
+            'health_score': health_score,
+            'recommended_supplements': recommended_supplements,
+            'recommendations': health_report.recommendations.split('\n')
         }
-    else:
-        context = {
-            'message': '아직 설문 결과가 없습니다.'
-        }
-    
-    context['user'] = request.user
-    return render(request, 'Mypage/survey_result.html', context)
+        return render(request, 'Mypage/survey_result.html', context)
+    except SurveyResult.DoesNotExist:
+        return render(request, 'Mypage/survey_result.html', {
+            'message': '설문 응답이 없습니다. 먼저 설문을 완료해주세요.'
+        })
+    except Exception as e:
+        print(f"Error in survey_result view: {str(e)}")
+        return render(request, 'Mypage/survey_result.html', {
+            'message': '설문 결과를 불러오는 중 오류가 발생했습니다.'
+        })
 
 @login_required
 def nutrient_analysis_view(request):

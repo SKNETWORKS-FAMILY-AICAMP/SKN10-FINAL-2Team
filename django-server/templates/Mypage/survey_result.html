@@ -167,7 +167,8 @@
     {% else %}
         <div class="health-status">
             <h2>현재 건강 상태</h2>
-            <p>건강 점수: {{ health_score }}</p>
+            <p>건강 점수: {{ health_score }}점</p>
+            <p>건강 상태: {{ survey_result.answers.health_status }}</p>
         </div>
 
         <div class="supplements-section">
@@ -190,7 +191,26 @@
             </ul>
         </div>
 
-        <button class="profile-btn" onclick="window.location.href='/mypage/'">마이페이지로 이동</button>
+        <div class="survey-responses">
+            <h2>설문 응답</h2>
+            <ul class="response-list">
+                <li>키: {{ survey_result.answers.height }}cm</li>
+                <li>체중: {{ survey_result.answers.weight }}kg</li>
+                <li>좌식 작업: {{ survey_result.answers.sitting_work }}</li>
+                <li>실내 활동: {{ survey_result.answers.indoor_daytime }}</li>
+                <li>운동: {{ survey_result.answers.exercise }}</li>
+                <li>흡연: {{ survey_result.answers.smoking }}</li>
+                <li>음주: {{ survey_result.answers.drinking }}</li>
+                <li>피로도: {{ survey_result.answers.fatigue }}</li>
+                <li>수면 질: {{ survey_result.answers.sleep_well }}</li>
+                <li>수면 후 피로: {{ survey_result.answers.still_tired }}</li>
+                <li>수면 시간: {{ survey_result.answers.sleep_hours }}시간</li>
+                <li>운동 빈도: {{ survey_result.answers.exercise_frequency }}</li>
+                <li>물 섭취량: {{ survey_result.answers.water_intake }}L</li>
+            </ul>
+        </div>
+
+        <button class="profile-btn" onclick="window.location.href='{% url 'mypage:mypage' %}'">마이페이지로 이동</button>
     {% endif %}
 </div>
 {% endblock %} 
