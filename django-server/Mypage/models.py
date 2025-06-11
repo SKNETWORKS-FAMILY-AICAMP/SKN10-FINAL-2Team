@@ -225,8 +225,7 @@ from Product.models import Products
 class UserLog(models.Model):
     ACTION_CHOICES = [
         ('click', 'Click'),
-        ('like', 'Like'),
-        ('unlike', 'Unlike'),
+        ('purchase', 'Purchase'),
     ]
 
     id = models.AutoField(primary_key=True)
@@ -234,18 +233,24 @@ class UserLog(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='user_logs'
+        related_name='user_logs',
+        verbose_name='사용자'
     )
 
     product = models.ForeignKey(
         Products,
         on_delete=models.CASCADE,
-        related_name='user_logs'
+        related_name='user_logs',
+        verbose_name='제품'
     )
 
-    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES,verbose_name='액션')
+    timestamp = models.DateTimeField(auto_now_add=True,verbose_name='기록 시각')
 
+    class Meta:
+        verbose_name = '사용자 로그'
+        verbose_name_plural = '사용자 로그'
+        ordering = ['-timestamp'] # Order by latest logs first
     def __str__(self):
         return f"{self.user.email} - {self.action} - {self.product.title}"
     
