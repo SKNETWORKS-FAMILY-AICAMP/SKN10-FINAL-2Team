@@ -338,7 +338,7 @@ def save_survey(request):
             # SurveyResult 객체 생성 및 저장
             survey_result = SurveyResult.objects.create(
                 user=request.user,
-                survey_response=survey_response,
+                # survey_response=survey_response,
                 answers={
                     'height': height,
                     'weight': weight,
