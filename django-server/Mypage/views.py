@@ -5,12 +5,13 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
-from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient, UserNutrientIntake, NutrientAnalysis
+from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient, UserNutrientIntake, NutrientAnalysis, Like, UserLog
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime, timedelta
-from Product.models import Favorite, Products  # 파일 상단에 추가
+from Product.models import Products  # 파일 상단에 추가
 import pytesseract
 from PIL import Image
 import re
@@ -588,3 +589,56 @@ def ocr_extract(request):
         return JsonResponse({'status': 'success', 'ingredients': ingredients})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}) 
+
+# @login_required
+def like_list(request):
+    User = get_user_model()
+    user = User.objects.get(pk=1)
+    # user = request.user
+    like_list = Like.objects.filter(user=user).select_related('product')
+    return render(request, 'Mypage/like.html', {'user': user, 'like_list': like_list})
+
+@require_POST
+# @login_required
+def like_delete(request):
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    user = User.objects.get(pk=1)  # 실제 서비스에서는 request.user 사용
+    # user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        like = Like.objects.get(user=user, product_id=product_id)
+        like.delete()
+        UserLog.objects.create(user=user, product=product, action='unlike')
+        return JsonResponse({'success': True})
+    except Like.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
+
+@require_POST
+# @login_required
+def like_add(request):
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    user = User.objects.get(pk=1)  # 실제 서비스에서는 request.user 사용
+    # user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        Like.objects.get_or_create(user=user, product_id=product_id)
+        UserLog.objects.create(user=user, product=product, action='like')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@require_POST
+# @login_required
+def product_click(request):
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    user = User.objects.get(pk=1)
+    try:
+        product = Products.objects.get(pk=product_id)
+        # UserLog 저장 (click)
+        UserLog.objects.create(user=user, product=product, action='click')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

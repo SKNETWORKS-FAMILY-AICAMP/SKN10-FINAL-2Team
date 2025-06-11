@@ -14,4 +14,8 @@ urlpatterns = [
     path('get_favorite_products/', views.get_favorite_products, name='get_favorite_products'),
     path('get_nutrient_data/', views.get_nutrient_data, name='get_nutrient_data'),
     path('ocr_extract/', views.ocr_extract, name='ocr_extract'),
-] 
+    path('like/', views.like_list, name='like_list'),
+    path('like/delete/', views.like_delete, name='like_delete'),
+    path('like/add/', views.like_add, name='like_add'),
+    path('product/click/', views.product_click, name='product_click'),
+]

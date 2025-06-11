@@ -222,7 +222,7 @@ if (signupSubmitButton) {
 
             if (response.ok) { // HTTP 상태 코드가 200번대인 경우
                 closeModal(signupModal);
-                showSmallInfoPopup(`${username}님, 회원가입이 성공적으로 완료되었습니다!`);
+                showSmallInfoPopup(`${username}님, 입력하신 이메일로 인증메일이 발송되었습니다. 인증 후 로그인 가능합니다.`);
                 // 성공 후 필드 초기화
                 nameInput.value = '';
                 emailInput.value = '';

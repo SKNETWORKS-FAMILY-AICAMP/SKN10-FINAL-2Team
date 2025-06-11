@@ -31,4 +31,5 @@ urlpatterns = [
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('', include('landing.urls')), 
     path('Chatbot/', include('Chatbot.urls')),
+    path('mypage/', include('Mypage.urls')),
 ]

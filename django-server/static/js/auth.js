@@ -13,18 +13,21 @@ function getCookie(name) {
     return cookieValue;
 }
 
-function logoutUser() {
+export function logoutUser() {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     // 로그인 페이지로 리다이렉트 (YOUR_LOGIN_URL을 실제 로그인 페이지 URL로 변경)
-    window.location.href = '/login/'; 
+    window.location.href = '/'; 
 }
-
+export function redirectToLogin() {
+    console.log("Redirecting to login page.");
+    window.location.href = '/login'; // Replace with your actual login page URL
+}
 /**
  * 사용자 인증 상태를 확인하고, 필요시 토큰을 재발급합니다.
  * @returns {boolean} 사용자가 현재 인증된 상태인지 여부 (Access Token 유효 또는 성공적으로 재발급됨)
  */
-async function checkUserAuthentication() {
+export async function checkUserAuthentication() {
     let accessToken = localStorage.getItem('accessToken');
     const refreshToken = localStorage.getItem('refreshToken');
 
@@ -100,6 +103,7 @@ async function checkUserAuthentication() {
         return false;
     }
 }
+
 // js 사용 예시
 // const isAuthenticated = await checkUserAuthentication(); api 호출 전에 인증 했는지 확인 하는 코드 true 이면 인증, false면 거부
 
