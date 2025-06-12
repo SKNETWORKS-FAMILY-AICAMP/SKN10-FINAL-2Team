@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient_daily, UserNutrientIntake, NutrientAnalysis, Like, UserLog, Favorite
 from django.contrib.auth.decorators import login_required
+from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
@@ -16,7 +17,7 @@ import pytesseract
 from PIL import Image
 import re
 from django.contrib import messages
-
+from rest_framework.permissions import IsAuthenticated
 @login_required
 def mypage_view(request):
     # 사용자의 최근 설문 결과 가져오기
@@ -690,8 +691,8 @@ def chatbot_view(request):
         return redirect('mypage')
 
 @csrf_exempt
-@require_http_methods(["POST", "DELETE", "GET"])
-@login_required
+@api_view(["POST", "DELETE", "GET"])
+@permission_classes([IsAuthenticated])
 def like_api(request):
     """
     좋아요 API 엔드포인트

@@ -19,7 +19,7 @@ function toggleLike(event, productId) {
         event.stopPropagation();
         event.preventDefault();
     }
-    
+    const accessToken = localStorage.getItem('accessToken');
     // productId가 문자열로 전달된 경우 숫자로 변환
     productId = parseInt(productId);
     
@@ -63,6 +63,7 @@ function toggleLike(event, productId) {
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCsrfToken(),  // CSRF 토큰 필요
+            'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
             product_id: productId
@@ -166,7 +167,7 @@ function showProductDetail(productId, event) {
     if (event) {
         event.stopPropagation();
     }
-    
+    // 클릭 로그 추가.
     console.log("showProductDetail 호출됨:", productId);
     
     // productId가 문자열로 전달된 경우 숫자로 변환
@@ -389,6 +390,7 @@ function displayProductDetail(product) {
     if (urlElem) {
         if (product.url) {
             urlElem.href = product.url;
+            // 구매 로그 추가 해야 됨
             urlElem.classList.remove('hidden');
         } else {
             urlElem.classList.add('hidden');
