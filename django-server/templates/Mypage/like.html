@@ -1,168 +1,167 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>마이페이지 - 좋아요 상품 조회</title>
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/like.css' %}">
-</head>
-<body>
-    <div class="center-container">
-        <div class="h2" style="margin-top: 20px; padding: 10px;">
-            <span style="color: #DDC66F;">{{ user.first_name }}</span> <span style="color: #333333">님이 좋아요 누른 영양제</span>
-        </div>
-        <div class="caption-font" style="margin-top: 10px; margin-bottom: 10px; padding: 5px; color:#7D97A1;">
-            <span style="color:#DDC66F">♥</span> {{ like_list|length }}개의 영양제
-        </div>
-        <div class="like-list-container">
-            {% if like_list %}
-                {% for like in like_list %}
-                <div class="like-item"
-                        data-product-id="{{ like.product.id }}"
-                        data-price="{{ like.product.total_price }}"
-                        data-url="{{ like.product.url }}"
-                        data-title="{{ like.product.title }}"
-                        data-manufacturer="{{ like.product.manufacturer }}"
-                        data-rating="{{ like.product.average_rating }}"
-                        data-total-reviews="{{ like.product.total_reviews }}"
-                        data-ingredients="{{ like.product.ingredients }}">
-                    <div class="product-container">
-                        <img src="{{ like.product.image_link|default:'https://placehold.co/96x96?text=Image' }}" alt="Image"/>
-                        <div class="item-info">
-                            <div class="body-font" style="color: #333333">{{ like.product.title }}</div>
-                            <div class="caption-font" style="color:#7D97A1">{{ like.product.manufacturer }}</div>
-                            <div class="body-font" style="color: #EADCA6;">$ {{ like.product.total_price }}</div>
-                            <div class="caption-font" style="color:#7D97A1;">
-                                <span style="color:#DCA628">★</span> {{ like.product.average_rating }} <span style="font-size: 10pt">({{ like.product.total_reviews }})</span>
-                            </div>
+{% extends 'Mypage/base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/like.css' %}">
+
+<div class="center-container">
+    <div class="h2" style="margin-top: 20px; padding: 10px;">
+        <span style="color: #DDC66F;">{{ user.name }}</span> <span style="color: #333333">님이 좋아요 누른 영양제</span>
+    </div>
+    <div class="caption-font" style="margin-top: 10px; margin-bottom: 10px; padding: 5px; color:#7D97A1;">
+        <span style="color:#DDC66F">♥</span> {{ like_list|length }}개의 영양제
+    </div>
+    <div class="like-list-container">
+        {% if like_list %}
+            {% for like in like_list %}
+            <div class="like-item"
+                    data-product-id="{{ like.product.id }}"
+                    data-price="{{ like.product.total_price }}"
+                    data-url="{{ like.product.url }}"
+                    data-title="{{ like.product.title }}"
+                    data-manufacturer="{{ like.product.manufacturer }}"
+                    data-rating="{{ like.product.average_rating }}"
+                    data-total-reviews="{{ like.product.total_reviews }}"
+                    data-ingredients="{{ like.product.ingredients }}">
+                <div class="product-container">
+                    <img src="{{ like.product.image_link|default:'https://placehold.co/96x96?text=Image' }}" alt="Image"/>
+                    <div class="item-info">
+                        <div class="body-font" style="color: #333333">{{ like.product.title }}</div>
+                        <div class="caption-font" style="color:#7D97A1">{{ like.product.manufacturer }}</div>
+                        <div class="body-font" style="color: #EADCA6;">$ {{ like.product.total_price }}</div>
+                        <div class="caption-font" style="color:#7D97A1;">
+                            <span style="color:#DCA628">★</span> {{ like.product.average_rating }} <span style="font-size: 10pt">({{ like.product.total_reviews }})</span>
                         </div>
-                        <button class="heart-btn liked" title="Dislike">&#10084;</button>
                     </div>
-                </div>
-            {% endfor %}
-            {% else %}
-                <div class="empty-image">
-                </div>
-                <div class="h3" style="margin:10px; padding:10px;">좋아요 누른 영양제가 없어요.</div>
-            {% endif %}
-        </div>
-        <div id="product-modal" class="modal" style="display:none;">
-            <div class="modal-content">
-                <span class="modal-close">&times;</span>
-                <div id="modal-body">
+                    <button class="heart-btn liked" title="Dislike">&#10084;</button>
                 </div>
             </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-image"></div>
+            <div class="h3" style="margin:10px; padding:10px;">좋아요 누른 영양제가 없어요.</div>
+        {% endif %}
+    </div>
+
+    <div id="product-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="modal-body"></div>
         </div>
     </div>
-    <script>
-    document.querySelectorAll('.heart-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const likeItem = btn.closest('.like-item');
-            const productId = likeItem.dataset.productId;
-            const isLiked = btn.classList.contains('liked');
-            const url = isLiked ? "{% url 'mypage:like_delete' %}" : "{% url 'mypage:like_add' %}";
-
-            fetch(url, {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": "{{ csrf_token }}",
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: "product_id=" + encodeURIComponent(productId)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    if (isLiked) {
-                        btn.classList.remove('liked');
-                        btn.innerHTML = "&#9825;"; // 빈 하트
-                    } else {
-                        btn.classList.add('liked');
-                        btn.innerHTML = "&#10084;"; // 채운 하트
-                    }
+</div>
+<script src="{% static 'js/auth.js' %}"></script>
+<script>
+document.querySelectorAll('.heart-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const likeItem = btn.closest('.like-item');
+        const productId = likeItem.dataset.productId;
+        const isLiked = btn.classList.contains('liked');
+        const url = isLiked ? "{% url 'mypage:like_delete' %}" : "{% url 'mypage:like_add' %}";
+        const userisAuthenticated = checkUserAuthentication();
+        const accessToken = localStorage.getItem('accessToken');
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                'Authorization': `Bearer ${accessToken}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: "product_id=" + encodeURIComponent(productId)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (isLiked) {
+                    btn.classList.remove('liked');
+                    btn.innerHTML = "&#9825;";
                 } else {
-                    alert("처리 실패: " + (data.error || "알 수 없는 오류"));
+                    btn.classList.add('liked');
+                    btn.innerHTML = "&#10084;";
                 }
-            });
-        });
-    });
-    document.querySelectorAll('.product-container').forEach(function(container) {
-        container.addEventListener('click', function(e) {
-            // 하트 버튼 클릭 시에는 모달 안 뜨게
-            if (e.target.classList.contains('heart-btn')) return;
-
-            const item = container.closest('.like-item');
-            const productId = item.dataset.productId;
-            const imgSrc = container.querySelector('img').src;
-            const title = item.dataset.title;
-            const manufacturer = item.dataset.manufacturer;
-            const price = item.dataset.price;
-            const rating = item.dataset.rating;
-            const totalReviews = item.dataset.totalReviews;
-            const ingredients = item.dataset.ingredients;
-            const url = item.dataset.url;
-            
-            let ingredientsTable = '';
-            try {
-                const ingredientsArr = JSON.parse(ingredients.replace(/'/g, '"'));
-                if (Array.isArray(ingredientsArr) && ingredientsArr.length > 0) {
-                    ingredientsTable = `<table style="width:100%;font-size:14px;margin:10px 0 10px 0;border-collapse:collapse;">
-                        <thead>
-                            <tr>
-                                <th style="text-align:left;padding:2px 4px;">성분명</th>
-                                <th style="text-align:right;padding:2px 4px;">함량</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${ingredientsArr.map(i => `
-                                <tr>
-                                    <td style="padding:2px 4px;">${i.ingredient_name}</td>
-                                    <td style="padding:2px 4px;text-align:right;">${i.amount} ${i.unit}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>`;
-                }
-            } catch (e) {
-                ingredientsTable = `<div style="color:#888;">성분 정보를 불러올 수 없습니다.</div>`;
+            } else {
+                alert("처리 실패: " + (data.error || "알 수 없는 오류"));
             }
-
-            // 모달 내용 구성
-            document.getElementById('modal-body').innerHTML = `
-                <img src="${imgSrc}" alt="상품 이미지" style="width:160px;height:160px;object-fit:contain;display:block;margin:10px auto 10px auto;padding:10px;">
-                <div style="font-size:20px;font-weight:700;margin:10px 0 10px 0;">${title}</div>
-                <div style="font-size:16px;color:#7D97A1;margin:10px 0 10px 0;">${manufacturer}</div>
-                <div style="font-size:18px;color:#EADCA6;margin:10px 0 10px 0;">$ ${price}</div>
-                <div style="font-size:14px;color:#7D97A1;margin:10px 0 10px 0;">★ ${rating} <span style="font-size:12px;">(${totalReviews})</span></div>
-                <hr>
-                <div style="color:#7D97A1;">${ingredientsTable}</div>
-                <div style="width:100%;display:flex;justify-content:flex-end;margin-top:24px;">
-                    <a href="${url}" target="_blank"
-                    style="display:inline-block; padding:10px 10px; background-color:#DDC66F; color:#333333; text-decoration:none; border-radius:4px; font-weight:600;">
-                    구매하기
-                    </a>
-                </div>
-                `;
-            document.getElementById('product-modal').style.display = 'flex';
-            document.querySelector('.modal-content').scrollTop = 0;
-
-            fetch("{% url 'mypage:product_click' %}", {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": "{{ csrf_token }}",
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: "product_id=" + encodeURIComponent(productId)
-            });
         });
     });
-    document.querySelector('.modal-close').onclick = function() {
-        document.getElementById('product-modal').style.display = 'none';
-    };
-    document.getElementById('product-modal').onclick = function(e) {
-        if (e.target === this) this.style.display = 'none';
-    };
-    </script>
-</body>
-</html>
+});
+
+document.querySelectorAll('.product-container').forEach(function(container) {
+    container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('heart-btn')) return;
+
+        const item = container.closest('.like-item');
+        const productId = item.dataset.productId;
+        const imgSrc = container.querySelector('img').src;
+        const title = item.dataset.title;
+        const manufacturer = item.dataset.manufacturer;
+        const price = item.dataset.price;
+        const rating = item.dataset.rating;
+        const totalReviews = item.dataset.totalReviews;
+        const ingredients = item.dataset.ingredients;
+        const url = item.dataset.url;
+
+        let ingredientsTable = '';
+        try {
+            const ingredientsArr = JSON.parse(ingredients.replace(/'/g, '"'));
+            if (Array.isArray(ingredientsArr) && ingredientsArr.length > 0) {
+                ingredientsTable = `<table style="width:100%;font-size:14px;margin:10px 0;border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;padding:2px 4px;">성분명</th>
+                            <th style="text-align:right;padding:2px 4px;">함량</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${ingredientsArr.map(i => `
+                            <tr>
+                                <td style="padding:2px 4px;">${i.ingredient_name}</td>
+                                <td style="padding:2px 4px;text-align:right;">${i.amount} ${i.unit}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+            }
+        } catch (e) {
+            ingredientsTable = `<div style="color:#888;">성분 정보를 불러올 수 없습니다.</div>`;
+        }
+
+        document.getElementById('modal-body').innerHTML = `
+            <img src="${imgSrc}" alt="상품 이미지" style="width:160px;height:160px;object-fit:contain;display:block;margin:10px auto;padding:10px;">
+            <div style="font-size:20px;font-weight:700;margin:10px 0;">${title}</div>
+            <div style="font-size:16px;color:#7D97A1;margin:10px 0;">${manufacturer}</div>
+            <div style="font-size:18px;color:#EADCA6;margin:10px 0;">$ ${price}</div>
+            <div style="font-size:14px;color:#7D97A1;margin:10px 0;">★ ${rating} <span style="font-size:12px;">(${totalReviews})</span></div>
+            <hr>
+            <div style="color:#7D97A1;">${ingredientsTable}</div>
+            <div style="width:100%;display:flex;justify-content:flex-end;margin-top:24px;">
+                <a href="${url}" target="_blank"
+                style="display:inline-block; padding:10px 10px; background-color:#DDC66F; color:#333333; text-decoration:none; border-radius:4px; font-weight:600;">
+                구매하기
+                </a>
+            </div>
+        `;
+        document.getElementById('product-modal').style.display = 'flex';
+        document.querySelector('.modal-content').scrollTop = 0;
+        const userisAuthenticated = checkUserAuthentication();
+        const accessToken = localStorage.getItem('accessToken');
+        fetch("{% url 'mypage:product_click' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/x-www-form-urlencoded",
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: "product_id=" + encodeURIComponent(productId)
+        });
+    });
+});
+
+document.querySelector('.modal-close').onclick = function() {
+    document.getElementById('product-modal').style.display = 'none';
+};
+document.getElementById('product-modal').onclick = function(e) {
+    if (e.target === this) this.style.display = 'none';
+};
+</script>
+{% endblock %}

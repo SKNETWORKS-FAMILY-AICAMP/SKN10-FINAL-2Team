@@ -17,8 +17,7 @@
 }
 
 body {
-    margin: 0 auto;
-    max-width: 1920px;
+    margin: 0 ;
     overflow-x: hidden;
     font-family: 'Arial', sans-serif;
 }
@@ -31,8 +30,7 @@ header {
 }
 
 header nav {
-  max-width: 1920px;
-  margin: 0 auto;
+  width : 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -94,10 +92,16 @@ header nav ul li  {
     margin: 0;
     display: flex;
     text-align: center;
+    color: #DDC66F;
+    font-weight: 700;
     justify-content: center;
     height: 80px;
 }
-    
+#auth-button {
+  margin-right: 100px;
+  color: #DDC66F;
+  text-decoration: none;
+}
 .content {
     max-width: 1420px;
     margin: 0 auto;

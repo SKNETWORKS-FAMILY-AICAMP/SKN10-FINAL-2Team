@@ -1,7 +1,7 @@
 /* Header styles */
 header {
-    position: absolute;
-    width: 1920px;
+    position: fixed;
+    width: 100%;
     height: 80px;
     left: 0px;
     top: 0px;
@@ -19,67 +19,11 @@ nav {
 }
 
 /* 로고 스타일 */
-.logo {
-    position: absolute;
-    width: 125px;
-    height: 64px;
-    left: 250px;
-    top: 8px;
-    z-index: 1001;
+.Logo {
+    margin-left: 250px;
 }
-
-.logo-t {
-    position: absolute;
-    width: 40px;
-    height: 48px;
-    left: 250px;
-    top: 24px;
-    font-family: 'Pretendard';
-    font-style: normal;
-    font-weight: 500;
-    font-size: 68px;
-    line-height: 57px;
-    display: flex;
-    align-items: center;
-    color: #EADCA6;
-}
-
-.logo-p {
-    position: absolute;
-    width: 40px;
-    height: 48px;
-    left: 335px;
-    top: 24px;
-    font-family: 'Pretendard';
-    font-style: normal;
-    font-weight: 500;
-    font-size: 68px;
-    line-height: 81px;
-    display: flex;
-    align-items: center;
-    color: #EADCA6;
-}
-
-.logo-rectangle {
-    box-sizing: border-box;
-    position: absolute;
-    width: 36px;
-    height: 48px;
-    left: 295px;
-    top: 23px;
-    border: 4px solid #EADCA6;
-    border-radius: 6px;
-}
-
-.logo-rectangle-2 {
-    position: absolute;
-    width: 25px;
-    height: 30px;
-    left: 328px;
-    top: 46px;
-    background: #EADCA6;
-    border-radius: 0px 4px 4px 0px;
-    transform: rotate(90deg);
+.Logo img {
+  height: 50px;
 }
 
 /* 상단 메뉴 텍스트 */
@@ -89,44 +33,39 @@ nav {
     font-size: 24px;
     display: flex;
     align-items: center;
-    top: 26px;
+    top: 20px;
 }
 
 .nav-label.chatbot {
-    left: 781px;
-    color: #5C6B73;
-}
-
-.nav-label.mypage {
-    left: 898px;
+    left: 1105px;
     font-weight: 700;
     color: #DDC66F;
     cursor: pointer;
 }
 
-.nav-label.products {
-    left: 1077px;
-    color: #5C6B73;
+.nav-label.mypage {
+    left: 1225px;
+    font-weight: 700;
+    color: #DDC66F;
+    cursor: pointer;
 }
+
 
 /* 로그인/로그아웃 메뉴 */
 .login-item {
     position: absolute;
-    right: 60px;
-    top: 30px;
+    right: 100px;
+    top: 20px;
 }
 
 .login-item a {
     font-family: 'Pretendard';
-    font-size: 16px;
-    color: #000;
+    font-size: 24px;
+    color: #DDC66F;
     text-decoration: none;
 }
 
 /* 마이페이지 드롭다운 */
-.nav-label.mypage {
-    position: relative;
-}
 
 .dropdown-menu {
     display: none;
@@ -224,34 +163,6 @@ footer {
     border-radius: 6px;
     background: #fff;
     transition: background 0.2s;
-}
-
-.logout-dropdown {
-    display: none;
-    position: absolute;
-    top: 36px;
-    right: 0;
-    background: #fff;
-    border: 1px solid #E6E6E6;
-    border-radius: 6px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    z-index: 2000;
-    min-width: 100px;
-}
-
-.logout-btn {
-    display: block;
-    padding: 10px 20px;
-    color: #5C6B73;
-    text-decoration: none;
-    font-family: 'Pretendard';
-    font-size: 16px;
-    border-radius: 6px;
-    transition: background 0.2s;
-}
-
-.logout-btn:hover {
-    background: #f2f2f2;
 }
 
 .user-greeting:hover .logout-dropdown {
