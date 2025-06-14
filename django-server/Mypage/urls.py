@@ -20,4 +20,5 @@ urlpatterns = [
     path('product/click/', views.product_click, name='product_click'),
     path('chatbot/', views.chatbot_view, name='chatbot'),
     path('api/like/', views.like_api, name='like_api'),
+    path('product/purchase/', views.product_purchase, name='product_purchase'),
 ] 

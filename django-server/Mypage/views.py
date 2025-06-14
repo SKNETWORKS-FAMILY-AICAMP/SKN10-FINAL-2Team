@@ -757,3 +757,19 @@ def like_api(request):
             return JsonResponse({"error": str(e)}, status=500)
     
     return JsonResponse({"error": "지원하지 않는 메서드입니다."}, status=405)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def product_purchase(request):
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        # UserLog 저장 (click)
+        UserLog.objects.create(user=user, product=product, action='purchase')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

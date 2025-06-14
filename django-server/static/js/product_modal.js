@@ -396,6 +396,29 @@ function displayProductDetail(product) {
             urlElem.classList.add('hidden');
         }
     }
+    if (urlElem) {
+        urlElem.onclick = function (e) {
+            const accessToken = localStorage.getItem('accessToken');
+            const productId = product.id;
+            if(accessToken){
+                checkUserAuthentication();
+                fetch('/mypage/product/purchase/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': `Bearer ${accessToken}`,
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: `product_id=${encodeURIComponent(productId)}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('🛒 구매 로그 저장 완료:', data);
+                });
+            }
+        }; 
+        
+    }
     
     // 모달 표시 (애니메이션 적용)
     modal.classList.remove('hidden');
@@ -473,8 +496,28 @@ function attachProductCardListeners() {
         const productId = card.getAttribute('data-product-id');
         card.addEventListener('click', (e) => {
             e.stopPropagation(); // 이벤트 버블링 방지
+            const accessToken = localStorage.getItem('accessToken');
+            if (accessToken) {
+                checkUserAuthentication();
+                const accessToken = localStorage.getItem('accessToken');
+                fetch('/mypage/product/click/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': `Bearer ${accessToken}`,
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: `product_id=${encodeURIComponent(productId)}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('✅ 클릭 로그 저장 완료:', data);
+                });
+            }
             showProductDetail(productId, e);
         });
+        
+
     });
 }
 
