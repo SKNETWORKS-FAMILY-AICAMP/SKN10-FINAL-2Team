@@ -18,6 +18,7 @@ urlpatterns = [
     path('like/', views.like_list, name='like_list'),
     path('like-add/', views.like_add, name='like_add'),
     path('like-delete/', views.like_delete, name='like_delete'),
+    path('product/<int:product_id>/nutrients/', views.get_product_nutrients, name='get_product_nutrients'),
     path('product/click/', views.product_click, name='product_click'),
     path('chatbot/', views.chatbot_view, name='chatbot'),
 ]

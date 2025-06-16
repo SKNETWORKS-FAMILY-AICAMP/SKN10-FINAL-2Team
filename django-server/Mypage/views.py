@@ -968,3 +968,37 @@ def delete_nutrient_intake(request):
             'status': 'error',
             'message': str(e)
         }, status=400)
+
+@login_required
+def get_product_nutrients(request, product_id):
+    try:
+        product = Products.objects.get(id=product_id)
+        # 여기서 제품의 영양소 정보를 가져오는 로직을 구현해야 합니다
+        # 예시 데이터:
+        nutrients = [
+            {
+                'name': '비타민 C',
+                'amount': 100,
+                'unit': 'mg'
+            },
+            {
+                'name': '비타민 D',
+                'amount': 10,
+                'unit': 'µg'
+            }
+        ]
+        
+        return JsonResponse({
+            'status': 'success',
+            'nutrients': nutrients
+        })
+    except Products.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': '제품을 찾을 수 없습니다.'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)

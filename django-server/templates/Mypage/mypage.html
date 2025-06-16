@@ -22,6 +22,17 @@
                     <span class="score">{{ health_score }}</span>
                     <span class="score-label">점</span>
                 </div>
+                <div class="health-status">
+                    {% if health_score >= 80 %}
+                        <span class="status-good">매우 좋음</span>
+                    {% elif health_score >= 60 %}
+                        <span class="status-normal">좋음</span>
+                    {% elif health_score >= 40 %}
+                        <span class="status-warning">보통</span>
+                    {% else %}
+                        <span class="status-bad">주의 필요</span>
+                    {% endif %}
+                </div>
             {% else %}
                 <p>아직 설문을 진행하지 않았습니다.</p>
                 <a href="{% url 'mypage:survey' %}" class="btn-primary">설문하러 가기</a>
@@ -34,11 +45,11 @@
             {% if recommended_supplements %}
                 <div class="supplements-grid">
                     {% for supplement in recommended_supplements %}
-                        <div class="supplement-card">
-                            <img src="{{ supplement.image_url }}" alt="{{ supplement.name }}">
-                            <h3>{{ supplement.name }}</h3>
-                            <p>{{ supplement.description }}</p>
-                        </div>
+                    <div class="supplement-card">
+                        <h3>{{ supplement.name }}</h3>
+                        <p class="reason">{{ supplement.reason }}</p>
+                        <p class="benefits">{{ supplement.benefits }}</p>
+                    </div>
                     {% endfor %}
                 </div>
             {% else %}
@@ -50,9 +61,11 @@
         <div class="health-recommendations-section">
             <h2>건강 추천사항</h2>
             {% if recommendations %}
-                <div class="recommendations">
-                    {{ recommendations|linebreaks }}
-                </div>
+                <ul class="recommendations-list">
+                    {% for recommendation in recommendations %}
+                    <li class="recommendation-item">{{ recommendation }}</li>
+                    {% endfor %}
+                </ul>
             {% else %}
                 <p>아직 추천사항이 없습니다.</p>
             {% endif %}
@@ -64,41 +77,31 @@
             {% if survey_history %}
                 <div class="history-list">
                     {% for survey in survey_history %}
-                        <div class="history-item">
-                            <div class="history-date">{{ survey.created_at|date:"Y년 m월 d일" }}</div>
-                            <div class="history-score">건강 점수: {{ survey.health_score }}점</div>
-                            <a href="{% url 'mypage:survey_result' %}" class="btn-secondary">상세보기</a>
-                        </div>
+                    <div class="history-item">
+                        <div class="history-date">{{ survey.created_at|date:"Y년 m월 d일" }}</div>
+                        <div class="history-score">건강 점수: {{ survey.health_score }}점</div>
+                        <a href="{% url 'mypage:survey_result' %}" class="btn-secondary">상세보기</a>
+                    </div>
                     {% endfor %}
                 </div>
             {% else %}
                 <p>아직 설문 이력이 없습니다.</p>
             {% endif %}
         </div>
-
-        <div class="chatbot-section">
-            <h2>챗봇과 대화하기</h2>
-            <a href="{% url 'mypage:chatbot' %}" class="btn-primary">챗봇과 대화하기</a>
-        </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-function navigateTo(page) {
-    switch(page) {
-        case 'mypage':
-            window.location.href = "{% url 'mypage:mypage' %}";
-            break;
-        case 'survey':
-            window.location.href = "{% url 'mypage:survey' %}";
-            break;
+function navigateTo(section) {
+    switch(section) {
         case 'like':
             window.location.href = "{% url 'mypage:like_list' %}";
             break;
         case 'analysis':
             window.location.href = "{% url 'mypage:analysis' %}";
+            break;
+        case 'survey':
+            window.location.href = "{% url 'mypage:survey' %}";
             break;
     }
 }

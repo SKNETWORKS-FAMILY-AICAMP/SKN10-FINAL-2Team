@@ -193,59 +193,45 @@ function loadFavoriteProducts() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                const favoritesList = document.querySelector('.favorites-list');
-                favoritesList.innerHTML = '';
+                const container = document.getElementById('favorite-products-container');
+                container.innerHTML = '';
                 
                 data.products.forEach(product => {
-                    const favoriteItem = document.createElement('div');
-                    favoriteItem.className = 'favorite-item';
-                    favoriteItem.innerHTML = `
-                        <img src="${product.image_link}" alt="${product.title}" class="favorite-image">
-                        <div class="favorite-info">
-                            <h3>${product.title}</h3>
-                            <p>${product.ingredients}</p>
-                        </div>
-                        <button class="remove-favorite" onclick="removeFavorite(${product.id})">삭제</button>
+                    const productElement = document.createElement('div');
+                    productElement.className = 'product-item';
+                    productElement.innerHTML = `
+                        <h4>${product.name}</h4>
+                        <p>${product.manufacturer}</p>
+                        <button class="btn btn-secondary" onclick="addToAnalysis(${product.id})">분석에 추가</button>
                     `;
-                    favoritesList.appendChild(favoriteItem);
+                    container.appendChild(productElement);
                 });
-                
-                // Pokaż modal
-                modal.style.display = "block";
             } else {
-                console.error('Error loading favorites:', data.message);
-                alert('좋아요한 영양제를 불러오는데 실패했습니다.');
+                alert('좋아요한 제품을 불러오는데 실패했습니다.');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('좋아요한 영양제를 불러오는데 실패했습니다.');
+            alert('좋아요한 제품을 불러오는데 실패했습니다.');
         });
 }
 
-function removeFavorite(productId) {
-    fetch('/mypage/like-delete/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({
-            product_id: productId
+function addToAnalysis(productId) {
+    fetch(`/mypage/product/${productId}/nutrients/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // 여기서 영양소 데이터를 분석 섹션에 추가하는 로직을 구현해야 합니다
+                console.log('Product nutrients:', data.nutrients);
+                // TODO: Implement adding nutrients to analysis
+            } else {
+                alert('제품 정보를 불러오는데 실패했습니다.');
+            }
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            loadFavoriteProducts();
-        } else {
-            console.error('Error removing favorite:', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('영양제 삭제에 실패했습니다.');
-    });
+        .catch(error => {
+            console.error('Error:', error);
+            alert('제품 정보를 불러오는데 실패했습니다.');
+        });
 }
 
 // 직접 입력 모달
