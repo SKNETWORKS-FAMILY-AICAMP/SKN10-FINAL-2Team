@@ -35,9 +35,9 @@
                 <div class="supplements-grid">
                     {% for supplement in recommended_supplements %}
                         <div class="supplement-card">
-                            <img src="{{ supplement.image_url }}" alt="{{ supplement.name }}">
                             <h3>{{ supplement.name }}</h3>
-                            <p>{{ supplement.description }}</p>
+                            <p>{{ supplement.reason }}</p>
+                            <p>{{ supplement.benefits }}</p>
                         </div>
                     {% endfor %}
                 </div>

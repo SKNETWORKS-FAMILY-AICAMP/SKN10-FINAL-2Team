@@ -238,31 +238,61 @@ def calculate_health_score(survey_result):
 
 def get_recommended_supplements(survey_result):
     supplements = []
+    added_names = set()  # 중복 방지를 위한 집합
+
+    def add_supplement(name, reason, benefits):
+        if name not in added_names:
+            supplements.append({
+                'name': name,
+                'reason': reason,
+                'benefits': benefits
+            })
+            added_names.add(name)
+
+    answers = survey_result.answers
+
+    # 비타민 D 추천
+    if answers.get('indoor_daytime') == '예':
+        add_supplement(
+            name='비타민 D',
+            reason='실내 생활이 많고 햇빛 노출이 부족합니다.',
+            benefits='면역력 강화와 뼈 건강에 도움을 줍니다.'
+        )
+
+    # 오메가-3 추천
+    if answers.get('sitting_work') == '예' and answers.get('exercise_frequency') in ['전혀 안함', '1-2회']:
+        add_supplement(
+            name='오메가-3',
+            reason='장시간 앉아서 일하고 운동이 부족합니다.',
+            benefits='심장 건강과 염증 감소에 도움을 줍니다.'
+        )
+
+    # 비타민 B 복합체 추천
+    if answers.get('fatigue') == '예' or answers.get('still_tired') == '예':
+        add_supplement(
+            name='비타민 B 복합체',
+            reason='피로감이 심하고 수면의 질이 좋지 않습니다.',
+            benefits='에너지 대사와 신경계 건강에 도움을 줍니다.'
+        )
+
+    # 비타민 C 추천 (흡연자)
+    if answers.get('smoking') == '예':
+        add_supplement(
+            name='비타민 C',
+            reason='흡연으로 인한 산화 스트레스와 비타민 C 소모가 큽니다.',
+            benefits='항산화 작용 및 면역력 강화에 도움을 줍니다.'
+        )
+
+    # 비타민 B군 추가 (음주)
+    if answers.get('drinking') == '예':
+        add_supplement(
+            name='비타민 B 복합체',
+            reason='음주로 인해 비타민 B군이 소모되고 간 기능이 저하될 수 있습니다.',
+            benefits='간 보호 및 에너지 대사 촉진에 도움을 줍니다.'
+        )
+
     
-    # 비타민 D 추천 조건
-    if survey_result.answers.get('indoor_daytime'):
-        supplements.append({
-            'name': '비타민 D',
-            'reason': '실내 생활이 많고 햇빛 노출이 부족합니다.',
-            'benefits': '면역력 강화와 뼈 건강에 도움을 줍니다.'
-        })
-    
-    # 오메가-3 추천 조건
-    if survey_result.answers.get('sitting_work') and survey_result.answers.get('exercise_frequency') in ['전혀 안함', '1-2회']:
-        supplements.append({
-            'name': '오메가-3',
-            'reason': '장시간 앉아서 일하고 운동이 부족합니다.',
-            'benefits': '심장 건강과 염증 감소에 도움을 줍니다.'
-        })
-    
-    # 비타민 B 복합체 추천 조건
-    if survey_result.answers.get('fatigue') or survey_result.answers.get('still_tired'):
-        supplements.append({
-            'name': '비타민 B 복합체',
-            'reason': '피로감이 심하고 수면의 질이 좋지 않습니다.',
-            'benefits': '에너지 대사와 신경계 건강에 도움을 줍니다.'
-        })
-    
+
     return supplements
 
 def generate_recommendations(survey_result, health_score):
@@ -315,6 +345,7 @@ def save_survey(request):
             exercise_frequency = request.POST.get('exercise_frequency', '')
             water_intake = float(request.POST.get('water_intake', 0))
             health_status = request.POST.get('health_status', '보통')
+            health_concerns = request.POST.get('health_concerns','없음')
 
             # SurveyResponse 객체 생성 및 저장
             survey_response = SurveyResponse.objects.create(
@@ -354,7 +385,8 @@ def save_survey(request):
                     'sleep_hours': sleep_hours,
                     'exercise_frequency': exercise_frequency,
                     'water_intake': water_intake,
-                    'health_status': health_status
+                    'health_status': health_status,
+                    'health_concerns' : health_concerns
                 }
             )
 
