@@ -27,12 +27,12 @@ class Nutrient_daily(models.Model):
 
     def __str__(self):
         return self.name
-
+from django.utils import timezone
 class UserNutrientIntake(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    nutrient = models.ForeignKey(Nutrient_daily, on_delete=models.CASCADE)
-    amount = models.FloatField()
-    date = models.DateField()
+    nutrient_name = models.CharField(max_length=100,default='')
+    amount = models.FloatField(default=0.0)
+    date = models.DateField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -40,7 +40,7 @@ class UserNutrientIntake(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f"{self.user.username}'s {self.nutrient.name} intake on {self.date}"
+        return f"{self.user.username}'s {self.nutrient_name} intake on {self.date}"
 
 class NutrientAnalysis(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

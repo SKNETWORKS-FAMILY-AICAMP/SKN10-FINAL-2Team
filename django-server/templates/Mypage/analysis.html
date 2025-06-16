@@ -9,9 +9,12 @@
 {% block content %}
 <div id="favoriteModal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
+        <span class="close" onclick="closeModal('favoriteModal')">&times;</span>
         <h2>좋아요한 영양제</h2>
-        <div id="favorite-products" class="favorite-products-grid"></div>
+        <p>등록할 영양제를 선택하세요.</p>
+        <div id="favorite-products-grid" class="favorite-products-grid">
+            </div>
+        <button onclick="registerSelection()" class="register-button">선택 영양제 등록하기</button>
     </div>
 </div>
 
@@ -31,42 +34,24 @@
                 <span>직접 입력하기</span>
             </div>
             <div id="product-details" class="product-details">
-                <!-- Tutaj pojawią się szczegóły wybranego produktu -->
+                
             </div>
             <div id="ocr-error" style="color:red; margin-top:10px;"></div>
         </div>
 
         <!-- Prawa karta -->
         <div class="card-box right-card">
-            <div class="title">{{ user.username }}님의 영양분석</div>
+            <div class="title">{{ user.name }}님의 영양분석</div>
             <div class="product-image-line"></div>
-            <div class="product-image-box">
-                <img src="{% static 'images/product1.jpg' %}" alt="제품 이미지" class="product-image">
+            <div class="intake-products-container">
+                <h3>섭취 중인 영양제</h3>
+                <div id="intakeProductImageList" class="product-image-list">
+                    </div>
             </div>
             <div class="product-image-line"></div>
             <div class="result-content">
                 <h2>권장섭취량 대비 섭취량 분석</h2>
-                <div class="nutrition-item">
-                    <span class="nutrition-label">단백질</span>
-                    <div class="nutrition-bar">
-                        <div class="nutrition-bar-fill" style="width: 80%"></div>
-                    </div>
-                    <span class="nutrition-percent">80%</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="nutrition-label">비타민</span>
-                    <div class="nutrition-bar">
-                        <div class="nutrition-bar-fill" style="width: 60%"></div>
-                    </div>
-                    <span class="nutrition-percent">60%</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="nutrition-label">미네랄</span>
-                    <div class="nutrition-bar">
-                        <div class="nutrition-bar-fill" style="width: 70%"></div>
-                    </div>
-                    <span class="nutrition-percent">70%</span>
-                </div>
+                <div id="nutrientBarContainer"></div>
             </div>
         </div>
     </div>
@@ -85,19 +70,56 @@
 <!-- 직접 입력 모달 -->
 <div id="manualInputModal" class="modal">
     <div class="modal-content">
+        <span class="close" onclick="closeModal('manualInputModal')">&times;</span>
         <h2>영양소 직접 입력</h2>
+        
         <div>
-            <label>단백질 (%)</label>
-            <input type="number" id="proteinInput" min="0" max="100">
+            <label for="nutrientSelect">영양소 선택</label>
+            <select id="nutrientSelect">
+                <option value="류신">류신</option>
+                <option value="이소류신">이소류신</option>
+                <option value="발린">발린</option>
+                <option value="라이신">라이신</option>
+                <option value="페닐알라닌">페닐알라닌</option>
+                <option value="트레오닌">트레오닌</option>
+                <option value="트립토판">트립토판</option>
+                <option value="히스티딘">히스티딘</option>
+                <option value="비타민 A">비타민A</option>
+                <option value="비타민 D">비타민D</option>
+                <option value="비타민 E">비타민E</option>
+                <option value="비타민 K">비타민K</option>
+                <option value="비타민 C">비타민C</option>
+                <option value="비타민 B1">비타민B1</option>
+                <option value="비타민 B2">비타민B2</option>
+                <option value="니아신">니아신</option>
+                <option value="비타민 B6">비타민B6</option>
+                <option value="엽산">엽산</option>
+                <option value="비타민 B12">비타민B12</option>
+                <option value="판토텐산">판토텐산</option>
+                <option value="비오틴">비오틴</option>
+                <option value="칼슘">칼슘</option>
+                <option value="인">인</option>
+                <option value="나트륨">나트륨</option>
+                <option value="염소">염소</option>
+                <option value="칼륨">칼륨</option>
+                <option value="마그네슘">마그네슘</option>
+                <option value="철">철</option>
+                <option value="아연">아연</option>
+                <option value="구리">구리</option>
+                <option value="불소">불소</option>
+                <option value="망간">망간</option>
+                <option value="요오드">요오드</option>
+                <option value="셀레늄">셀레늄</option>
+                <option value="몰리브덴">몰리브덴</option>
+                <option value="크롬">크롬</option>
+            </select>
         </div>
+
         <div>
-            <label>비타민 (%)</label>
-            <input type="number" id="vitaminInput" min="0" max="100">
+            <label for="amountInput">섭취량 (mg 또는 μg)</label>
+            <input type="number" id="amountInput" min="0" step="0.01">
         </div>
-        <div>
-            <label>미네랄 (%)</label>
-            <input type="number" id="mineralInput" min="0" max="100">
-        </div>
+
         <button onclick="saveManualInput()">저장</button>
         <button onclick="closeModal('manualInputModal')">취소</button>
     </div>
@@ -106,22 +128,6 @@
 
 {% block extra_js %}
 <script>
-function navigateTo(page) {
-    switch(page) {
-        case 'mypage':
-            window.location.href = "{% url 'mypage:mypage' %}";
-            break;
-        case 'survey':
-            window.location.href = "{% url 'mypage:survey' %}";
-            break;
-        case 'favorite':
-            window.location.href = "{% url 'mypage:favorite' %}";
-            break;
-        case 'analysis':
-            window.location.href = "{% url 'mypage:analysis' %}";
-            break;
-    }
-}
 
 // CSRF 토큰 가져오기
 function getCookie(name) {
@@ -190,145 +196,148 @@ window.onclick = function(event) {
     }
 }
 
+// ✨ 좋아요한 영양제 목록 불러오기 (수정)
 function loadFavoriteProducts() {
-    fetch('/mypage/get_favorite_products/')
+    fetch("{% url 'mypage:get_liked_products' %}")
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                const favoritesList = document.querySelector('.favorites-list');
-                favoritesList.innerHTML = '';
-                
+                const grid = document.getElementById('favorite-products-grid');
+                grid.innerHTML = ''; // 기존 목록 비우기
+
                 data.products.forEach(product => {
-                    const favoriteItem = document.createElement('div');
-                    favoriteItem.className = 'favorite-item';
-                    favoriteItem.innerHTML = `
-                        <img src="${product.image_link}" alt="${product.title}" class="favorite-image">
-                        <div class="favorite-info">
-                            <h3>${product.title}</h3>
-                            <p>${product.ingredients}</p>
-                        </div>
-                        <button class="remove-favorite" onclick="removeFavorite(${product.id})">삭제</button>
+                    const item = document.createElement('div');
+                    item.className = 'product-item';
+                    item.dataset.productId = product.id; // 상품 ID를 data 속성에 저장
+                    item.onclick = function() { toggleProductSelection(this); };
+                    
+                    item.innerHTML = `
+                        <img src="${product.image_url}" alt="${product.name}">
+                        <p>${product.name}</p>
                     `;
-                    favoritesList.appendChild(favoriteItem);
+                    grid.appendChild(item);
                 });
-                
-                // Pokaż modal
-                modal.style.display = "block";
+
+                document.getElementById('favoriteModal').style.display = 'block';
             } else {
-                console.error('Error loading favorites:', data.message);
-                alert('좋아요한 영양제를 불러오는데 실패했습니다.');
+                alert('좋아요 목록을 불러오는데 실패했습니다.');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('좋아요한 영양제를 불러오는데 실패했습니다.');
-        });
+        .catch(error => console.error('Error:', error));
 }
+// ✨ 모달에서 상품 선택/해제 토글 함수
+function toggleProductSelection(element) {
+    // 다중 선택이 아닌 단일 선택으로 구현
+    const selected = document.querySelector('.product-item.selected');
+    if (selected) {
+        selected.classList.remove('selected');
+    }
+    element.classList.add('selected');
+}
+function registerSelection() {
+    const selectedItem = document.querySelector('.product-item.selected');
+    if (!selectedItem) {
+        alert('등록할 영양제를 선택해주세요.');
+        return;
+    }
+    
+    const productId = selectedItem.dataset.productId;
 
-function removeFavorite(productId) {
-    fetch('/mypage/toggle_like/', {
+    fetch("{% url 'mypage:register_liked_product' %}", {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCookie('csrftoken')
         },
-        body: JSON.stringify({
-            supplement_id: productId,
-            is_liked: false
-        })
+        body: JSON.stringify({ product_id: productId })
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            loadFavoriteProducts();
+            alert(data.message);
+            // UI 업데이트
+            addIntakeProductImage(data.added_product_image_url);
+            // 영양 분석 그래프/바 업데이트 함수 호출 (이전 답변에서 사용)
+            // renderNutrientGraph(); 
+            closeModal('favoriteModal');
         } else {
-            console.error('Error removing favorite:', data.message);
+            alert('등록에 실패했습니다: ' + data.message);
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('영양제 삭제에 실패했습니다.');
-    });
+    .catch(error => console.error('Error:', error));
+}
+
+function addIntakeProductImage(imageUrl) {
+    const listContainer = document.getElementById('intakeProductImageList');
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    listContainer.appendChild(img);
 }
 
 // 직접 입력 모달
 function showManualInput() {
     const modal = document.getElementById('manualInputModal');
-    modal.classList.add('show');
+    modal.style.display = 'block';
 }
-
 function saveManualInput() {
-    const protein = document.getElementById('proteinInput').value;
-    const vitamin = document.getElementById('vitaminInput').value;
-    const mineral = document.getElementById('mineralInput').value;
-    
-    if (protein && vitamin && mineral) {
-        // TODO: 입력값 저장 API 호출
-        console.log('Saving manual input:', { protein, vitamin, mineral });
-        closeModal('manualInputModal');
-    } else {
-        alert('모든 값을 입력해주세요.');
+    const nutrient = document.getElementById('nutrientSelect').value;
+    const amount = document.getElementById('amountInput').value;
+
+    if (!amount || isNaN(amount)) {
+        alert("섭취량을 올바르게 입력해주세요.");
+        return;
     }
+
+    const dataToSave = {
+        nutrient_name: nutrient,
+        amount: amount
+    };
+
+    fetch("{% url 'mypage:save_user_nutrients' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(dataToSave)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            closeModal('manualInputModal');
+            renderNutrientGraph(); // 저장 후 그래프 다시 그림
+        } else {
+            alert('저장 실패: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('서버 오류가 발생했습니다.');
+    });
 }
 
 // 모달 닫기
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
-    modal.classList.remove('show');
+    modal.style.display = 'none';
+
+}
+// 모달 외부 클릭 시 닫기
+window.onclick = function(event) {
+    const favoriteModal = document.getElementById('favoriteModal');
+    const manualInputModal = document.getElementById('manualInputModal');
+    if (event.target == favoriteModal) {
+        favoriteModal.style.display = "none";
+    }
+    if (event.target == manualInputModal) {
+        manualInputModal.style.display = "none";
+    }
 }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Pobierz dane o składnikach odżywczych
-    fetch('/mypage/get_nutrient_data/')
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // Przygotuj dane do wykresu
-                const labels = Object.keys(data.nutrients);
-                const actualValues = labels.map(nutrient => data.nutrients[nutrient].actual_amount);
-                const recommendedValues = labels.map(nutrient => data.nutrients[nutrient].recommended_amount);
-
-                // Stwórz wykres
-                const ctx = document.getElementById('nutrientChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: '실제 섭취량',
-                                data: actualValues,
-                                backgroundColor: 'rgba(76, 175, 80, 0.5)',
-                                borderColor: 'rgba(76, 175, 80, 1)',
-                                borderWidth: 1
-                            },
-                            {
-                                label: '권장 섭취량',
-                                data: recommendedValues,
-                                backgroundColor: 'rgba(33, 150, 243, 0.5)',
-                                borderColor: 'rgba(33, 150, 243, 1)',
-                                borderWidth: 1
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-});
 
 function showProductDetails(product) {
     const detailsDiv = document.getElementById('product-details');
@@ -343,5 +352,54 @@ function showProductDetails(product) {
     html += '</ul>';
     detailsDiv.innerHTML = html;
 }
+
+// 차트 관련 스크립트
+let nutrientChart = null; // 차트 객체를 저장할 변수
+function renderNutrientGraph() {
+    fetch("/mypage/get_nutrient_data/")
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                renderProgressBars(data.labels, data.intake_percentages);
+            } else {
+                console.error('그래프 데이터 로딩 실패');
+            }
+        })
+        .catch(error => {
+            console.error('그래프 데이터 통신 오류:', error);
+        });
+}
+
+function renderProgressBars(labels, percentages) {
+    const container = document.getElementById('nutrientBarContainer');
+    container.innerHTML = ''; // 초기화
+
+    labels.forEach((label, index) => {
+        const percent = percentages[index];
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'nutrient-bar-wrapper';
+
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'nutrient-label';
+        labelDiv.innerHTML = `<span>${label}</span><span>${percent}%</span>`;
+
+        const barBg = document.createElement('div');
+        barBg.className = 'nutrient-bar-bg';
+
+        const barFill = document.createElement('div');
+        barFill.className = 'nutrient-bar-fill';
+        barFill.style.width = `${Math.min(percent, 100)}%`; // 100% 초과 방지
+
+        barBg.appendChild(barFill);
+        wrapper.appendChild(labelDiv);
+        wrapper.appendChild(barBg);
+        container.appendChild(wrapper);
+    });
+}
+
+
+
+document.addEventListener('DOMContentLoaded', renderNutrientGraph);
 </script>
 {% endblock %} 

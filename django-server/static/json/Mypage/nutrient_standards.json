@@ -1,77 +1,38 @@
 {
-    "비타민A": {
-        "recommended_amount": 700,
-        "unit": "μg",
-        "description": "시력, 면역력, 세포 성장에 중요"
-    },
-    "비타민C": {
-        "recommended_amount": 100,
-        "unit": "mg",
-        "description": "항산화 작용, 면역력 강화"
-    },
-    "비타민D": {
-        "recommended_amount": 15,
-        "unit": "μg",
-        "description": "뼈 건강, 면역력 강화"
-    },
-    "비타민E": {
-        "recommended_amount": 15,
-        "unit": "mg",
-        "description": "항산화 작용, 세포 보호"
-    },
-    "비타민B1": {
-        "recommended_amount": 1.2,
-        "unit": "mg",
-        "description": "에너지 대사, 신경 기능"
-    },
-    "비타민B2": {
-        "recommended_amount": 1.3,
-        "unit": "mg",
-        "description": "에너지 대사, 피부 건강"
-    },
-    "비타민B6": {
-        "recommended_amount": 1.7,
-        "unit": "mg",
-        "description": "단백질 대사, 신경 전달물질 생성"
-    },
-    "비타민B12": {
-        "recommended_amount": 2.4,
-        "unit": "μg",
-        "description": "적혈구 생성, 신경 기능"
-    },
-    "엽산": {
-        "recommended_amount": 400,
-        "unit": "μg",
-        "description": "세포 분열, DNA 합성"
-    },
-    "칼슘": {
-        "recommended_amount": 1000,
-        "unit": "mg",
-        "description": "뼈와 치아 건강, 근육 수축"
-    },
-    "철": {
-        "recommended_amount": 18,
-        "unit": "mg",
-        "description": "적혈구 생성, 산소 운반"
-    },
-    "마그네슘": {
-        "recommended_amount": 400,
-        "unit": "mg",
-        "description": "근육 기능, 에너지 생산"
-    },
-    "아연": {
-        "recommended_amount": 11,
-        "unit": "mg",
-        "description": "면역력, 단백질 합성"
-    },
-    "셀레늄": {
-        "recommended_amount": 55,
-        "unit": "μg",
-        "description": "항산화 작용, 갑상선 기능"
-    },
-    "오메가3": {
-        "recommended_amount": 1.6,
-        "unit": "g",
-        "description": "심장 건강, 뇌 기능"
-    }
-} 
+    "류신": { "recommended_amount": 3.1, "unit": "g", "description": "" },
+    "이소류신": { "recommended_amount": 1.4, "unit": "g", "description": "" },
+    "발린": { "recommended_amount": 1.7, "unit": "g", "description": "" },
+    "라이신": { "recommended_amount": 3.1, "unit": "g", "description": "" },
+    "페닐알라닌": { "recommended_amount": 3.6, "unit": "g", "description": "" },
+    "트레오닌": { "recommended_amount": 1.5, "unit": "g", "description": "" },
+    "트립토판": { "recommended_amount": 0.3, "unit": "g", "description": "" },
+    "히스티딘": { "recommended_amount": 1.0, "unit": "g", "description": "" },
+    "비타민 A": { "recommended_amount": 800, "unit": "µg RAE", "description": "" },
+    "비타민 D": { "recommended_amount": 10, "unit": "µg", "description": "" },
+    "비타민 E": { "recommended_amount": 12, "unit": "mg ɑ-TE", "description": "" },
+    "비타민 K": { "recommended_amount": 75, "unit": "µg", "description": "" },
+    "비타민 C": { "recommended_amount": 100, "unit": "mg", "description": "" },
+    "비타민 B1": { "recommended_amount": 1.2, "unit": "mg", "description": "" },
+    "비타민 B2": { "recommended_amount": 1.5, "unit": "mg", "description": "" },
+    "니아신": { "recommended_amount": 16, "unit": "mg NE", "description": "" },
+    "비타민 B6": { "recommended_amount": 1.5, "unit": "mg", "description": "" },
+    "엽산": { "recommended_amount": 400, "unit": "µg DFE", "description": "" },
+    "비타민 B12": { "recommended_amount": 2.4, "unit": "µg", "description": "" },
+    "판토텐산": { "recommended_amount": 5, "unit": "mg", "description": "" },
+    "비오틴": { "recommended_amount": 30, "unit": "µg", "description": "" },
+    "칼슘": { "recommended_amount": 800, "unit": "mg", "description": "" },
+    "인": { "recommended_amount": 700, "unit": "mg", "description": "" },
+    "나트륨": { "recommended_amount": 1500, "unit": "mg", "description": "" },
+    "염소": { "recommended_amount": 2300, "unit": "mg", "description": "" },
+    "칼륨": { "recommended_amount": 3500, "unit": "mg", "description": "" },
+    "마그네슘": { "recommended_amount": 360, "unit": "mg", "description": "" },
+    "철": { "recommended_amount": 10, "unit": "mg", "description": "" },
+    "아연": { "recommended_amount": 10, "unit": "mg", "description": "" },
+    "구리": { "recommended_amount": 850, "unit": "µg", "description": "" },
+    "불소": { "recommended_amount": 3.4, "unit": "mg", "description": "" },
+    "망간": { "recommended_amount": 4, "unit": "mg", "description": "" },
+    "요오드": { "recommended_amount": 150, "unit": "µg", "description": "" },
+    "셀레늄": { "recommended_amount": 60, "unit": "µg", "description": "" },
+    "몰리브덴": { "recommended_amount": 30, "unit": "µg", "description": "" },
+    "크롬": { "recommended_amount": 30, "unit": "µg", "description": "" }
+}

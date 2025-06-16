@@ -21,4 +21,7 @@ urlpatterns = [
     path('chatbot/', views.chatbot_view, name='chatbot'),
     path('api/like/', views.like_api, name='like_api'),
     path('product/purchase/', views.product_purchase, name='product_purchase'),
+    path('save_nutrients/', views.save_user_nutrients, name='save_user_nutrients'),
+    path('get_liked_products/', views.get_liked_products, name='get_liked_products'),
+    path('register_liked_product/', views.register_liked_product_intake, name='register_liked_product'),
 ] 

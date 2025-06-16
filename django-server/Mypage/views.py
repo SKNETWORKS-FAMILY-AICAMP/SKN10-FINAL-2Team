@@ -18,6 +18,7 @@ from PIL import Image
 import re
 from django.contrib import messages
 from rest_framework.permissions import IsAuthenticated
+from .utils import get_recommended_supplements,get_required_nutrients
 @login_required
 def mypage_view(request):
     # 사용자의 최근 설문 결과 가져오기
@@ -236,64 +237,7 @@ def calculate_health_score(survey_result):
 
     return max(0, score)
 
-def get_recommended_supplements(survey_result):
-    supplements = []
-    added_names = set()  # 중복 방지를 위한 집합
 
-    def add_supplement(name, reason, benefits):
-        if name not in added_names:
-            supplements.append({
-                'name': name,
-                'reason': reason,
-                'benefits': benefits
-            })
-            added_names.add(name)
-
-    answers = survey_result.answers
-
-    # 비타민 D 추천
-    if answers.get('indoor_daytime') == '예':
-        add_supplement(
-            name='비타민 D',
-            reason='실내 생활이 많고 햇빛 노출이 부족합니다.',
-            benefits='면역력 강화와 뼈 건강에 도움을 줍니다.'
-        )
-
-    # 오메가-3 추천
-    if answers.get('sitting_work') == '예' and answers.get('exercise_frequency') in ['전혀 안함', '1-2회']:
-        add_supplement(
-            name='오메가-3',
-            reason='장시간 앉아서 일하고 운동이 부족합니다.',
-            benefits='심장 건강과 염증 감소에 도움을 줍니다.'
-        )
-
-    # 비타민 B 복합체 추천
-    if answers.get('fatigue') == '예' or answers.get('still_tired') == '예':
-        add_supplement(
-            name='비타민 B 복합체',
-            reason='피로감이 심하고 수면의 질이 좋지 않습니다.',
-            benefits='에너지 대사와 신경계 건강에 도움을 줍니다.'
-        )
-
-    # 비타민 C 추천 (흡연자)
-    if answers.get('smoking') == '예':
-        add_supplement(
-            name='비타민 C',
-            reason='흡연으로 인한 산화 스트레스와 비타민 C 소모가 큽니다.',
-            benefits='항산화 작용 및 면역력 강화에 도움을 줍니다.'
-        )
-
-    # 비타민 B군 추가 (음주)
-    if answers.get('drinking') == '예':
-        add_supplement(
-            name='비타민 B 복합체',
-            reason='음주로 인해 비타민 B군이 소모되고 간 기능이 저하될 수 있습니다.',
-            benefits='간 보호 및 에너지 대사 촉진에 도움을 줍니다.'
-        )
-
-    
-
-    return supplements
 
 def generate_recommendations(survey_result, health_score):
     recommendations = []
@@ -469,136 +413,65 @@ def nutrient_analysis_view(request):
     }
     return render(request, 'nutrient_analysis.html', context)
 
+
 @login_required
 @require_POST
-def add_nutrient_intake(request):
+def save_user_nutrients(request):
+    """단일 영양소 섭취 정보 저장"""
     try:
         data = json.loads(request.body)
-        nutrient_id = data.get('nutrient_id')
+        nutrient_name = data.get('nutrient_name')
         amount = data.get('amount')
-        date = data.get('date', timezone.now().date())
 
-        nutrient = Nutrient_daily.objects.get(id=nutrient_id)
-        intake = UserNutrientIntake.objects.create(
+        if not nutrient_name or amount is None:
+            return JsonResponse({'status': 'error', 'message': '입력값이 부족합니다.'}, status=400)
+
+        amount = float(amount)
+
+        UserNutrientIntake.objects.update_or_create(
             user=request.user,
-            nutrient=nutrient,
-            amount=amount,
-            date=date
+            nutrient_name=nutrient_name,
+            amount = amount
         )
 
-        return JsonResponse({
-            'status': 'success',
-            'message': '영양소 섭취 기록이 추가되었습니다.',
-            'intake': {
-                'id': intake.id,
-                'nutrient_name': nutrient.name,
-                'amount': amount,
-                'unit': nutrient.unit,
-                'percentage': min(100, (amount / nutrient.daily_recommended) * 100)
-            }
-        })
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=400)
+        return JsonResponse({'status': 'success', 'message': '영양소 정보가 저장되었습니다.'})
 
-@login_required
-def analyze_nutrients(request):
-    try:
-        # 최근 7일간의 영양소 섭취 기록 가져오기
-        end_date = timezone.now().date()
-        start_date = end_date - timedelta(days=7)
-        
-        intakes = UserNutrientIntake.objects.filter(
-            user=request.user,
-            date__range=[start_date, end_date]
-        ).select_related('nutrient')
-
-        # 영양소별 평균 섭취량 계산
-        nutrient_averages = {}
-        for intake in intakes:
-            if intake.nutrient.name not in nutrient_averages:
-                nutrient_averages[intake.nutrient.name] = {
-                    'total': 0,
-                    'count': 0,
-                    'recommended': intake.nutrient.daily_recommended
-                }
-            nutrient_averages[intake.nutrient.name]['total'] += intake.amount
-            nutrient_averages[intake.nutrient.name]['count'] += 1
-
-        # 평균 섭취량 계산 및 점수 산출
-        overall_score = 0
-        details = []
-        recommendations = []
-
-        for nutrient_name, data in nutrient_averages.items():
-            avg_intake = data['total'] / data['count']
-            percentage = (avg_intake / data['recommended']) * 100
-            score = min(100, percentage)
-            overall_score += score
-
-            details.append(f"{nutrient_name}: {avg_intake:.1f}% (권장량 대비)")
-
-            if percentage < 80:
-                recommendations.append(f"{nutrient_name} 섭취량이 부족합니다. 권장량의 {percentage:.1f}%만 섭취하고 있습니다.")
-            elif percentage > 120:
-                recommendations.append(f"{nutrient_name} 섭취량이 과다합니다. 권장량의 {percentage:.1f}%를 섭취하고 있습니다.")
-
-        # 전체 점수 계산 (100점 만점)
-        overall_score = overall_score / len(nutrient_averages) if nutrient_averages else 0
-
-        # 분석 결과 저장
-        analysis = NutrientAnalysis.objects.create(
-            user=request.user,
-            analysis_date=end_date,
-            overall_score=overall_score,
-            details=json.dumps(details, ensure_ascii=False),
-            recommendations='\n'.join(recommendations)
-        )
-
-        return JsonResponse({
-            'status': 'success',
-            'message': '영양분석이 완료되었습니다.',
-            'analysis': {
-                'overall_score': overall_score,
-                'details': details,
-                'recommendations': recommendations
-            }
-        })
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=400)
-
+    except (json.JSONDecodeError, ValueError) as e:
+        return JsonResponse({'status': 'error', 'message': f'처리 중 오류 발생: {e}'}, status=400)
+    
 @login_required
 def get_nutrient_data(request):
-    try:
-        # 사용자의 최신 영양소 분석 결과 가져오기
-        latest_analysis = NutrientAnalysis.objects.filter(user=request.user).order_by('-date').first()
+    """그래프에 표시할 '필요 영양소'와 '섭취 영양소' 데이터를 계산하여 반환"""
+    
+    # 1. 사용자의 필요 영양소 및 권장량(100% 기준) 가져오기
+    required_nutrients = get_required_nutrients(request.user)
+    
+    # 2. 사용자가 현재 섭취 중인 영양소 정보 가져오기
+    user_intake_qs = UserNutrientIntake.objects.filter(user=request.user)
+    current_intake = {item.nutrient_name: item.amount for item in user_intake_qs}
+    
+    # 3. 그래프에 표시할 최종 영양소 목록 생성 (필요 영양소와 섭취 영양소의 합집합)
+    all_nutrient_names = set(required_nutrients.keys()) | set(current_intake.keys())
+    
+    labels = []
+    intake_percentages = []
+
+    for name in sorted(list(all_nutrient_names)):
+        recommended_amount = required_nutrients.get(name)
         
-        if not latest_analysis:
-            return JsonResponse({
-                'status': 'error',
-                'message': '영양소 분석 결과가 없습니다.'
-            })
-        
-        return JsonResponse({
-            'status': 'success',
-            'data': {
-                'total_nutrients': latest_analysis.total_nutrients,
-                'analysis_result': latest_analysis.analysis_result,
-                'overall_score': latest_analysis.overall_score,
-                'details': latest_analysis.details,
-                'recommendations': latest_analysis.recommendations
-            }
-        })
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=500)
+        # 권장량이 정의된 영양소만 그래프에 포함
+        if recommended_amount and recommended_amount > 0:
+            labels.append(name)
+            
+            actual_amount = current_intake.get(name, 0) # 섭취량이 없으면 0
+            percentage = round((actual_amount / recommended_amount) * 100)
+            intake_percentages.append(percentage)
+
+    return JsonResponse({
+        'status': 'success',
+        'labels': labels,
+        'intake_percentages': intake_percentages
+    })
 
 @login_required
 def get_favorite_products(request):
@@ -805,3 +678,82 @@ def product_purchase(request):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+
+@login_required
+def get_liked_products(request):
+    """사용자가 좋아요한 상품 목록을 JSON으로 반환"""
+    user = request.user
+    like_list = Like.objects.filter(user=user).select_related('product')
+    
+    products_data = []
+    for like in like_list:
+        products_data.append({
+            'id': like.product.id,
+            'name': like.product.title[:40],
+            # ✨ 모델에 정의된 image_link 필드를 사용하도록 수정
+            'image_url': like.product.image_link 
+        })
+        
+    return JsonResponse({'status': 'success', 'products': products_data})
+import ast 
+@login_required
+@require_POST
+def register_liked_product_intake(request):
+    try:
+        data = json.loads(request.body)
+        product_id = data.get('product_id')
+
+        if not product_id:
+            return JsonResponse({'status': 'error', 'message': '상품 ID가 필요합니다.'}, status=400)
+
+        product = Products.objects.get(id=product_id)
+        ingredients_str = product.ingredients
+
+        if not ingredients_str:
+            return JsonResponse({'status': 'success', 'message': f"'{product.title}'에 등록된 성분 정보가 없습니다."})
+
+        ingredients_list = []
+        try:
+            # ✨ 핵심 변경: json.loads() 대신 ast.literal_eval()을 사용합니다.
+            # 이 함수는 작은따옴표로 된 문자열도 파이썬 객체로 안전하게 변환해 줍니다.
+            parsed_data = ast.literal_eval(ingredients_str)
+            print(f"parsed_data = {parsed_data}")
+            # 파싱 결과가 리스트인지 확인
+            if isinstance(parsed_data, list):
+                ingredients_list = parsed_data
+            else:
+                # 단일 딕셔너리인 경우 리스트로 감싸서 처리
+                ingredients_list = [parsed_data]
+
+        except (ValueError, SyntaxError):
+            # ast.literal_eval이 실패하면 문제가 있는 데이터라는 의미입니다.
+            # 서버 로그에 문제의 문자열을 출력하여 확인할 수 있습니다.
+            print(f"파싱 실패! Product ID: {product.id}, ingredients 데이터: {ingredients_str}")
+            return JsonResponse({'status': 'error', 'message': '성분 정보의 형식이 잘못되었습니다.'}, status=400)
+        
+        # --- 이하 로직은 동일 ---
+        for nutrient_data in ingredients_list:
+            name = nutrient_data.get('ingredient_name')
+            amount = nutrient_data.get('amount')
+            
+            if name and amount is not None:
+                intake, created = UserNutrientIntake.objects.get_or_create(
+                    user=request.user,
+                    nutrient_name=name,
+                    defaults={'amount': 0}
+                )
+                intake.amount = float(amount)
+                intake.save()
+
+        return JsonResponse({
+            'status': 'success', 
+            'message': f"'{product.title}'의 영양 정보가 등록되었습니다.",
+            'added_product_image_url': product.image_link
+        })
+
+    except Products.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': '존재하지 않는 상품입니다.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

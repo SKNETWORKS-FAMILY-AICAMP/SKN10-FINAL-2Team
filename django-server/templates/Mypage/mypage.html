@@ -9,8 +9,8 @@
 {% block content %}
 <div class="mypage-container">
     <div class="mypage-header">
-        <h1>마이페이지</h1>
-        <p>안녕하세요, {{ user.name }}님!</p>
+        <!-- <h1>마이페이지</h1> -->
+        <h1>안녕하세요, {{ user.name }}님!</h1>
     </div>
 
     <div class="mypage-content">
@@ -30,7 +30,7 @@
 
         <!-- 추천 영양제 섹션 -->
         <div class="recommended-supplements-section">
-            <h2>추천 영양제</h2>
+            <h2>추천 영양소</h2>
             {% if recommended_supplements %}
                 <div class="supplements-grid">
                     {% for supplement in recommended_supplements %}
@@ -42,7 +42,7 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <p>아직 추천 영양제가 없습니다.</p>
+                <p>아직 추천 영양소가 없습니다.</p>
             {% endif %}
         </div>
 
