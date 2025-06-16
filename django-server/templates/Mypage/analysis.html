@@ -46,26 +46,8 @@
             <div class="product-image-line"></div>
             <div class="result-content">
                 <h2>권장섭취량 대비 섭취량 분석</h2>
-                <div class="nutrition-item">
-                    <span class="nutrition-label">단백질</span>
-                    <div class="nutrition-bar">
-                        <div class="nutrition-bar-fill" style="width: 80%"></div>
-                    </div>
-                    <span class="nutrition-percent">80%</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="nutrition-label">비타민</span>
-                    <div class="nutrition-bar">
-                        <div class="nutrition-bar-fill" style="width: 60%"></div>
-                    </div>
-                    <span class="nutrition-percent">60%</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="nutrition-label">미네랄</span>
-                    <div class="nutrition-bar">
-                        <div class="nutrition-bar-fill" style="width: 70%"></div>
-                    </div>
-                    <span class="nutrition-percent">70%</span>
+                <div id="nutrientAnalysis">
+                    <!-- 여기에 영양소 분석 결과가 동적으로 표시됩니다 -->
                 </div>
             </div>
         </div>
@@ -85,26 +67,42 @@
 <!-- 직접 입력 모달 -->
 <div id="manualInputModal" class="modal">
     <div class="modal-content">
-        <h2>영양소 직접 입력</h2>
-        <div>
-            <label>단백질 (%)</label>
-            <input type="number" id="proteinInput" min="0" max="100">
+        <span class="close" onclick="closeModal('manualInputModal')">&times;</span>
+        <h2>영양소 직접입력</h2>
+        <div class="input-group">
+            <label for="nutrientNameInput">영양소 이름:</label>
+            <input type="text" id="nutrientNameInput" placeholder="예: 비타민C">
         </div>
-        <div>
-            <label>비타민 (%)</label>
-            <input type="number" id="vitaminInput" min="0" max="100">
+        <div class="input-group">
+            <label for="unitInput">단위:</label>
+            <input type="text" id="unitInput" placeholder="예: mg">
         </div>
-        <div>
-            <label>미네랄 (%)</label>
-            <input type="number" id="mineralInput" min="0" max="100">
+        <div class="input-group">
+            <label for="amountInput">섭취량:</label>
+            <input type="number" id="amountInput" placeholder="예: 100">
         </div>
-        <button onclick="saveManualInput()">저장</button>
-        <button onclick="closeModal('manualInputModal')">취소</button>
+        <button onclick="saveManualInput()" class="btn-primary">저장</button>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- 수정 모달 -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('editModal')">&times;</span>
+        <h2>영양소 섭취 기록 수정</h2>
+        <input type="hidden" id="editIntakeId">
+        <div class="input-group">
+            <label for="editAmountInput">섭취량:</label>
+            <input type="number" id="editAmountInput">
+        </div>
+        <div class="input-group">
+            <label for="editDateInput">날짜:</label>
+            <input type="date" id="editDateInput">
+        </div>
+        <button onclick="updateNutrientIntake()" class="btn-primary">수정</button>
+    </div>
+</div>
+
 <script>
 function navigateTo(page) {
     switch(page) {
@@ -115,7 +113,7 @@ function navigateTo(page) {
             window.location.href = "{% url 'mypage:survey' %}";
             break;
         case 'favorite':
-            window.location.href = "{% url 'mypage:favorite' %}";
+            window.location.href = "{% url 'mypage:like_list' %}";
             break;
         case 'analysis':
             window.location.href = "{% url 'mypage:analysis' %}";
@@ -191,7 +189,7 @@ window.onclick = function(event) {
 }
 
 function loadFavoriteProducts() {
-    fetch('/mypage/get_favorite_products/')
+    fetch('/mypage/like/')
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -226,15 +224,14 @@ function loadFavoriteProducts() {
 }
 
 function removeFavorite(productId) {
-    fetch('/mypage/toggle_like/', {
+    fetch('/mypage/like-delete/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCookie('csrftoken')
         },
         body: JSON.stringify({
-            supplement_id: productId,
-            is_liked: false
+            product_id: productId
         })
     })
     .then(response => response.json())
@@ -254,27 +251,235 @@ function removeFavorite(productId) {
 // 직접 입력 모달
 function showManualInput() {
     const modal = document.getElementById('manualInputModal');
-    modal.classList.add('show');
+    modal.style.display = "block";
 }
 
+function updateNutrientAnalysis() {
+    console.log('영양분석 데이터 가져오기 시작');
+    fetch('/mypage/get-nutrient-data/')
+        .then(response => response.json())
+        .then(data => {
+            console.log('받은 데이터:', data);
+            if (data.status === 'success') {
+                const analysisDiv = document.getElementById('nutrientAnalysis');
+                console.log('total_nutrients:', data.data.total_nutrients);
+                const nutrients = JSON.parse(data.data.total_nutrients);
+                console.log('파싱된 영양소 데이터:', nutrients);
+                
+                let html = '';
+                for (const [nutrientName, nutrientData] of Object.entries(nutrients)) {
+                    const avgIntake = nutrientData.total / nutrientData.count;
+                    const percentage = (avgIntake / nutrientData.recommended) * 100;
+                    console.log(`${nutrientName}: 평균 섭취량=${avgIntake}, 권장량=${nutrientData.recommended}, 비율=${percentage}%`);
+                    
+                    html += `
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">${nutrientName}</span>
+                            <div class="nutrition-bar">
+                                <div class="nutrition-bar-fill" style="width: ${Math.min(100, percentage)}%"></div>
+                            </div>
+                            <span class="nutrition-percent">${percentage.toFixed(1)}%</span>
+                        </div>
+                    `;
+                }
+                
+                analysisDiv.innerHTML = html;
+            } else {
+                console.error('영양분석 데이터 가져오기 실패:', data.message);
+                document.getElementById('nutrientAnalysis').innerHTML = '<p>영양분석 데이터를 불러올 수 없습니다.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('영양분석 데이터 가져오기 오류:', error);
+            document.getElementById('nutrientAnalysis').innerHTML = '<p>영양분석 데이터를 불러오는 중 오류가 발생했습니다.</p>';
+        });
+}
+
+// 페이지 로드 시 영양분석 데이터와 기록 가져오기
+document.addEventListener('DOMContentLoaded', function() {
+    updateNutrientAnalysis();
+    loadNutrientHistory();
+});
+
+// 영양소 섭취 기록 가져오기
+function loadNutrientHistory() {
+    fetch('/mypage/get-nutrient-history/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const historyDiv = document.getElementById('nutrientHistory');
+                let html = '<table class="history-table">';
+                html += `
+                    <thead>
+                        <tr>
+                            <th>날짜</th>
+                            <th>영양소</th>
+                            <th>섭취량</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                `;
+                
+                data.data.forEach(item => {
+                    html += `
+                        <tr>
+                            <td>${item.date}</td>
+                            <td>${item.nutrient_name}</td>
+                            <td>${item.amount} ${item.unit}</td>
+                            <td>
+                                <button onclick="openEditModal(${item.id}, ${item.amount}, '${item.date}')" class="btn-edit">수정</button>
+                                <button onclick="deleteNutrientIntake(${item.id})" class="btn-delete">삭제</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                historyDiv.innerHTML = html;
+            } else {
+                document.getElementById('nutrientHistory').innerHTML = '<p>영양소 섭취 기록을 불러올 수 없습니다.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('영양소 기록 가져오기 오류:', error);
+            document.getElementById('nutrientHistory').innerHTML = '<p>영양소 섭취 기록을 불러오는 중 오류가 발생했습니다.</p>';
+        });
+}
+
+// 직접입력 저장
 function saveManualInput() {
-    const protein = document.getElementById('proteinInput').value;
-    const vitamin = document.getElementById('vitaminInput').value;
-    const mineral = document.getElementById('mineralInput').value;
+    const nutrientName = document.getElementById('nutrientNameInput').value;
+    const unit = document.getElementById('unitInput').value;
+    const amount = document.getElementById('amountInput').value;
     
-    if (protein && vitamin && mineral) {
-        // TODO: 입력값 저장 API 호출
-        console.log('Saving manual input:', { protein, vitamin, mineral });
-        closeModal('manualInputModal');
+    if (nutrientName && unit && amount) {
+        fetch('/mypage/add-manual-nutrient/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                nutrient_name: nutrientName,
+                unit: unit,
+                amount: parseFloat(amount)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('영양소 섭취 기록이 추가되었습니다.');
+                closeModal('manualInputModal');
+                // 입력 필드 초기화
+                document.getElementById('nutrientNameInput').value = '';
+                document.getElementById('unitInput').value = '';
+                document.getElementById('amountInput').value = '';
+                // 영양분석과 기록 업데이트
+                updateNutrientAnalysis();
+                loadNutrientHistory();
+            } else {
+                alert('오류가 발생했습니다: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('영양소 섭취 기록 추가에 실패했습니다.');
+        });
     } else {
         alert('모든 값을 입력해주세요.');
     }
 }
 
+// 수정 모달 열기
+function openEditModal(id, amount, date) {
+    document.getElementById('editIntakeId').value = id;
+    document.getElementById('editAmountInput').value = amount;
+    document.getElementById('editDateInput').value = date;
+    openModal('editModal');
+}
+
+// 영양소 섭취 기록 수정
+function updateNutrientIntake() {
+    const id = document.getElementById('editIntakeId').value;
+    const amount = document.getElementById('editAmountInput').value;
+    const date = document.getElementById('editDateInput').value;
+    
+    if (amount && date) {
+        fetch('/mypage/update-nutrient-intake/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                id: id,
+                amount: parseFloat(amount),
+                date: date
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('영양소 섭취 기록이 수정되었습니다.');
+                closeModal('editModal');
+                // 영양분석과 기록 업데이트
+                updateNutrientAnalysis();
+                loadNutrientHistory();
+            } else {
+                alert('오류가 발생했습니다: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('영양소 섭취 기록 수정에 실패했습니다.');
+        });
+    } else {
+        alert('모든 값을 입력해주세요.');
+    }
+}
+
+// 영양소 섭취 기록 삭제
+function deleteNutrientIntake(id) {
+    if (confirm('정말로 이 기록을 삭제하시겠습니까?')) {
+        fetch('/mypage/delete-nutrient-intake/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                id: id
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('영양소 섭취 기록이 삭제되었습니다.');
+                // 영양분석과 기록 업데이트
+                updateNutrientAnalysis();
+                loadNutrientHistory();
+            } else {
+                alert('오류가 발생했습니다: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('영양소 섭취 기록 삭제에 실패했습니다.');
+        });
+    }
+}
+
+// 모달 열기
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.style.display = "block";
+}
+
 // 모달 닫기
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
-    modal.classList.remove('show');
+    modal.style.display = "none";
 }
 </script>
 

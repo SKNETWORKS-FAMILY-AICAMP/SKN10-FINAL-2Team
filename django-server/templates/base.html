@@ -25,9 +25,9 @@
             <div class="user-info">
                 {% if user.is_authenticated %}
                     <span class="username">{{ user.username }}</span>
-                    <a href="{% url 'logout' %}" class="logout-btn">로그아웃</a>
+                    <a href="{% url 'account:custom_logout' %}" class="logout-btn">로그아웃</a>
                 {% else %}
-                    <a href="{% url 'login' %}" class="login-btn">로그인</a>
+                    <a href="{% url 'account:login' %}" class="login-btn">로그인</a>
                 {% endif %}
             </div>
         </div>

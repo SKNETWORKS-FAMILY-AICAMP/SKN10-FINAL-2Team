@@ -24,7 +24,7 @@
                 <div class="dropdown-menu" id="mypageDropdown">
                     <a href="{% url 'mypage:mypage' %}" class="dropdown-item">내 정보</a>
                     <a href="{% url 'mypage:survey' %}" class="dropdown-item">설문 조사</a>
-                    <a href="{% url 'mypage:favorite' %}" class="dropdown-item">좋아요</a>
+                    <a href="{% url 'mypage:like_list' %}" class="dropdown-item">좋아요</a>
                     <a href="{% url 'mypage:analysis' %}" class="dropdown-item">영양 분석</a>
                 </div>
             </div>
@@ -53,14 +53,15 @@
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
         }
 
-        // 드롭다운 외부 클릭 시 닫기
-        document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('mypageDropdown');
-            const mypageMenu = document.querySelector('.nav-label.mypage');
-            if (!mypageMenu.contains(event.target)) {
-                dropdown.style.display = 'none';
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.nav-label.mypage')) {
+                const dropdown = document.getElementById('mypageDropdown');
+                if (dropdown.style.display === 'block') {
+                    dropdown.style.display = 'none';
+                }
             }
-        });
+        }
     </script>
 
     {% block extra_js %}{% endblock %}

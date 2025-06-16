@@ -34,5 +34,4 @@ urlpatterns = [
     path('', include('landing.urls')), 
     path('Chatbot/', include('Chatbot.urls')),
     path('mypage/', include('Mypage.urls')),
-    path('chatbot/', include('Mypage.urls')),  # Dodajemy URL dla chatbotu
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

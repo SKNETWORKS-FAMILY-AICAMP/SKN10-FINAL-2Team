@@ -94,8 +94,8 @@ function navigateTo(page) {
         case 'survey':
             window.location.href = "{% url 'mypage:survey' %}";
             break;
-        case 'favorite':
-            window.location.href = "{% url 'mypage:favorite' %}";
+        case 'like':
+            window.location.href = "{% url 'mypage:like_list' %}";
             break;
         case 'analysis':
             window.location.href = "{% url 'mypage:analysis' %}";

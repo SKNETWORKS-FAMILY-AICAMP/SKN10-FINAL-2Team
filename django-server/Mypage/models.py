@@ -63,6 +63,8 @@ class SurveyResponse(models.Model):
     responses = models.JSONField(default=dict)
     answers = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
+    age_range = models.CharField(max_length=20, null=True, blank=True)  # 연령대
+    gender = models.CharField(max_length=10, null=True, blank=True)  # 성별
     height = models.FloatField(null=True, blank=True)
     weight = models.FloatField(null=True, blank=True)
     sitting_work = models.CharField(max_length=10, null=True, blank=True)
@@ -278,4 +280,38 @@ class Favorite(models.Model):
 
     def __str__(self):
         return f"{self.user.email}의 {self.product.title} 즐겨찾기"
+    
+class KDRIs(models.Model):
+    category = models.CharField(max_length=50)  # 분류 (유아, 남자, 여자, 임신부, 수유부)
+    age_range = models.CharField(max_length=50)  # 연령
+    energy = models.FloatField()  # 에너지(kcal/일)
+    carbohydrates = models.FloatField()  # 탄수화물(g/일)
+    dietary_fiber = models.FloatField()  # 식이섬유(g/일)
+    protein = models.FloatField()  # 단백질(g/일)
+    vitamin_a = models.FloatField()  # 비타민 A(µg RAE/일)
+    vitamin_d = models.FloatField()  # 비타민 D(µg/일)
+    vitamin_e = models.FloatField()  # 비타민 E(mg ɑ-TE/일)
+    vitamin_k = models.FloatField()  # 비타민 K(µg/일)
+    vitamin_c = models.FloatField()  # 비타민 C(mg/일)
+    thiamin = models.FloatField()  # 티아민(mg/일)
+    riboflavin = models.FloatField()  # 리보플라빈(mg/일)
+    niacin = models.FloatField()  # 니아신(mg NE/일)
+    vitamin_b6 = models.FloatField()  # 비타민 B6(mg/일)
+    folate = models.FloatField()  # 엽산(µg DFE/일)
+    vitamin_b12 = models.FloatField()  # 비타민B12(µg/일)
+    calcium = models.FloatField()  # 칼슘(mg/일)
+    phosphorus = models.FloatField()  # 인(mg/일)
+    sodium = models.FloatField()  # 나트륨(mg/일)
+    potassium = models.FloatField()  # 칼륨(mg/일)
+    magnesium = models.FloatField()  # 마그네슘(mg/일)
+    iron = models.FloatField()  # 철(mg/일)
+    zinc = models.FloatField()  # 아연(mg/일)
+    selenium = models.FloatField()  # 셀레늄(µg/일)
+
+    class Meta:
+        verbose_name_plural = "KDRIs"
+        unique_together = ('category', 'age_range')
+
+    def __str__(self):
+        return f"{self.category} - {self.age_range}"
     
