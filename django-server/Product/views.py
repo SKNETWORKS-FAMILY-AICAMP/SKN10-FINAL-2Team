@@ -16,6 +16,7 @@ def get_product_details(request, product_id=None):
     GET /product/details/?ids=1,2,3 - 여러 상품 정보 반환
     """
     try:
+        user_id = request.user.id if request.user.is_authenticated else None
         if product_id:
             # 단일 상품 조회
             product = get_object_or_404(Products, id=product_id)
@@ -25,7 +26,8 @@ def get_product_details(request, product_id=None):
             user_id = user.id
             
             # 좋아요 여부 확인
-            is_liked = Like.objects.filter(user_id=user_id, product=product).exists()
+            if user_id:
+                is_liked = Like.objects.filter(user_id=user_id, product=product).exists()
             
             product_data = {
                 'id': product.id,

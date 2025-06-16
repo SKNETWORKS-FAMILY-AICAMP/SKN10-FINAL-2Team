@@ -75,7 +75,8 @@ html, body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    padding: 5px;
 }
 .like-item {
     display: flex;

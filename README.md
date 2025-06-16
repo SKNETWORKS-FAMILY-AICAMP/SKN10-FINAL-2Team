@@ -50,12 +50,12 @@
 
 #### 데이터 수집 및 전처리
 
-![](https://img.shields.io/badge/python-3776AB?style=for-the-badge&logo=python&logoColor=white) ![](https://img.shields.io/badge/selenium-43B02A?style=for-the-badge&logo=selenium&logoColor=white) ![](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
+![](https://img.shields.io/badge/python-3776AB?style=for-the-badge&logo=python&logoColor=white) ![](https://img.shields.io/badge/selenium-43B02A?style=for-the-badge&logo=selenium&logoColor=white) ![](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white) ![](https://img.shields.io/badge/numpy-013243?style=for-the-badge&logo=numpy&logoColor=white)
 
 
 #### 데이터베이스
 
-![](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![](https://img.shields.io/badge/neo4j-4581C3?style=for-the-badge&logo=neo4j&logoColor=white)
+![](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![](https://img.shields.io/badge/neo4j-4581C3?style=for-the-badge&logo=neo4j&logoColor=white) ![](https://custom-icon-badges.demolab.com/badge/AWS_RDS-FF9900?style=for-the-badge&logo=aws&logoColor=white)
 
 #### LLM
 
@@ -64,12 +64,12 @@
 
 #### 인프라
 
-![](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![](https://img.shields.io/badge/Amazon_AWS-FF9900?style=for-the-badge&logo=aws&logoColor=white)
+![](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![](https://custom-icon-badges.demolab.com/badge/AWS_CICD-FF9900?style=for-the-badge&logo=aws&logoColor=white)
 
-#### 버전 관리
+#### 버전 관리 및 협업
 
 ![](https://img.shields.io/badge/git-F05032?style=for-the-badge&logo=git&logoColor=white)
- ![](https://img.shields.io/badge/github-181717?style=for-the-badge&logo=github&logoColor=white)
+ ![](https://img.shields.io/badge/github-181717?style=for-the-badge&logo=github&logoColor=white) ![](https://img.shields.io/badge/discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)
 
 ### 프로젝트 구조
 

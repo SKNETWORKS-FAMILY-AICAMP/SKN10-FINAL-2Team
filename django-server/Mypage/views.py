@@ -664,6 +664,8 @@ def like_list(request):
     # user = User.objects.get(pk=1)
     user = request.user
     like_list = Like.objects.filter(user=user).select_related('product')
+    for like in like_list:
+        setattr(like.product, 'is_liked', True)
     return render(request, 'Mypage/like.html', {'user': user, 'like_list': like_list})
 
 @api_view(['POST'])
