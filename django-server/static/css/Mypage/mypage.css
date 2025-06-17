@@ -76,8 +76,10 @@
     color: #333;
 }
 
+/* Nowa struktura - karty wyświetlane pionowo */
 .mypage-content {
     display: flex;
+    flex-direction: column;
     gap: 30px;
 }
 
@@ -124,6 +126,34 @@
 .health-score-section {
     text-align: center;
     margin-bottom: 30px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.score-circle {
+    display: inline-block;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: #EADCA6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto;
+}
+
+.score {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #333;
+}
+
+.score-label {
+    font-size: 1.2em;
+    color: #666;
+    margin-left: 5px;
 }
 
 .health-score {
@@ -158,6 +188,10 @@
 
 .health-recommendations-section {
     margin-bottom: 30px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .health-recommendations-section h2 {
@@ -189,6 +223,15 @@
 
 .recommended-supplements-section {
     margin-bottom: 30px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.recommended-supplements-section h2 {
+    color: #333;
+    margin-bottom: 15px;
 }
 
 .supplements-grid {
@@ -199,37 +242,41 @@
 }
 
 .supplement-card {
-    background: #fff;
+    background: #f8f9fa;
     border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 20px;
+    border: 1px solid #e9ecef;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .supplement-card h3 {
     color: #333;
     margin-bottom: 10px;
-    font-size: 1.1em;
+    font-size: 1.2em;
 }
 
 .supplement-card .reason {
     color: #666;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     font-size: 0.9em;
 }
 
 .supplement-card .benefits {
-    color: #4CAF50;
+    color: #888;
     font-size: 0.9em;
-    font-weight: 500;
 }
 
 .survey-history-section {
-    margin-top: 30px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .history-timeline {
-    margin-top: 20px;
+    position: relative;
 }
 
 .history-item {
@@ -240,47 +287,69 @@
     margin-bottom: 10px;
     background: #f9f9f9;
     border-radius: 5px;
+    border-left: 4px solid #EADCA6;
 }
 
 .history-date {
-    color: #666;
-}
-
-.history-score {
     font-weight: bold;
     color: #333;
 }
 
+.history-score {
+    color: #666;
+}
+
+.btn-secondary {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #6c757d;
+    color: #FFFFFF;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    text-decoration: none;
+    color: #FFFFFF;
+}
+
 .no-survey-message {
     text-align: center;
-    padding: 50px 0;
+    padding: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
 }
 
 .no-survey-message h2 {
-    color: #333;
+    color: #666;
     margin-bottom: 20px;
 }
 
 .no-survey-message p {
-    color: #666;
-    margin-bottom: 30px;
+    color: #888;
+    margin-bottom: 20px;
 }
 
 .btn-primary {
     display: inline-block;
     padding: 12px 24px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    background: #EADCA6;
+    color: #FFFFFF;
     text-decoration: none;
-    font-size: 1em;
-    transition: background-color 0.3s;
+    border-radius: 6px;
+    font-family: 'Pretendard';
+    font-weight: 700;
+    font-size: 16px;
+    transition: background-color 0.2s;
 }
 
 .btn-primary:hover {
-    background-color: #45a049;
+    background: #DCA628;
+    text-decoration: none;
+    color: #FFFFFF;
 }
 
 @media (max-width: 768px) {
@@ -290,6 +359,7 @@
 
     .mypage-menu {
         width: 100%;
+        margin-bottom: 20px;
     }
 
     .supplements-grid {
@@ -298,28 +368,28 @@
 }
 
 .chatbot-section {
-    background-color: #ffffff;
-    padding: 2rem;
+    background: #fff;
     border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-top: 2rem;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-align: center;
+    margin-top: 30px;
 }
 
 .chatbot-section h2 {
     color: #333;
-    margin-bottom: 1rem;
+    margin-bottom: 20px;
 }
 
 .chatbot-section .btn-primary {
-    display: inline-block;
-    padding: 0.8rem 1.5rem;
-    background-color: #4CAF50;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    transition: background-color 0.3s;
+    background: #007bff;
+    color: #FFFFFF;
+    padding: 15px 30px;
+    font-size: 18px;
 }
 
 .chatbot-section .btn-primary:hover {
-    background-color: #45a049;
+    background: #0056b3;
+    text-decoration: none;
+    color: #FFFFFF;
 } 

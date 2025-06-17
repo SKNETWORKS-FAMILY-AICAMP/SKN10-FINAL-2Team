@@ -21,4 +21,6 @@ urlpatterns = [
     path('product/<int:product_id>/nutrients/', views.get_product_nutrients, name='get_product_nutrients'),
     path('product/click/', views.product_click, name='product_click'),
     path('chatbot/', views.chatbot_view, name='chatbot'),
+    path('ocr_extract/', views.ocr_extract, name='ocr_extract'),
+    path('save-ocr-ingredients/', views.save_ocr_ingredients, name='save_ocr_ingredients'),
 ]

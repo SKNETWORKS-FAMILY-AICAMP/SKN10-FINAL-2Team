@@ -727,17 +727,169 @@ def get_favorite_products(request):
 
 def parse_ingredients(text):
     ingredients = {}
-    # Szukaj linii z wartościami odżywczymi
-    # Przykład: "비타민A 210 ㎍ RE(30 %)"
-    pattern = re.compile(r'([가-힣A-Za-z0-9]+)\s*([\d\.]+)\s*([a-zA-Z㎍mgRE%]+)')
+    
+    # Mapowanie nazw angielskich na koreańskie
+    name_mapping = {
+        'biotin': '비오틴',
+        'vitamin a': '비타민A',
+        'vitamin b1': '비타민B1',
+        'vitamin b2': '비타민B2',
+        'vitamin b3': '비타민B3',
+        'vitamin b6': '비타민B6',
+        'vitamin b12': '비타민B12',
+        'vitamin c': '비타민C',
+        'vitamin d': '비타민D',
+        'vitamin e': '비타민E',
+        'vitamin k': '비타민K',
+        'folate': '엽산',
+        'calcium': '칼슘',
+        'iron': '철',
+        'magnesium': '마그네슘',
+        'zinc': '아연',
+        'selenium': '셀레늄',
+        'copper': '구리',
+        'manganese': '망간',
+        'chromium': '크롬',
+        'molybdenum': '몰리브덴',
+        'iodine': '요오드',
+        'potassium': '칼륨',
+        'sodium': '나트륨',
+        'phosphorus': '인',
+        'omega-3': '오메가3',
+        'omega-6': '오메가6',
+        'dha': 'DHA',
+        'epa': 'EPA',
+        'coq10': '코엔자임Q10',
+        'lutein': '루테인',
+        'zeaxanthin': '제아잔틴',
+        'probiotics': '프로바이오틱스',
+        'collagen': '콜라겐',
+        'creatine': '크레아틴',
+        'glutamine': '글루타민',
+        'bcaa': 'BCAA',
+        'protein': '단백질',
+        'fiber': '식이섬유',
+        'carbohydrates': '탄수화물',
+        'fat': '지방',
+        'sugar': '당류',
+        'cholesterol': '콜레스테롤'
+    }
+    
+    # Lista głównych składników odżywczych do rozpoznania (angielskie i koreańskie)
+    main_nutrients = list(name_mapping.keys()) + list(name_mapping.values())
+    
+    # Słowa do ignorowania (instrukcje dawkowania, itp.)
+    ignore_words = [
+        'take', 'tablet', 'capsule', 'pill', 'serving', 'daily', 'dose', 'dosage',
+        'directions', 'use', 'recommended', 'suggested', 'intake', 'per', 'each',
+        'with', 'food', 'meal', 'water', 'morning', 'evening', 'night', 'before',
+        'after', 'during', 'breakfast', 'lunch', 'dinner', 'snack'
+    ]
+    
+    # Szukaj linii z wartościami odżywczymi - rozszerzone wzorce
+    patterns = [
+        # Format: Nazwa: Liczba Jednostka Procent
+        re.compile(r'([A-Za-z\s]+):\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)\s+([\d,]+%)'),
+        # Format: Nazwa: Liczba Jednostka
+        re.compile(r'([A-Za-z\s]+):\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
+        # Format: Nazwa Liczba Jednostka Procent
+        re.compile(r'([A-Za-z\s]+)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)\s+([\d,]+%)'),
+        # Format: Nazwa Liczba Jednostka
+        re.compile(r'([A-Za-z\s]+)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
+        # Format: Nazwa Liczba Jednostka (Procent)
+        re.compile(r'([A-Za-z\s]+)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)\s*\(([\d,]+%)\)'),
+        # Format: Nazwa (Procent) Liczba Jednostka
+        re.compile(r'([A-Za-z\s]+)\s*\(([\d,]+%)\)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
+        # Format: Nazwa Liczba Jednostka bez spacji
+        re.compile(r'([A-Za-z\s]+)([\d,]+\.?\d*)([a-zA-Z㎍mgREµ]+)'),
+        # Format: Nazwa z myślnikiem
+        re.compile(r'([A-Za-z\s-]+)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
+    ]
+    
+    print(f"OCR Raw text: {text}")  # Debug: pokaż surowy tekst
+    
     for line in text.split('\n'):
-        for match in re.finditer(pattern, line):
-            name = match.group(1)
-            value = match.group(2)
-            unit = match.group(3)
-            ingredients[name] = value + unit
+        line = line.strip()
+        if not line:
+            continue
+            
+        print(f"Processing line: {line}")  # Debug: pokaż każdą linię
+        
+        # Sprawdź czy linia zawiera słowa do ignorowania
+        line_lower = line.lower()
+        if any(ignore_word in line_lower for ignore_word in ignore_words):
+            print(f"Ignoring line (contains ignore words): {line}")
+            continue
+        
+        for pattern in patterns:
+            matches = re.finditer(pattern, line)
+            for match in matches:
+                name = match.group(1).strip()
+                value = match.group(2).replace(',', '')  # Usuń przecinki z liczby
+                unit = match.group(3)
+                
+                # Sprawdź czy nazwa zawiera główne składniki odżywcze
+                is_main_nutrient = any(nutrient.lower() in name.lower() for nutrient in main_nutrients)
+                
+                # Sprawdź czy nazwa nie zawiera słów do ignorowania
+                name_lower = name.lower()
+                contains_ignore_words = any(ignore_word in name_lower for ignore_word in ignore_words)
+                
+                if is_main_nutrient and not contains_ignore_words:
+                    # Mapuj angielską nazwę na koreańską
+                    korean_name = name_mapping.get(name_lower, name)
+                    
+                    # Dodaj procent jeśli istnieje
+                    if len(match.groups()) > 3 and match.group(4):
+                        percentage = match.group(4)
+                        ingredients[korean_name] = f"{value} {unit} ({percentage})"
+                    else:
+                        ingredients[korean_name] = f"{value} {unit}"
+                    
+                    print(f"Rozpoznano składnik: {name} -> {korean_name} = {ingredients[korean_name]}")  # Debug
+                else:
+                    print(f"Odrzucono: {name} (główny: {is_main_nutrient}, ignorowane: {contains_ignore_words})")
+    
+    # Jeśli nie znaleziono żadnych składników, spróbuj prostszego podejścia
+    if not ingredients:
+        print("Nie znaleziono składników standardowymi wzorcami, próbuję prostszego podejścia...")
+        simple_patterns = [
+            re.compile(r'([A-Za-z]+)\s*([\d,]+)'),
+            re.compile(r'([A-Za-z]+)\s*([\d,]+\.?\d*)'),
+        ]
+        
+        for line in text.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Sprawdź czy linia zawiera słowa do ignorowania
+            line_lower = line.lower()
+            if any(ignore_word in line_lower for ignore_word in ignore_words):
+                continue
+                
+            for pattern in simple_patterns:
+                matches = re.finditer(pattern, line)
+                for match in matches:
+                    name = match.group(1).strip()
+                    value = match.group(2).replace(',', '')
+                    
+                    # Sprawdź czy nazwa zawiera główne składniki odżywcze
+                    is_main_nutrient = any(nutrient.lower() in name.lower() for nutrient in main_nutrients)
+                    
+                    # Sprawdź czy nazwa nie zawiera słów do ignorowania
+                    name_lower = name.lower()
+                    contains_ignore_words = any(ignore_word in name_lower for ignore_word in ignore_words)
+                    
+                    if is_main_nutrient and not contains_ignore_words:
+                        # Mapuj angielską nazwę na koreańską
+                        korean_name = name_mapping.get(name_lower, name)
+                        ingredients[korean_name] = value
+                        print(f"Proste rozpoznanie: {name} -> {korean_name} = {value}")
+    
     return ingredients
 
+@login_required
 @csrf_exempt
 @require_POST
 def ocr_extract(request):
@@ -746,14 +898,33 @@ def ocr_extract(request):
     image_file = request.FILES['image']
     try:
         image = Image.open(image_file)
-        text = pytesseract.image_to_string(image, lang='kor+eng')
-        print(text)  # Debug: sprawdź co zwraca OCR
+        # Zmieniam na tylko angielski dla lepszej wydajności
+        text = pytesseract.image_to_string(image, lang='eng')
+        print(f"OCR Raw text: {text}")  # Debug: sprawdź co zwraca OCR
+        
+        # Sprawdź czy to jest żądanie debugowania
+        debug_mode = request.POST.get('debug', 'false').lower() == 'true'
+        if debug_mode:
+            return JsonResponse({
+                'status': 'debug', 
+                'raw_text': text,
+                'message': 'Raw OCR text for debugging'
+            })
+        
         ingredients = parse_ingredients(text)
         if not ingredients:
-            ingredients = {'메시지': '성분을 인식하지 못했습니다.'}
-        return JsonResponse({'status': 'success', 'ingredients': ingredients})
+            ingredients = {'Message': 'Could not recognize ingredients.'}
+        
+        # Sprawdź przydatność suplementu
+        compatibility_result = check_supplement_compatibility(request.user, ingredients)
+        
+        return JsonResponse({
+            'status': 'success', 
+            'ingredients': ingredients,
+            'compatibility': compatibility_result
+        })
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}) 
+        return JsonResponse({'status': 'error', 'message': str(e)})
 
 @login_required
 def like_list(request):
@@ -1002,3 +1173,232 @@ def get_product_nutrients(request, product_id):
             'status': 'error',
             'message': str(e)
         }, status=500)
+
+def check_supplement_compatibility(user, ingredients):
+    """
+    Sprawdza przydatność suplementu na podstawie składników i profilu użytkownika
+    """
+    compatibility_result = {
+        'is_suitable': True,
+        'score': 0,
+        'warnings': [],
+        'benefits': [],
+        'recommendations': []
+    }
+    
+    try:
+        # Pobierz najnowszy profil użytkownika
+        latest_survey = SurveyResult.objects.filter(user=user).order_by('-created_at').first()
+        if not latest_survey:
+            compatibility_result['warnings'].append('사용자 프로필 정보가 없습니다. 설문을 먼저 완료해주세요.')
+            compatibility_result['is_suitable'] = False
+            return compatibility_result
+        
+        answers = latest_survey.answers
+        score = 0
+        max_score = 0
+        
+        # Analiza składników
+        for ingredient_name, ingredient_value in ingredients.items():
+            ingredient_lower = ingredient_name.lower()
+            
+            # Biotin - dla zdrowia włosów, skóry i paznokci
+            if 'biotin' in ingredient_lower or '비오틴' in ingredient_lower:
+                max_score += 8
+                score += 8
+                compatibility_result['benefits'].append('비오틴은 모발, 피부, 손톱 건강에 도움이 됩니다.')
+            
+            # Witamina D - dla osób spędzających dużo czasu w pomieszczeniach
+            elif 'vitamin d' in ingredient_lower or '비타민 d' in ingredient_lower:
+                max_score += 10
+                if answers.get('indoor_daytime') == '예':
+                    score += 10
+                    compatibility_result['benefits'].append('비타민 D는 실내 생활이 많은 사용자에게 적합합니다.')
+                else:
+                    compatibility_result['warnings'].append('비타민 D는 햇빛 노출이 충분한 경우 과다 섭취될 수 있습니다.')
+            
+            # Witamina B - dla osób z objawami zmęczenia
+            elif any(b_vitamin in ingredient_lower for b_vitamin in ['vitamin b', '비타민 b', 'thiamin', 'riboflavin', 'niacin']):
+                max_score += 8
+                if answers.get('fatigue') == '예' or answers.get('still_tired') == '예':
+                    score += 8
+                    compatibility_result['benefits'].append('비타민 B는 피로감이 있는 사용자에게 도움이 됩니다.')
+                else:
+                    score += 4
+                    compatibility_result['recommendations'].append('비타민 B는 에너지 대사에 도움이 되지만, 필요에 따라 섭취하세요.')
+            
+            # Witamina C - dla palaczy
+            elif 'vitamin c' in ingredient_lower or '비타민 c' in ingredient_lower:
+                max_score += 8
+                if answers.get('smoking') == '예':
+                    score += 8
+                    compatibility_result['benefits'].append('비타민 C는 흡연자에게 특히 유용합니다.')
+                else:
+                    score += 6
+                    compatibility_result['benefits'].append('비타민 C는 면역력 강화에 도움이 됩니다.')
+            
+            # Omega-3 - dla osób prowadzących siedzący tryb życia
+            elif any(omega in ingredient_lower for omega in ['omega-3', 'omega 3', 'dha', 'epa', '오메가']):
+                max_score += 10
+                if answers.get('sitting_work') == '예' and answers.get('exercise_frequency') in ['전혀 안함', '1-2회']:
+                    score += 10
+                    compatibility_result['benefits'].append('오메가-3는 장시간 앉아서 일하는 사용자에게 적합합니다.')
+                else:
+                    score += 6
+                    compatibility_result['benefits'].append('오메가-3는 전반적인 심장 건강에 도움이 됩니다.')
+            
+            # Magnez - dla osób z problemami ze snem
+            elif 'magnesium' in ingredient_lower or '마그네슘' in ingredient_lower:
+                max_score += 8
+                if answers.get('sleep_well') == '아니오' or (answers.get('sleep_hours') and float(answers.get('sleep_hours', 0)) < 7):
+                    score += 8
+                    compatibility_result['benefits'].append('마그네슘은 수면의 질을 개선하는 데 도움이 됩니다.')
+                else:
+                    score += 5
+                    compatibility_result['benefits'].append('마그네슘은 근육 이완과 신경 기능에 도움이 됩니다.')
+            
+            # Żelazo - dla kobiet
+            elif 'iron' in ingredient_lower or '철' in ingredient_lower:
+                max_score += 8
+                if answers.get('gender') == '여성':
+                    score += 8
+                    compatibility_result['benefits'].append('철분은 여성에게 특히 중요한 영양소입니다.')
+                else:
+                    score += 4
+                    compatibility_result['warnings'].append('남성의 경우 철분 과다 섭취에 주의하세요.')
+            
+            # Wapń - dla osób z problemami z kośćmi
+            elif 'calcium' in ingredient_lower or '칼슘' in ingredient_lower:
+                max_score += 6
+                if answers.get('indoor_daytime') == '예':  # Brak witaminy D może wpływać na wchłanianie wapnia
+                    score += 4
+                    compatibility_result['warnings'].append('칼슘은 비타민 D와 함께 섭취하는 것이 좋습니다.')
+                else:
+                    score += 6
+                    compatibility_result['benefits'].append('칼슘은 뼈 건강에 중요합니다.')
+            
+            # Inne składniki
+            else:
+                max_score += 3
+                score += 2
+                compatibility_result['benefits'].append(f'{ingredient_name}은 일반적으로 유용한 영양소입니다.')
+        
+        # Sprawdź interakcje i przeciwwskazania
+        if answers.get('drinking') == '예':
+            compatibility_result['warnings'].append('음주 시 일부 영양제와의 상호작용에 주의하세요.')
+        
+        if answers.get('smoking') == '예':
+            compatibility_result['warnings'].append('흡연은 일부 비타민의 흡수를 감소시킬 수 있습니다.')
+        
+        # Oblicz końcowy wynik
+        if max_score > 0:
+            compatibility_result['score'] = int((score / max_score) * 100)
+        
+        # Określ ogólną przydatność
+        if compatibility_result['score'] >= 70:
+            compatibility_result['is_suitable'] = True
+        elif compatibility_result['score'] >= 40:
+            compatibility_result['is_suitable'] = True
+            compatibility_result['recommendations'].append('이 영양제는 부분적으로 적합합니다. 개인적인 필요에 따라 섭취하세요.')
+        else:
+            compatibility_result['is_suitable'] = False
+            compatibility_result['warnings'].append('이 영양제는 현재 프로필에 적합하지 않을 수 있습니다.')
+        
+        return compatibility_result
+        
+    except Exception as e:
+        print(f"영양제 호환성 검사 오류: {str(e)}")
+        compatibility_result['is_suitable'] = False
+        compatibility_result['warnings'].append('호환성 검사 중 오류가 발생했습니다.')
+        return compatibility_result
+
+@login_required
+@require_POST
+def save_ocr_ingredients(request):
+    """
+    OCR로 rozpoznane składniki를 데이터베이스에 저장
+    """
+    try:
+        data = json.loads(request.body)
+        ingredients = data.get('ingredients', {})
+        date = data.get('date', timezone.now().date())
+        
+        saved_ingredients = []
+        
+        for ingredient_name, ingredient_value in ingredients.items():
+            # Skip if it's a message
+            if ingredient_name == 'Message':
+                continue
+                
+            # Parse ingredient value to extract amount and unit
+            amount = 0
+            unit = 'mg'  # default unit
+            
+            if isinstance(ingredient_value, str):
+                # Try to extract amount and unit from string like "10000 mcg" or "100 mg"
+                import re
+                match = re.match(r'([\d,]+\.?\d*)\s*([a-zA-Z㎍mgREµ]+)', ingredient_value)
+                if match:
+                    amount = float(match.group(1).replace(',', ''))
+                    unit = match.group(2)
+                else:
+                    # Try to extract just the number
+                    num_match = re.search(r'([\d,]+\.?\d*)', ingredient_value)
+                    if num_match:
+                        amount = float(num_match.group(1).replace(',', ''))
+            elif isinstance(ingredient_value, (int, float)):
+                amount = float(ingredient_value)
+            
+            # Load nutrient standards
+            json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    nutrient_standards = json.load(f)
+            except Exception as e:
+                print(f"영양소 기준치 파일 로드 실패: {str(e)}")
+                nutrient_standards = {}
+            
+            # Create or get nutrient
+            nutrient, created = Nutrient.objects.get_or_create(
+                name=ingredient_name,
+                defaults={
+                    'unit': unit,
+                    'daily_recommended': nutrient_standards.get(ingredient_name, {}).get('recommended_amount', 100),
+                    'description': nutrient_standards.get(ingredient_name, {}).get('description', ''),
+                    'category': '기타'
+                }
+            )
+            
+            # Create nutrient intake record
+            intake = UserNutrientIntake.objects.create(
+                user=request.user,
+                nutrient=nutrient,
+                amount=amount,
+                date=date
+            )
+            
+            saved_ingredients.append({
+                'id': intake.id,
+                'nutrient_name': nutrient.name,
+                'amount': amount,
+                'unit': nutrient.unit
+            })
+        
+        # Run nutrient analysis
+        try:
+            analyze_nutrients(request)
+        except Exception as e:
+            print(f"영양분석 실행 중 오류 발생: {str(e)}")
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'{len(saved_ingredients)}개의 영양소가 저장되었습니다.',
+            'saved_ingredients': saved_ingredients
+        })
+        
+    except Exception as e:
+        print(f"OCR 성분 저장 오류: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)

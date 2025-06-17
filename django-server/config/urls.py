@@ -27,11 +27,11 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('login/', include('Account.urls')),
+    path('login/', include('Account.urls', namespace='account')),
     path('accounts/', include('allauth.urls')),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # <-- 이 URL이 필요
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('', include('landing.urls')), 
-    path('Chatbot/', include('Chatbot.urls')),
+    path('Chatbot/', include('Chatbot.urls', namespace='chatbot')),
     path('mypage/', include('Mypage.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
