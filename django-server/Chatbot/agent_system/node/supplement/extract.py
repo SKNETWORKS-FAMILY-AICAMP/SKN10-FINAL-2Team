@@ -70,6 +70,111 @@ from langgraph.errors import NodeInterrupt
 #     # 변경된 상태 필드만 반환
 #     return {"user_health_info": updated_health_info}
 
+def is_enough_supplement_info(state: AgentState) -> Dict[str, Any]:
+    """
+    사용자 쿼리에서 영양제 관련 정보를 추출하는 함수
+    
+    Args:
+        state: 현재 에이전트 상태
+        
+    Returns:
+        변경된 상태 필드만 포함하는 딕셔너리
+    """
+    print("영양소, 건강 목적을 추출합니다!")
+    # 가장 최근 사용자 메시지 추출
+    messages = state.get("messages", [])
+    if not messages:
+        return {}
+    
+    latest_message = messages[-1]
+    if latest_message.type != "human":
+        return {}
+    
+    user_query = latest_message.content
+
+    nutrient_lst = [
+        "비타민 A", "베타카로틴", "비타민 D", "비타민 E", "비타민 K", "비타민 B1", "비타민 B2",
+        "나이아신", "판토텐산", "비타민 B6", "엽산", "비타민 B12", "비오틴", "비타민 C", "칼슘", "마그네슘",
+        "철", "아연", "구리", "셀레늄", "요오드", "망간", "몰리브덴", "칼륨", "크롬", "루테인", "인",
+        "메티오닌", "시스테인", "류신", "트립토판", "라이신", "트레오닌", "페닐알라닌", "티로신", "오메가3"
+    ]
+
+    purpose_tag_lst = [
+        "간", "기분", "근육", "눈", "면역", "뼈", "소화",
+        "수면", "수분", "신경", "성장", "집중", "피부", "혈당",
+        "혈액", "항산화", "해독", "피로회복"
+    ]
+
+        # 시스템 프롬프트 정의
+    system_prompt = f"""당신은 사용자의 영양제 관련 텍스트에서 다양한 정보를 추출하는 전문가입니다.
+
+사용자 텍스트를 분석하여 다음 정보들을 추출해주세요:
+
+1. **영양소**: {', '.join(nutrient_lst)}
+2. **건강 목적**: {', '.join(purpose_tag_lst)}
+
+**추출 규칙:**
+- 명시적으로 언급된 항목만 추출
+- 정확한 이름으로 매칭 (예: "비타민C" → "비타민 C")
+- 리스트에 없는 항목은 포함하지 말것
+
+**응답 형식 (JSON):**
+{{
+  "nutrients": ["항목1", "항목2"],
+  "purpose_tag": ["항목1", "항목2"]
+}}"""
+    # LLM에 요청하여 영양제 정보 추출
+    result = get_llm_json_response(
+        system_prompt=system_prompt,
+        user_prompt=user_query
+    )
+    print(result)
+    
+    # 필수 정보가 있는지 확인 (영양소 또는 목적 태그 중 하나는 필수)
+    nutrients = result.get("nutrients", [])
+    purpose_tags = result.get("purpose_tag", [])
+
+    if not(nutrients or purpose_tags):
+        response = get_llm_json_response(
+            system_prompt=f"""당신은 영양제와 영양소에 관한 전문 지식을 갖춘 친절한 챗봇입니다.
+사용자에게 영양제를 섭취하려는 건강 목적, 어떤 영양소를 섭취하려는지 물어보는 질문을 작성해주세요.
+
+사용자의 사전 설문조사 내용을 참고한 후, 어떤 영양소, 어떤 건강 목적을 대답할 수 있는지 사용자에게 추천할 만한 예시를 각 5개 이하만 전달하세요.
+반드시 영양소 예시, 건강 목적 예시 목록에 있는 예시만 전달하세요.
+예를 들어, 사전 설문 조사 결과에서 "낮에 주로 실내에서 활동하시나요"에 "예"라고 답했다면, 비타민 D 영양소를 추천할 수 있습니다.
+"잠을 자도 피곤하신가요"에 "예"라고 답했다면, 피로 회복 이라는 건강 목적을 추천할 수 있습니다.
+
+어떤 이유로 어느 영양소, 어느 건강 목적을 추천했는지 이유를 작성하세요.
+예를 들어, "주로 실내에서 활동하신다고 알고있습니다. 따라서 비타민 D를 추천합니다."
+"요즘 잠을 잘 못 이루시나요? 피로 회복에 도움이 되는 영양제를 찾아드릴 수 있습니다."
+
+사전 설문조사 내용은 다음과 같습니다:
+**사전 설문 조사**: {state['user_health_info']}
+
+영양소 예시는 다음과 같습니다:
+**영양소**: {', '.join(nutrient_lst)}
+
+건강 목적 예시는 다음과 같습니다:
+**건강 목적**: {', '.join(purpose_tag_lst)}
+""",
+            user_prompt=user_query,
+            response_format_json=False
+        )
+
+        print(f"정보 부족으로 진행할 수 없습니다: {response}")
+        return {
+            "response": response,
+            "is_enough_sup_info": False
+        } 
+        
+
+    print("영양소, 건강 목적을 추출을 완료했습니다!")
+    # 변경된 상태 필드만 반환
+    return {
+        "extracted_info": result,
+        "is_enough_sup_info": True
+    }
+
 def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
     """
     사용자 쿼리에서 영양제 관련 정보를 추출하는 함수
@@ -90,14 +195,6 @@ def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
         return {}
     
     user_query = latest_message.content
-    
-    # 추출할 정보를 위한 카테고리 리스트 정의
-    nutrient_lst = [
-        "비타민 A", "베타카로틴", "비타민 D", "비타민 E", "비타민 K", "비타민 B1", "비타민 B2",
-        "나이아신", "판토텐산", "비타민 B6", "엽산", "비타민 B12", "비오틴", "비타민 C", "칼슘", "마그네슘",
-        "철", "아연", "구리", "셀레늄", "요오드", "망간", "몰리브덴", "칼륨", "크롬", "루테인", "인",
-        "메티오닌", "시스테인", "류신", "트립토판", "라이신", "트레오닌", "페닐알라닌", "티로신", "오메가3"
-    ]
 
     taste_lst = [
         "오렌지", "복숭아", "베리", "망고", "체리", "딸기", "파인애플",
@@ -115,28 +212,20 @@ def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
         "알약", "캡슐", "젤리", "분말", "젤", "캔디", "액상"
     ]
 
-    purpose_tag_lst = [
-        "간", "기분", "근육", "눈", "면역", "뼈", "소화",
-        "수면", "수분", "신경", "성장", "집중", "피부", "혈당",
-        "혈액", "항산화", "해독", "피로회복"
-    ]
-    
     # 시스템 프롬프트 정의
     system_prompt = f"""당신은 사용자의 영양제 관련 텍스트에서 다양한 정보를 추출하는 전문가입니다.
 
 사용자 텍스트를 분석하여 다음 정보들을 추출해주세요:
 
-1. **영양소**: {', '.join(nutrient_lst)}
-2. **맛**: {', '.join(taste_lst)}
-3. **영양제 종류**: {', '.join(type_lst)}
-4. **양식**: {', '.join(form_lst)}
-5. **건강 목적**: {', '.join(purpose_tag_lst)}
-6. **수량**: 영양제 개수 관련 숫자만 (함유량 제외)
-7. **가격**: 가격 범위나 조건 (예: "2만원 이하", "저렴한")
-8. **원산지**: 국가명이나 지역명
-9. **별점 선호도**: 높은 별점순을 원하는지 (true/false/null)
-10. **리뷰수 선호도**: 많은 리뷰수순을 원하는지 (true/false/null)
-11. **비건 선호도**: 비건 제품을 원하는지 (true/false/null)
+1. **맛**: {', '.join(taste_lst)}
+2. **영양제 종류**: {', '.join(type_lst)}
+3. **양식**: {', '.join(form_lst)}
+4. **수량**: 영양제 개수 관련 숫자만 (함유량 제외)
+5. **가격**: 가격 범위나 조건 (예: "2만원 이하", "저렴한")
+6. **원산지**: 국가명이나 지역명
+7. **별점 선호도**: 높은 별점순을 원하는지 (true/false/null)
+8. **리뷰수 선호도**: 많은 리뷰수순을 원하는지 (true/false/null)
+9. **비건 선호도**: 비건 제품을 원하는지 (true/false/null)
 
 **추출 규칙:**
 - 명시적으로 언급된 항목만 추출
@@ -149,11 +238,9 @@ def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
 
 **응답 형식 (JSON):**
 {{
-  "nutrients": ["항목1", "항목2"],
   "flavors": ["항목1", "항목2"],
   "supplement_types": ["항목1", "항목2"],
   "forms": ["항목1", "항목2"],
-  "purpose_tag": ["항목1", "항목2"],
   "quantities": ["30", "60"],
   "prices": ["2만원 이하", "저렴한"],
   "origins": ["미국", "독일"],
@@ -169,30 +256,9 @@ def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
     )
     print(result)
     
-    # 필수 정보가 있는지 확인 (영양소 또는 목적 태그 중 하나는 필수)
-    nutrients = result.get("nutrients", [])
-    purpose_tags = result.get("purpose_tag", [])
-    
-    if not nutrients and not purpose_tags:
-        request_more_info = get_llm_json_response(
-            system_prompt="당신은 영양제와 영양소에 관한 전문 지식을 갖춘 친절한 챗봇입니다. 사용자에게 영양제를 섭취하려는 목적, 어떤 영양소를 섭취하려는지 물어보는 질문을 작성해주세요.",
-            user_prompt=user_query,
-            response_format_json=False
-        )
 
-        print(f"정보 부족으로 interrupt 발생: {request_more_info}")
-
-        # NodeInterrupt를 직접 발생시켜서 워크플로우 중단
-        raise NodeInterrupt(request_more_info)
-    
-    # 추출된 정보에서 has_sufficient_info 키 제거
-    if "has_sufficient_info" in result:
-        del result["has_sufficient_info"]
-    
-    print(f"충분한 정보 추출됨: {result}")
 
     # 변경된 상태 필드만 반환
     return {
         "extracted_info": result,
-        "needs_human_input": False
     } 

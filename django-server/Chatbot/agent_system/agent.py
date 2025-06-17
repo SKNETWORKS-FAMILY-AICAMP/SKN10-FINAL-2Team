@@ -12,7 +12,7 @@ from .state import AgentState
 
 from .node.input_analysis import analyze_input
 from .node.general_chat import handle_general_chat
-from .node.supplement.extract import extract_health_info, extract_supplement_info
+from .node.supplement.extract import is_enough_supplement_info, extract_supplement_info
 from .node.supplement.query import build_kag_query, execute_kag_query
 from .node.supplement.rerank import rerank_node, select_products_node
 from .node.supplement.response import generate_supplement_response
@@ -76,6 +76,9 @@ class SupplementRecommendationAgent:
                 conversation_type = state.get("conversation_type", "general")
                 return conversation_type
             
+            def route_by_is_enough_supplement_info(state: AgentState):
+                return "enough" if state.get("is_enough_sup_info", False) else "not_enough"
+            
             # 시작점 설정!
             builder = StateGraph(AgentState)
             
@@ -87,6 +90,7 @@ class SupplementRecommendationAgent:
 
             # 영양제 관련 노드
             # builder.add_node("extract_health_info", extract_health_info)
+            builder.add_node("is_enough_supplement_info", is_enough_supplement_info)
             builder.add_node("extract_supplement_info", extract_supplement_info)  # 함수명 매핑
             builder.add_node("build_kag_query", build_kag_query)
             builder.add_node("execute_kag_query", execute_kag_query)  # 함수명 매핑
@@ -103,8 +107,17 @@ class SupplementRecommendationAgent:
                 route_by_conversation_type,
                 {
                     "general": "general_chat",
-                    "nutrient": "extract_supplement_info",  # 영양소 노드 제거로 임시 변경
-                    "supplement": "extract_supplement_info"
+                    "nutrient": "is_enough_supplement_info",  # 영양소 노드 제거로 임시 변경
+                    "supplement": "is_enough_supplement_info"
+                }
+            )
+
+            builder.add_conditional_edges(
+                "is_enough_supplement_info",
+                route_by_is_enough_supplement_info,
+                {
+                    "enough": "extract_supplement_info",
+                    "not_enough": END
                 }
             )
             # # 추가 정보 요청 분기
@@ -143,8 +156,7 @@ class SupplementRecommendationAgent:
                 # interrupt_after를 사용하여 extract_supplement_info 노드 실행 후에 
                 # NodeInterrupt가 발생했는지 체크
                 cls._workflow = builder.compile(
-                    checkpointer=checkpointer,
-                    interrupt_after=["extract_supplement_info"]
+                    checkpointer=checkpointer
                 )
                 print("LangGraph workflow compiled with PostgreSQL persistence.")
             except Exception as e:
@@ -193,42 +205,29 @@ class SupplementRecommendationAgent:
         config = cls.get_thread_config(thread_id)
         
         # 기존 상태 가져오기 (LangGraph checkpointer가 자동으로 관리)
-        try:
-            # 기존 상태 조회 시도
-            existing_state = workflow.get_state(config)
-            print(f"기존 상태 조회 성공: {thread_id}")
-            print(f"기존 상태: {existing_state.next}")
 
-            # interrupt 상태에서 재시작하는 경우
-            if existing_state.next and len(existing_state.next) > 0:
-                print("체크포인트에서 재시작 중...")
-                # 새로운 사용자 메시지 추가
-                workflow.update_state(config, {"messages": [HumanMessage(content=message)]})
-                
-                try:
-                    # None을 전달하여 체크포인트부터 재시작
-                    for event in workflow.stream(None, config=config, stream_mode="values"):
-                        if event.get("messages"):
-                            event["messages"][-1].pretty_print()
-                except Exception as e:
-                    # NodeInterrupt가 다시 발생할 수 있음
-                    print(f"재시작 중 interrupt 발생: {e}")
-            else:
-                print("새로운 대화 시작")
-                # 새로운 대화 시작
-                initial_state = {"messages": [HumanMessage(content=message)]}
-                if user_health_info:
-                    initial_state["user_health_info"] = user_health_info
-                
-                try:
-                    for event in workflow.stream(initial_state, config=config, stream_mode="values"):
-                        if event.get("messages"):
-                            event["messages"][-1].pretty_print()
-                except Exception as e:
-                    print(f"새로운 대화 중 interrupt 발생: {e}")
-        except Exception as e:
-            print(f"상태 처리 중 오류: {e}")
-            # 새로운 대화로 처리
+        # 기존 상태 조회 시도
+        existing_state = workflow.get_state(config)
+        print(f"기존 상태 조회 성공: {thread_id}")
+        print(f"기존 상태: {existing_state.next}")
+
+        # interrupt 상태에서 재시작하는 경우
+        if existing_state.next and len(existing_state.next) > 0:
+            print("체크포인트에서 재시작 중...")
+            # 새로운 사용자 메시지 추가
+            workflow.update_state(config, {"messages": [HumanMessage(content=message)]})
+            
+            try:
+                # None을 전달하여 체크포인트부터 재시작
+                for event in workflow.stream(None, config=config, stream_mode="values"):
+                    if event.get("messages"):
+                        event["messages"][-1].pretty_print()
+            except Exception as e:
+                # NodeInterrupt가 다시 발생할 수 있음
+                print(f"재시작 중 interrupt 발생: {e}")
+        else:
+            print("새로운 대화 시작")
+            # 새로운 대화 시작
             initial_state = {"messages": [HumanMessage(content=message)]}
             if user_health_info:
                 initial_state["user_health_info"] = user_health_info
@@ -238,7 +237,7 @@ class SupplementRecommendationAgent:
                     if event.get("messages"):
                         event["messages"][-1].pretty_print()
             except Exception as e:
-                print(f"폴백 처리 중 interrupt 발생: {e}")
+                print(f"새로운 대화 중 interrupt 발생: {e}")
 
         # 최종 상태 가져오기
         final_state = workflow.get_state(config)

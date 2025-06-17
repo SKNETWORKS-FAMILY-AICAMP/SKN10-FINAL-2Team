@@ -34,6 +34,9 @@ class AgentState(TypedDict):
     
     # AI 최종 답변
     response: Annotated[Optional[str], overwrite_reducer]
+
+    # 영양제 검색을 위한 정보가 충분한지 여부
+    is_enough_sup_info: Annotated[bool, overwrite_reducer]
     
     # 추출된 정보
     extracted_info: Annotated[Optional[Dict[str, Any]], merge_dict]
