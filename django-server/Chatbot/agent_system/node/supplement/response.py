@@ -108,7 +108,7 @@ def generate_supplement_response(state: AgentState) -> Dict[str, Any]:
     
     # 변경된 상태 필드만 반환
     return {
-        "final_recommendation": response,
+        "response": response,
         "followup_question": followup_question,
         "product_ids": product_ids
     } 

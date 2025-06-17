@@ -31,7 +31,7 @@ def rerank_node(state: AgentState) -> Dict[str, Any]:
 1. 사용자가 요청한 영양소를 포함하는 제품 우선
 2. 사용자의 건강 목적에 맞는 제품 우선
 3. 사용자가 선호하는 형태, 맛, 원산지 등 고려
-4. 사용자의 건강 상태(알레르기, 약물 상호작용 등) 고려
+4. 사용자의 건강 상태(피로, 눈, 성장, 수면 등) 고려
 5. 가격 대비 효용성
 6. 평점과 리뷰 수
 
@@ -54,16 +54,13 @@ JSON 형식으로 다음 정보를 반환해주세요:
 }"""
 
     # 사용자 프롬프트 구성
-    user_prompt = f"""검색 결과:
+    user_prompt = f"""영양제 검색 결과:
 {json.dumps(kag_results, ensure_ascii=False, indent=2)}
 
 추출된 사용자 요구사항:
 {json.dumps(extracted_info, ensure_ascii=False, indent=2)}
 
-영양소 요약 정보:
-{json.dumps(nutrient_summary, ensure_ascii=False, indent=2)}
-
-사용자 건강 정보:
+사용자 건강 설문조사 정보:
 {json.dumps(user_health_info, ensure_ascii=False, indent=2)}
 
 위 정보를 바탕으로 검색된 영양제 결과를 재순위화해주세요."""

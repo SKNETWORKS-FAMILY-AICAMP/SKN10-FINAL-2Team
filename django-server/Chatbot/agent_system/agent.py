@@ -144,28 +144,21 @@ class SupplementRecommendationAgent:
             # 시작점 설정
             builder.set_entry_point("analyze_input")
 
-            try:
-                # PostgreSQL 체크포인터 설정
-                pool = cls.get_db_connection_pool()
-                checkpointer = PostgresSaver(pool)
-                
-                # 테이블 생성 등 필요한 초기 설정
-                checkpointer.setup()
-                print("PostgreSQL checkpointer setup completed.")
 
-                # interrupt_after를 사용하여 extract_supplement_info 노드 실행 후에 
-                # NodeInterrupt가 발생했는지 체크
-                cls._workflow = builder.compile(
-                    checkpointer=checkpointer
-                )
-                print("LangGraph workflow compiled with PostgreSQL persistence.")
-            except Exception as e:
-                print(f"Failed to setup PostgreSQL checkpointer: {e}")
-                # 체크포인터 없이 컴파일 (폴백)
-                cls._workflow = builder.compile(
-                    interrupt_before=["build_kag_query"]
-                )
-                print("LangGraph workflow compiled without persistence (fallback mode).")
+            # PostgreSQL 체크포인터 설정
+            pool = cls.get_db_connection_pool()
+            checkpointer = PostgresSaver(pool)
+            
+            # 테이블 생성 등 필요한 초기 설정
+            checkpointer.setup()
+            print("PostgreSQL checkpointer setup completed.")
+
+            # workflow 컴파일
+            cls._workflow = builder.compile(
+                checkpointer=checkpointer
+            )
+            print("LangGraph workflow compiled with PostgreSQL persistence.")
+
         print(cls._workflow.get_graph().draw_mermaid())
         return cls._workflow
 
@@ -241,6 +234,7 @@ class SupplementRecommendationAgent:
 
         # 최종 상태 가져오기
         final_state = workflow.get_state(config)
+        print(f"최종 상태: {final_state.values}")
         result = final_state.values
 
         # interrupt 상태 확인
@@ -252,7 +246,7 @@ class SupplementRecommendationAgent:
         followup_question = result.get("followup_question", "")
         needs_human_input = result.get("needs_human_input", False)
         human_input_request = result.get("human_input_request", "")
-
+        print(f"최종 응답: {response}")
         # interrupt가 발생한 경우 interrupt 메시지 확인
         interrupt_message = ""
         if is_interrupted and hasattr(final_state, 'tasks') and final_state.tasks:

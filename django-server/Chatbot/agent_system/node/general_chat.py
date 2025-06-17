@@ -33,6 +33,7 @@ def handle_general_chat(state: AgentState) -> Dict[str, Any]:
     print("대화 내용:\n", conversation_history)
     # 시스템 프롬프트 정의
     system_prompt = """당신은 영양제와 영양소에 관한 전문 지식을 갖춘 친절한 챗봇입니다.
+영양소, 영양제와 관련없는 질문은 대답하지 마세요.
 사용자의 일반적인 질문에 명확하고 간결하게 답변해주세요.
 
 답변 작성 지침:
@@ -49,13 +50,15 @@ def handle_general_chat(state: AgentState) -> Dict[str, Any]:
 - 감사 표현에는 정중하게 응답
 - 도움 요청에는 명확한 안내 제공
 - 불만 사항에는 공감하고 해결책 제시
-- 영양소 정보 검색, 영양제 상품 검색이 가능함을 설명"""
+- 영양소 정보 검색, 영양제 상품 검색이 가능함을 설명
+- 주어진 대화 맥락에 맞는 답변을 작성하세요.
+- 안녕하세요 라는 인사말은 건네지 않아도 됩니다."""
 
     # 사용자 프롬프트 구성
     user_prompt = f"""대화 기록(시간 순):
 {conversation_history}
 
-사용자의 최근 메시지에 응답해주세요."""
+사용자의 최근 메시지를 중접으로 응답해주세요."""
 
     # LLM에 요청하여 응답 생성
     response = get_llm_response(
