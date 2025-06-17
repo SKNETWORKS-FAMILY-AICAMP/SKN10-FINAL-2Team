@@ -55,6 +55,7 @@ class ChatRooms(models.Model):
     
     title = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+    state = models.JSONField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} (User: {self.user.email})"
