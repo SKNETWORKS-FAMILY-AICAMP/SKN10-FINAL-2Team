@@ -1,73 +1,74 @@
 from typing import Dict, Any, List
 import json
 
-from ...state import AgentState, UserHealthInfo, ExtractedInfo
+from ...state import AgentState
 from ..base import get_llm_json_response
 
 from langgraph.errors import NodeInterrupt
 
-def extract_health_info(state: AgentState) -> Dict[str, Any]:
-    """
-    사용자 입력에서 건강 정보를 추출하여 기존 설문조사 데이터를 업데이트하는 함수
+# def extract_health_info(state: AgentState) -> Dict[str, Any]:
+#     """
+#     사용자 입력에서 건강 정보를 추출하여 기존 설문조사 데이터를 업데이트하는 함수
     
-    Args:
-        state: 현재 에이전트 상태
+#     Args:
+#         state: 현재 에이전트 상태
         
-    Returns:
-        변경된 상태 필드만 포함하는 딕셔너리
-    """
-    # 가장 최근 사용자 메시지 추출
-    messages = state.get("messages", [])
-    if not messages:
-        return {}
+#     Returns:
+#         변경된 상태 필드만 포함하는 딕셔너리
+#     """
+#     print("건강 정보를 추출할게요!")
+#     # 가장 최근 사용자 메시지 추출
+#     messages = state.get("messages", [])
+#     if not messages:
+#         return {}
     
-    latest_message = messages[-1]
-    if latest_message.type != "human":
-        return {}
+#     latest_message = messages[-1]
+#     if latest_message.type != "human":
+#         return {}
     
-    user_query = latest_message.content
-    current_health_data = state.get("user_health_info", {})
+#     user_query = latest_message.content
+#     current_health_data = state.get("user_health_info", {})
     
-    # 시스템 프롬프트 정의
-    system_prompt = f"""당신은 건강 정보 추출 전문가입니다.
+#     # 시스템 프롬프트 정의
+#     system_prompt = f"""당신은 건강 정보 추출 전문가입니다.
 
-**임무**: 사용자의 입력에서 건강 관련 정보를 추출하여 기존 설문조사 데이터를 업데이트하세요.
+# **임무**: 사용자의 입력에서 건강 관련 정보를 추출하여 기존 설문조사 데이터를 업데이트하세요.
 
-**현재 설문조사 데이터**:
-```json
-{json.dumps(current_health_data, ensure_ascii=False, indent=2)}
-```
+# **현재 설문조사 데이터**:
+# ```json
+# {json.dumps(current_health_data, ensure_ascii=False, indent=2)}
+# ```
 
-**지침**:
-1. 사용자 입력에서 설문조사 항목과 관련된 정보만 추출하세요.
-2. 기존 데이터를 수정하거나 새로운 정보를 추가하세요.
-3. 확실하지 않은 정보는 추가하지 마세요.
-4. 알레르기 정보는 리스트에 추가하세요 (기존 항목 유지).
-5. 약물 정보도 리스트에 추가하세요 (기존 항목 유지).
+# **지침**:
+# 1. 사용자 입력에서 설문조사 항목과 관련된 정보만 추출하세요.
+# 2. 기존 데이터를 수정하거나 새로운 정보를 추가하세요.
+# 3. 확실하지 않은 정보는 추가하지 마세요.
+# 4. 알레르기 정보는 리스트에 추가하세요 (기존 항목 유지).
+# 5. 약물 정보도 리스트에 추가하세요 (기존 항목 유지).
 
-**응답 형식**:
-다음과 같은 JSON 형태로 응답하세요:
-{{
-  "updated_health_info": {{업데이트된 전체 건강 정보}},
-  "extracted_changes": {{
-    "category": "변경된 카테고리",
-    "field": "변경된 필드명",
-    "old_value": "기존 값",
-    "new_value": "새로운 값",
-    "action": "add|update|remove"
-  }}
-}}"""
+# **응답 형식**:
+# 다음과 같은 JSON 형태로 응답하세요:
+# {{
+#   "updated_health_info": {{업데이트된 전체 건강 정보}},
+#   "extracted_changes": {{
+#     "category": "변경된 카테고리",
+#     "field": "변경된 필드명",
+#     "old_value": "기존 값",
+#     "new_value": "새로운 값",
+#     "action": "add|update|remove"
+#   }}
+# }}"""
 
-    # LLM에 요청하여 건강 정보 추출
-    result = get_llm_json_response(
-        system_prompt=system_prompt,
-        user_prompt=user_query
-    )
+#     # LLM에 요청하여 건강 정보 추출
+#     result = get_llm_json_response(
+#         system_prompt=system_prompt,
+#         user_prompt=user_query
+#     )
     
-    updated_health_info = result.get("updated_health_info", current_health_data)
+#     updated_health_info = result.get("updated_health_info", current_health_data)
     
-    # 변경된 상태 필드만 반환
-    return {"user_health_info": updated_health_info}
+#     # 변경된 상태 필드만 반환
+#     return {"user_health_info": updated_health_info}
 
 def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
     """

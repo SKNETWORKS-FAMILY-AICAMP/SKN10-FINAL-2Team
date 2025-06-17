@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 노드 함수 직접 임포트 (패키지 초기화 파일 사용하지 않음)
-from .state import AgentState, UserHealthInfo, ExtractedInfo, QueryResult, NutrientKnowledge, NutrientSummary
+from .state import AgentState
 
 from .node.input_analysis import analyze_input
 from .node.general_chat import handle_general_chat
@@ -76,26 +76,25 @@ class SupplementRecommendationAgent:
                 conversation_type = state.get("conversation_type", "general")
                 return conversation_type
             
-            # StateGraph 생성 및 노드 추가 (LangGraph 공식 방식)
+            # 시작점 설정!
             builder = StateGraph(AgentState)
             
-            # 노드 추가 - nodes.py에서 가져온 함수들로 대체
+            # 분기 처리 노드 (작업 완료!)
             builder.add_node("analyze_input", analyze_input)
 
-            # 일반 대화 처리 노드
+            # 일반 대화 처리 노드 (작업 완료!)
             builder.add_node("general_chat", handle_general_chat)
-            
-            # 영양소 관련 노드
 
-            
             # 영양제 관련 노드
-            builder.add_node("extract_health_info", extract_health_info)
+            # builder.add_node("extract_health_info", extract_health_info)
             builder.add_node("extract_supplement_info", extract_supplement_info)  # 함수명 매핑
             builder.add_node("build_kag_query", build_kag_query)
             builder.add_node("execute_kag_query", execute_kag_query)  # 함수명 매핑
             builder.add_node("rerank_node", rerank_node)  # 노드 이름 변경
             builder.add_node("select_products_node", select_products_node)  # 노드 이름 변경
             builder.add_node("generate_supplement_response", generate_supplement_response)  # 함수명 매핑
+            
+            # 영양소 관련 노드
             
             # 엣지 연결
             # 입력 분석 후 분기
@@ -104,8 +103,8 @@ class SupplementRecommendationAgent:
                 route_by_conversation_type,
                 {
                     "general": "general_chat",
-                    "nutrient": "extract_health_info",  # 영양소 노드 제거로 임시 변경
-                    "supplement": "extract_health_info"
+                    "nutrient": "extract_supplement_info",  # 영양소 노드 제거로 임시 변경
+                    "supplement": "extract_supplement_info"
                 }
             )
             # # 추가 정보 요청 분기
@@ -122,8 +121,7 @@ class SupplementRecommendationAgent:
             builder.add_edge("general_chat", END)
             
             # 영양제 추천 플로우 (단순화)
-            builder.add_edge("extract_health_info", "extract_supplement_info")
-            # builder.add_edge("extract_supplement_info", "build_kag_query")
+            builder.add_edge("extract_supplement_info", "build_kag_query")
             builder.add_edge("build_kag_query", "execute_kag_query")
             builder.add_edge("execute_kag_query", "rerank_node")
             builder.add_edge("rerank_node", "select_products_node")
@@ -250,7 +248,7 @@ class SupplementRecommendationAgent:
         is_interrupted = len(final_state.next) > 0 if final_state.next else False
 
         # 응답 추출
-        final_recommendation = result.get("final_recommendation", "")
+        response = result.get("response", "")
         product_ids = result.get("product_ids", "")
         followup_question = result.get("followup_question", "")
         needs_human_input = result.get("needs_human_input", False)
@@ -267,8 +265,8 @@ class SupplementRecommendationAgent:
 
 
         # interrupt 발생 시에는 AI 메시지를 추가하지 않음 (재시작 시 문제 방지)
-        if not is_interrupted and final_recommendation:
-            workflow.update_state(config, {"messages": [AIMessage(content=final_recommendation)]})
+        if not is_interrupted and response:
+            workflow.update_state(config, {"messages": [AIMessage(content=response)]})
         elif is_interrupted and interrupt_message:
             # interrupt 메시지를 AI 메시지로 추가
             workflow.update_state(config, {"messages": [AIMessage(content=interrupt_message)]})
@@ -277,7 +275,7 @@ class SupplementRecommendationAgent:
         if is_interrupted:
             response = interrupt_message
         else:
-            response = final_recommendation
+            response = response
         
         return {
             "response": response,
