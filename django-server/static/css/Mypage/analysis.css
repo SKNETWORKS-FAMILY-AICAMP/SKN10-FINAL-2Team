@@ -2,6 +2,61 @@
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
+/* 로딩 스피너 */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #DDC66F;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* OCR 오류 메시지 스타일 */
+.ocr-error {
+    margin: 20px 0;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'Pretendard';
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.ocr-error .error-message {
+    color: #d32f2f;
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+}
+
+.ocr-error .success-message {
+    color: #2e7d32;
+    background: #e8f5e8;
+    border: 1px solid #c8e6c9;
+}
+
+.ocr-error .debug-message {
+    color: #1976d2;
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+}
+
+.ocr-error pre {
+    background: #f5f5f5;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    margin: 10px 0;
+}
+
 .my_healthy {
     width: 100%;
     min-height: 100vh;

@@ -534,6 +534,16 @@ def add_manual_nutrient_intake(request):
                 'category': '기타'  # 기본 카테고리
             }
         )
+        
+        # 기존 영양소인 경우 권장량 업데이트
+        if not created:
+            nutrient.unit = unit
+            nutrient.daily_recommended = nutrient_standards.get(nutrient_name, {}).get('recommended_amount', 100)
+            nutrient.description = nutrient_standards.get(nutrient_name, {}).get('description', '')
+            nutrient.save()
+            print(f"기존 영양소 업데이트: {nutrient_name}, 권장량: {nutrient.daily_recommended}")
+        else:
+            print(f"새 영양소 생성: {nutrient_name}, 권장량: {nutrient.daily_recommended}")
 
         # 영양소 섭취 기록 생성
         intake = UserNutrientIntake.objects.create(
@@ -597,14 +607,34 @@ def analyze_nutrients(request):
         # 영양소별 평균 섭취량 계산
         nutrient_averages = {}
         for intake in intakes:
-            if intake.nutrient.name not in nutrient_averages:
-                nutrient_averages[intake.nutrient.name] = {
+            nutrient_name = intake.nutrient.name
+            if nutrient_name not in nutrient_averages:
+                # 권장량 확인 및 로드
+                recommended = intake.nutrient.daily_recommended
+                if not recommended or recommended <= 0:
+                    # 기준치 파일에서 권장량 로드
+                    json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+                    try:
+                        with open(json_path, 'r', encoding='utf-8') as f:
+                            nutrient_standards = json.load(f)
+                        recommended = nutrient_standards.get(nutrient_name, {}).get('recommended_amount', 100)
+                        # 영양소 권장량 업데이트
+                        intake.nutrient.daily_recommended = recommended
+                        intake.nutrient.save()
+                        print(f"영양소 권장량 업데이트: {nutrient_name} = {recommended}")
+                    except Exception as e:
+                        print(f"기준치 파일 로드 실패: {str(e)}")
+                        recommended = 100
+                
+                nutrient_averages[nutrient_name] = {
                     'total': 0,
                     'count': 0,
-                    'recommended': intake.nutrient.daily_recommended or 100
+                    'recommended': recommended
                 }
-            nutrient_averages[intake.nutrient.name]['total'] += intake.amount
-            nutrient_averages[intake.nutrient.name]['count'] += 1
+                print(f"영양소 초기화: {nutrient_name}, 권장량: {recommended}")
+            
+            nutrient_averages[nutrient_name]['total'] += intake.amount
+            nutrient_averages[nutrient_name]['count'] += 1
 
         print("영양소별 평균:", nutrient_averages)
 
@@ -617,18 +647,25 @@ def analyze_nutrients(request):
             avg_intake = data['total'] / data['count']
             recommended = data['recommended']
             
+            print(f"분석 중: {nutrient_name}, 평균 섭취량: {avg_intake}, 권장량: {recommended}")
+            
             if recommended > 0:
                 percentage = (avg_intake / recommended) * 100
                 score = min(100, percentage)
                 overall_score += score
 
-                details.append(f"{nutrient_name}: {avg_intake:.1f}% (권장량 대비)")
+                details.append(f"{nutrient_name}: {avg_intake:.1f} (권장량 {recommended} 대비 {percentage:.1f}%)")
 
                 if percentage < 80:
                     recommendations.append(f"{nutrient_name} 섭취량이 부족합니다. 권장량의 {percentage:.1f}%만 섭취하고 있습니다.")
                 elif percentage > 120:
                     recommendations.append(f"{nutrient_name} 섭취량이 과다합니다. 권장량의 {percentage:.1f}%를 섭취하고 있습니다.")
-
+                else:
+                    recommendations.append(f"{nutrient_name} 섭취량이 적절합니다. 권장량의 {percentage:.1f}%를 섭취하고 있습니다.")
+            else:
+                print(f"권장량이 0인 영양소: {nutrient_name}")
+                details.append(f"{nutrient_name}: {avg_intake:.1f} (권장량 없음)")
+        
         # 전체 점수 계산 (100점 만점)
         overall_score = overall_score / len(nutrient_averages) if nutrient_averages else 0
 
@@ -772,7 +809,21 @@ def parse_ingredients(text):
         'carbohydrates': '탄수화물',
         'fat': '지방',
         'sugar': '당류',
-        'cholesterol': '콜레스테롤'
+        'cholesterol': '콜레스테롤',
+        # 추가 영양소 매핑
+        'thiamin': '비타민B1',
+        'riboflavin': '비타민B2',
+        'niacin': '비타민B3',
+        'pantothenic acid': '판토텐산',
+        'pyridoxine': '비타민B6',
+        'cobalamin': '비타민B12',
+        'ascorbic acid': '비타민C',
+        'retinol': '비타민A',
+        'calciferol': '비타민D',
+        'tocopherol': '비타민E',
+        'phylloquinone': '비타민K',
+        'folic acid': '엽산',
+        'folacin': '엽산'
     }
     
     # Lista głównych składników odżywczych do rozpoznania (angielskie i koreańskie)
@@ -783,7 +834,8 @@ def parse_ingredients(text):
         'take', 'tablet', 'capsule', 'pill', 'serving', 'daily', 'dose', 'dosage',
         'directions', 'use', 'recommended', 'suggested', 'intake', 'per', 'each',
         'with', 'food', 'meal', 'water', 'morning', 'evening', 'night', 'before',
-        'after', 'during', 'breakfast', 'lunch', 'dinner', 'snack'
+        'after', 'during', 'breakfast', 'lunch', 'dinner', 'snack', 'other',
+        'ingredients', 'gelatin', 'rice', 'flour', 'natural', 'life', 'naruraisimo'
     ]
     
     # Szukaj linii z wartościami odżywczymi - rozszerzone wzorce
@@ -804,6 +856,10 @@ def parse_ingredients(text):
         re.compile(r'([A-Za-z\s]+)([\d,]+\.?\d*)([a-zA-Z㎍mgREµ]+)'),
         # Format: Nazwa z myślnikiem
         re.compile(r'([A-Za-z\s-]+)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
+        # Format: Liczba Jednostka Nazwa
+        re.compile(r'([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)\s+([A-Za-z\s]+)'),
+        # Format: Nazwa - Liczba Jednostka
+        re.compile(r'([A-Za-z\s]+)\s*-\s*([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
     ]
     
     print(f"OCR Raw text: {text}")  # Debug: pokaż surowy tekst
@@ -856,6 +912,8 @@ def parse_ingredients(text):
         simple_patterns = [
             re.compile(r'([A-Za-z]+)\s*([\d,]+)'),
             re.compile(r'([A-Za-z]+)\s*([\d,]+\.?\d*)'),
+            # 추가 패턴: 숫자와 단위만 있는 경우
+            re.compile(r'([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
         ]
         
         for line in text.split('\n'):
@@ -874,6 +932,10 @@ def parse_ingredients(text):
                     name = match.group(1).strip()
                     value = match.group(2).replace(',', '')
                     
+                    # 숫자만 있는 경우 건너뛰기
+                    if name.isdigit():
+                        continue
+                    
                     # Sprawdź czy nazwa zawiera główne składniki odżywcze
                     is_main_nutrient = any(nutrient.lower() in name.lower() for nutrient in main_nutrients)
                     
@@ -886,6 +948,31 @@ def parse_ingredients(text):
                         korean_name = name_mapping.get(name_lower, name)
                         ingredients[korean_name] = value
                         print(f"Proste rozpoznanie: {name} -> {korean_name} = {value}")
+    
+    # 마지막 시도: 전체 텍스트에서 영양소 키워드 검색
+    if not ingredients:
+        print("마지막 시도: 전체 텍스트에서 영양소 키워드 검색...")
+        text_lower = text.lower()
+        
+        for nutrient in main_nutrients:
+            nutrient_lower = nutrient.lower()
+            if nutrient_lower in text_lower:
+                # 해당 영양소가 포함된 라인 찾기
+                for line in text.split('\n'):
+                    line_lower = line.lower()
+                    if nutrient_lower in line_lower:
+                        # 숫자 추출
+                        numbers = re.findall(r'[\d,]+\.?\d*', line)
+                        if numbers:
+                            value = numbers[0].replace(',', '')
+                            # 단위 추출
+                            units = re.findall(r'[a-zA-Z㎍mgREµ]+', line)
+                            unit = units[0] if units else 'mg'
+                            
+                            korean_name = name_mapping.get(nutrient_lower, nutrient)
+                            ingredients[korean_name] = f"{value} {unit}"
+                            print(f"키워드 검색 결과: {nutrient} -> {korean_name} = {ingredients[korean_name]}")
+                            break
     
     return ingredients
 
@@ -912,8 +999,37 @@ def ocr_extract(request):
             })
         
         ingredients = parse_ingredients(text)
+        
+        # 영양소 추출 결과에 대한 상세한 메시지
         if not ingredients:
-            ingredients = {'Message': 'Could not recognize ingredients.'}
+            # 추출된 텍스트에서 숫자와 단위가 있는지 확인
+            has_numbers = bool(re.search(r'[\d,]+\.?\d*', text))
+            has_units = bool(re.search(r'[a-zA-Z㎍mgREµ]+', text))
+            
+            if has_numbers and has_units:
+                ingredients = {
+                    'Message': '영양소 정보를 찾을 수 없습니다. 이미지가 영양성분표를 포함하고 있는지 확인해주세요.',
+                    'debug_info': {
+                        'raw_text': text,
+                        'has_numbers': has_numbers,
+                        'has_units': has_units
+                    }
+                }
+            else:
+                ingredients = {
+                    'Message': '이미지에서 텍스트를 인식할 수 없습니다. 더 선명한 이미지를 사용해주세요.',
+                    'debug_info': {
+                        'raw_text': text,
+                        'has_numbers': has_numbers,
+                        'has_units': has_units
+                    }
+                }
+        else:
+            # 성공적으로 추출된 경우에도 디버그 정보 추가
+            ingredients['debug_info'] = {
+                'raw_text': text,
+                'extracted_count': len([k for k in ingredients.keys() if k != 'debug_info'])
+            }
         
         # Sprawdź przydatność suplementu
         compatibility_result = check_supplement_compatibility(request.user, ingredients)
@@ -924,7 +1040,11 @@ def ocr_extract(request):
             'compatibility': compatibility_result
         })
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)})
+        print(f"OCR 처리 중 오류 발생: {str(e)}")
+        return JsonResponse({
+            'status': 'error', 
+            'message': f'이미지 처리 중 오류가 발생했습니다: {str(e)}'
+        })
 
 @login_required
 def like_list(request):
@@ -1326,8 +1446,8 @@ def save_ocr_ingredients(request):
         saved_ingredients = []
         
         for ingredient_name, ingredient_value in ingredients.items():
-            # Skip if it's a message
-            if ingredient_name == 'Message':
+            # Skip if it's a message or debug info
+            if ingredient_name == 'Message' or ingredient_name == 'debug_info':
                 continue
                 
             # Parse ingredient value to extract amount and unit
@@ -1349,6 +1469,11 @@ def save_ocr_ingredients(request):
             elif isinstance(ingredient_value, (int, float)):
                 amount = float(ingredient_value)
             
+            # Skip if amount is 0 or invalid
+            if amount <= 0:
+                print(f"유효하지 않은 양 건너뛰기: {ingredient_name} = {amount}")
+                continue
+            
             # Load nutrient standards
             json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
             try:
@@ -1368,6 +1493,16 @@ def save_ocr_ingredients(request):
                     'category': '기타'
                 }
             )
+            
+            # 기존 영양소인 경우 권장량 업데이트
+            if not created:
+                nutrient.unit = unit
+                nutrient.daily_recommended = nutrient_standards.get(ingredient_name, {}).get('recommended_amount', 100)
+                nutrient.description = nutrient_standards.get(ingredient_name, {}).get('description', '')
+                nutrient.save()
+                print(f"기존 영양소 업데이트: {ingredient_name}, 권장량: {nutrient.daily_recommended}")
+            else:
+                print(f"새 영양소 생성: {ingredient_name}, 권장량: {nutrient.daily_recommended}")
             
             # Create nutrient intake record
             intake = UserNutrientIntake.objects.create(

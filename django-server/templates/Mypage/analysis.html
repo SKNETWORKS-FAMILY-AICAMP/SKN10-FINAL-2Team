@@ -562,8 +562,11 @@ function handleOcrUpload(event) {
     
     const formData = new FormData();
     formData.append('image', file);
-    document.getElementById('ocr-error').innerText = '';
-    document.getElementById('ocr-error').style.display = 'block';
+    
+    // 로딩 메시지 표시
+    const errorDiv = document.getElementById('ocr-error');
+    errorDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner"></div><p>이미지를 분석하고 있습니다...</p></div>';
+    errorDiv.style.display = 'block';
     
     fetch('/mypage/ocr_extract/', {
         method: 'POST',
@@ -578,66 +581,76 @@ function handleOcrUpload(event) {
     })
     .then(data => {
         console.log('Odpowiedź OCR:', data);
+        
         if (data.status === 'success') {
-            showProductDetails({
-                ingredients: data.ingredients,
-                compatibility: data.compatibility
-            });
-            document.getElementById('ocr-error').style.display = 'none';
+            const ingredients = data.ingredients;
+            
+            // Message가 있는 경우 (영양소 추출 실패)
+            if (ingredients.Message) {
+                let errorMessage = ingredients.Message;
+                
+                // 디버그 정보가 있는 경우 추가 정보 표시
+                if (ingredients.debug_info) {
+                    const debugInfo = ingredients.debug_info;
+                    errorMessage += '<br><br><strong>디버그 정보:</strong><br>';
+                    errorMessage += `- 원본 텍스트: ${debugInfo.raw_text || '없음'}<br>`;
+                    errorMessage += `- 숫자 포함: ${debugInfo.has_numbers ? '예' : '아니오'}<br>`;
+                    errorMessage += `- 단위 포함: ${debugInfo.has_units ? '예' : '아니오'}`;
+                    
+                    // 원본 텍스트가 있는 경우 표시
+                    if (debugInfo.raw_text) {
+                        errorMessage += '<br><br><strong>인식된 텍스트:</strong><br>';
+                        errorMessage += `<div style="background: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap;">${debugInfo.raw_text}</div>`;
+                    }
+                }
+                
+                errorDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">${errorMessage}</div>`;
+            } else {
+                // 성공적으로 영양소 추출된 경우
+                showProductDetails({
+                    ingredients: ingredients,
+                    compatibility: data.compatibility
+                });
+                errorDiv.style.display = 'none';
+                
+                // 성공 메시지 표시
+                const successDiv = document.createElement('div');
+                successDiv.innerHTML = `<div style="color: #2e7d32; padding: 15px; background: #e8f5e8; border-radius: 5px; margin: 10px 0;">
+                    <strong>✅ 영양소 추출 성공!</strong><br>
+                    ${ingredients.debug_info ? `${ingredients.debug_info.extracted_count}개의 영양소가 인식되었습니다.` : '영양소 정보가 성공적으로 추출되었습니다.'}
+                </div>`;
+                errorDiv.parentNode.insertBefore(successDiv, errorDiv.nextSibling);
+                
+                // 3초 후 성공 메시지 제거
+                setTimeout(() => {
+                    if (successDiv.parentNode) {
+                        successDiv.parentNode.removeChild(successDiv);
+                    }
+                }, 3000);
+            }
         } else if (data.status === 'debug') {
-            document.getElementById('ocr-error').innerText = 'OCR raw text: ' + (data.raw_text || 'none');
+            errorDiv.innerHTML = `
+                <div style="background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <strong>🔍 OCR 디버그 모드</strong><br>
+                    <strong>인식된 텍스트:</strong><br>
+                    <pre style="white-space: pre-wrap; font-size: 12px; background: white; padding: 10px; border-radius: 3px;">${data.raw_text || '텍스트가 인식되지 않았습니다.'}</pre>
+                </div>
+            `;
         } else {
-            document.getElementById('ocr-error').innerText = data.message || 'Failed to recognize ingredients.';
+            errorDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
+                <strong>❌ 오류 발생</strong><br>
+                ${data.message || '영양소 인식에 실패했습니다.'}
+            </div>`;
         }
     })
     .catch((err) => {
-        document.getElementById('ocr-error').innerText = 'Server error occurred.';
         console.error('OCR fetch error:', err);
+        errorDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
+            <strong>❌ 서버 오류</strong><br>
+            이미지 처리 중 오류가 발생했습니다. 다시 시도해주세요.<br>
+            <small>오류 상세: ${err.message}</small>
+        </div>`;
     });
-}
-
-// OCR 디버그 모드
-function handleOcrDebug() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('debug', 'true');
-        document.getElementById('ocr-error').innerText = 'Przetwarzanie w trybie debugowania...';
-        document.getElementById('ocr-error').style.display = 'block';
-        
-        fetch('/mypage/ocr_extract/', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Debug OCR response:', data);
-            if (data.status === 'debug') {
-                document.getElementById('ocr-error').innerHTML = `
-                    <div style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin-top: 10px;">
-                        <strong>OCR Raw Text:</strong><br>
-                        <pre style="white-space: pre-wrap; font-size: 12px;">${data.raw_text || 'none'}</pre>
-                    </div>
-                `;
-            } else {
-                document.getElementById('ocr-error').innerText = data.message || 'Debug mode failed.';
-            }
-        })
-        .catch((err) => {
-            document.getElementById('ocr-error').innerText = 'Server error occurred in debug mode.';
-            console.error('OCR debug error:', err);
-        });
-    };
-    input.click();
 }
 
 function loadFavoriteProducts() {
@@ -709,18 +722,39 @@ function updateNutrientAnalysis() {
                 let html = '';
                 for (const [nutrientName, nutrientData] of Object.entries(nutrients)) {
                     const avgIntake = nutrientData.total / nutrientData.count;
-                    const percentage = (avgIntake / nutrientData.recommended) * 100;
-                    console.log(`${nutrientName}: 평균 섭취량=${avgIntake}, 권장량=${nutrientData.recommended}, 비율=${percentage}%`);
+                    const recommended = nutrientData.recommended;
+                    const percentage = recommended > 0 ? (avgIntake / recommended) * 100 : 0;
                     
-                    html += `
-                        <div class="nutrient-item">
-                            <span class="nutrient-label">${nutrientName}</span>
-                            <div class="nutrition-bar">
-                                <div class="nutrition-bar-fill" style="width: ${Math.min(100, percentage)}%"></div>
+                    console.log(`${nutrientName}: 평균 섭취량=${avgIntake}, 권장량=${recommended}, 비율=${percentage}%`);
+                    
+                    // 권장량이 0인 경우 경고 표시
+                    if (recommended <= 0) {
+                        html += `
+                            <div class="nutrient-item">
+                                <span class="nutrient-label">${nutrientName}</span>
+                                <div class="nutrition-bar">
+                                    <div class="nutrition-bar-fill" style="width: 0%; background-color: #ff9800;"></div>
+                                </div>
+                                <span class="nutrition-percent" style="color: #ff9800;">권장량 없음</span>
+                                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                    섭취량: ${avgIntake.toFixed(1)} (권장량 미설정)
+                                </div>
                             </div>
-                            <span class="nutrition-percent">${percentage.toFixed(1)}%</span>
-                        </div>
-                    `;
+                        `;
+                    } else {
+                        html += `
+                            <div class="nutrient-item">
+                                <span class="nutrient-label">${nutrientName}</span>
+                                <div class="nutrition-bar">
+                                    <div class="nutrition-bar-fill" style="width: ${Math.min(100, percentage)}%"></div>
+                                </div>
+                                <span class="nutrition-percent">${percentage.toFixed(1)}%</span>
+                                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                    섭취량: ${avgIntake.toFixed(1)} / 권장량: ${recommended}
+                                </div>
+                            </div>
+                        `;
+                    }
                 }
                 
                 analysisDiv.innerHTML = html;
