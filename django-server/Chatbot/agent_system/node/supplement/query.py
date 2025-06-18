@@ -9,9 +9,9 @@ from django.db.models.functions import TruncDate
 
 from ...state import AgentState
 from ..base import get_llm_response
-from ....models import NutritionDailyRec
-from .....Mypage.models import UserNutrientIntake
-from .....Account.models import CustomUser
+from Chatbot.models import NutritionDailyRec
+from Mypage.models import UserNutrientIntake
+from Account.models import CustomUser
 
 # 환경변수 로드
 load_dotenv()
@@ -106,9 +106,21 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
             user = CustomUser.objects.get(id=user_id)
             print(f"사용자 정보: {user.email}, 성별: {user.gender}, 생년월일: {user.birth_date}")
             
+            if user.gender is not None:
+                if user.gender == "male":
+                    gender = "남자"
+                else:
+                    gender = "여자"
+            else:
+                gender = "남자"
+
             # 사용자 나이 계산
             today = date.today()
-            age = today.year - user.birth_date.year - ((today.month, today.day) < (user.birth_date.month, user.birth_date.day))
+            if user.birth_date is not None:
+                today = date.today()
+                age = today.year - user.birth_date.year - ((today.month, today.day) < (user.birth_date.month, user.birth_date.day))
+            else:
+                age = 20
             print(f"사용자 나이: {age}")
             
             # 나이대 계산 (예: 6~8, 9~11 등)
@@ -142,7 +154,7 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                     
                     # 2. 1일 권장 섭취량 확인
                     daily_rec = NutritionDailyRec.objects.filter(
-                        sex=user.gender,
+                        sex=gender,
                         age_range=age_range,
                         nutrient=nutrient
                     ).first()
@@ -161,7 +173,7 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                         print(f"{nutrient} 부족량: {deficiency}")
                         
                         query = f"""
-                        MATCH (n:Nutrient {{name: '{nutrient}'}})-[c:CONTAINS]->(s:Supplement)
+                        MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{nutrient}'}})
                         WHERE c.amount >= {deficiency}
                         RETURN s.id
                         ORDER BY c.amount ASC
@@ -207,8 +219,8 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                             
                             # 관련 영양소의 1일 권장 섭취량 확인
                             related_daily_rec = NutritionDailyRec.objects.filter(
-                                sex=user.gender,
-                                age_range=age_range,
+                                sex=gender,
+                                age_range=age_range, 
                                 nutrient=related_nutrient
                             ).first()
                             
@@ -225,7 +237,7 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                                 print(f"{related_nutrient} 부족량: {deficiency}")
                                 
                                 query = f"""
-                                MATCH (n:Nutrient {{name: '{related_nutrient}'}})-[c:CONTAINS]->(s:Supplement)
+                                MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{related_nutrient}'}})
                                 WHERE c.amount >= {deficiency}
                                 RETURN s.id
                                 ORDER BY c.amount ASC

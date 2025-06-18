@@ -18,12 +18,12 @@ class Supplement(models.Model):
 
 class Nutrient(models.Model):
     name = models.CharField(max_length=100)
-    description = models.TextField()
-    daily_recommended = models.FloatField()
-    unit = models.CharField(max_length=20)
-    category = models.CharField(max_length=50)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    description = models.TextField(null=True, blank=True)
+    daily_recommended = models.FloatField(null=True, blank=True)
+    unit = models.CharField(max_length=20, null=True, blank=True)
+    category = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.name
