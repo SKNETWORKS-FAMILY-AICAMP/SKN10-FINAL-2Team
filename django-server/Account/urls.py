@@ -1,7 +1,9 @@
-
 from django.urls import path
 from .views import login, SignupAPIView,LoginAPIView,FindEmailAPIView,PasswordResetRequestAPIView,SetNewPasswordAPIView
 from .views import custom_logout_view,login_success_view
+
+app_name = 'account'
+
 urlpatterns = [
     path('',login),
     path('signup/', SignupAPIView.as_view(), name='signup_api'),
