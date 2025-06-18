@@ -3,168 +3,279 @@ header {
     position: fixed;
     width: 100%;
     height: 80px;
-    left: 0px;
-    top: 0px;
     background: #FFFFFF;
     box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.12);
     z-index: 1000;
+    top: 0;
+    left: 0;
 }
 
 nav {
-    position: relative;
-    width: 100%;
+    max-width: 1200px;
     height: 100%;
+    margin: 0 auto;
+    padding: 0 20px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1001;
 }
 
-/* 로고 스타일 */
-.Logo {
-    margin-left: 250px;
-}
-.Logo img {
-  height: 50px;
-}
-
-/* 상단 메뉴 텍스트 */
-.nav-label {
-    position: absolute;
-    font-family: 'Pretendard';
-    font-size: 24px;
+/* Logo styles */
+.logo {
     display: flex;
     align-items: center;
-    top: 20px;
-}
-
-.nav-label.chatbot {
-    left: 1105px;
-    font-weight: 700;
-    color: #DDC66F;
+    gap: 5px;
     cursor: pointer;
+    position: relative;
+    z-index: 1002;
+}
+
+.logo-t, .logo-p {
+    font-family: 'Pretendard';
+    font-weight: 700;
+    font-size: 48px;
+    line-height: 1;
+    color: #EADCA6;
+}
+
+.logo-rectangle {
+    width: 36px;
+    height: 48px;
+    border: 4px solid #EADCA6;
+    border-radius: 6px;
+}
+
+.logo-rectangle-2 {
+    width: 25px;
+    height: 30px;
+    background: #EADCA6;
+    border-radius: 0px 4px 4px 0px;
+    transform: rotate(90deg);
+}
+
+/* Navigation menu */
+.nav-menu {
+    display: flex;
+    gap: 60px;
+    align-items: center;
+    position: relative;
+    z-index: 1002;
+}
+
+.nav-label {
+    font-family: 'Pretendard';
+    font-size: 20px;
+    font-weight: 500;
+    color: #5C6B73;
+    cursor: pointer;
+    transition: color 0.3s;
+    padding: 10px 20px;
+    border-radius: 8px;
+    position: relative;
+    z-index: 1003;
+}
+
+.nav-label:hover {
+    color: #EADCA6;
+    background-color: rgba(234, 220, 166, 0.1);
 }
 
 .nav-label.mypage {
-    left: 1225px;
     font-weight: 700;
     color: #DDC66F;
-    cursor: pointer;
 }
 
-
-/* 로그인/로그아웃 메뉴 */
+/* Login/Logout section */
 .login-item {
-    position: absolute;
-    right: 100px;
-    top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    z-index: 1002;
 }
 
 .login-item a {
     font-family: 'Pretendard';
-    font-size: 24px;
-    color: #DDC66F;
+    font-size: 16px;
+    color: #5C6B73;
     text-decoration: none;
-}
-
-/* 마이페이지 드롭다운 */
-
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    width: 160px;
-    height: 240px;
-    left: 0;
-    top: 54px;
-    background: #FFFFFF;
-    border: 1px solid #E6E6E6;
+    transition: color 0.3s;
+    padding: 8px 16px;
     border-radius: 6px;
-    z-index: 1000;
 }
 
-.dropdown-menu .dropdown-item {
-    position: absolute;
-    width: 160px;
-    height: 60px;
-    font-family: 'Pretendard';
-    font-style: normal;
-    font-weight: 500;
-    font-size: 20px;
-    line-height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #000000;
-    text-decoration: none;
-    border-bottom: 1px solid #E6E6E6;
+.login-item a:hover {
+    color: #DDC66F;
+    background-color: rgba(234, 220, 166, 0.1);
 }
 
-.dropdown-menu .dropdown-item:nth-child(1) {
-    top: 0;
-    border-radius: 8px 8px 0 0;
-    color: #DCA628;
-}
-
-.dropdown-menu .dropdown-item:nth-child(2) {
-    top: 60px;
-}
-
-.dropdown-menu .dropdown-item:nth-child(3) {
-    top: 120px;
-}
-
-.dropdown-menu .dropdown-item:nth-child(4) {
-    top: 180px;
-    border-radius: 0 0 8px 8px;
-    border-bottom: none;
-}
-
-.dropdown-menu .dropdown-item:hover {
-    background-color: #f2f2f2;
-}
-
-/* 호버 시 메뉴 표시 */
-.nav-label.mypage:hover .dropdown-menu {
-    display: block;
-}
-
-.user-info {
-    flex: 0 0 auto !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-end !important;
-    color: #333 !important;
-    font-size: 16px !important;
-}
-
-.user-info span {
-    margin-right: 5px !important;
-}
-
+/* Main content adjustment */
 main {
     margin-top: 80px;
     min-height: calc(100vh - 160px);
     padding: 2rem;
+    display: flex;
+    gap: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
+/* Sidebar styles */
+.sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 100;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown-toggle {
+    width: 100%;
+    padding: 15px 20px;
+    background: #FFFFFF;
+    border: 1px solid #E6E6E6;
+    border-radius: 8px;
+    font-family: 'Pretendard';
+    font-size: 18px;
+    font-weight: 500;
+    color: #5C6B73;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.3s;
+    position: relative;
+    z-index: 101;
+}
+
+.dropdown-toggle:hover {
+    background: #F8F8F8;
+    color: #DDC66F;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #FFFFFF;
+    border: 1px solid #E6E6E6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 8px 0;
+    margin-top: 10px;
+    z-index: 1000;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 12px 20px;
+    font-family: 'Pretendard';
+    font-size: 16px;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.dropdown-item:hover {
+    background-color: #F8F8F8;
+    color: #DDC66F;
+}
+
+.dropdown-item:first-child {
+    color: #DDC66F;
+}
+
+/* Content area */
+.content {
+    flex-grow: 1;
+    background: transparent;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: none;
+    position: relative;
+    z-index: 1;
+}
+
+/* Footer */
 footer {
     background-color: #FFFFFF;
     padding: 1rem;
     text-align: center;
     color: #666;
     font-size: 0.9rem;
-}
-
-.user-greeting {
+    border-top: 1px solid #E6E6E6;
     position: relative;
-    cursor: pointer;
-    font-family: 'Pretendard';
-    font-size: 16px;
-    color: #000;
-    padding: 8px 16px;
-    border-radius: 6px;
-    background: #fff;
-    transition: background 0.2s;
+    z-index: 1;
 }
 
-.user-greeting:hover .logout-dropdown {
-    display: block;
+/* Responsive design */
+@media (max-width: 768px) {
+    nav {
+        padding: 0 15px;
+    }
+
+    .nav-menu {
+        gap: 30px;
+    }
+
+    .nav-label {
+        font-size: 16px;
+        padding: 8px 12px;
+    }
+
+    .logo-t, .logo-p {
+        font-size: 32px;
+    }
+
+    .logo-rectangle {
+        width: 24px;
+        height: 32px;
+    }
+
+    .logo-rectangle-2 {
+        width: 16px;
+        height: 20px;
+    }
+
+    main {
+        padding: 1rem;
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Dodatkowe style dla lepszej stabilności */
+body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Napraw problemy z z-index na różnych urządzeniach */
+@media (max-width: 480px) {
+    header {
+        z-index: 9999;
+    }
+    
+    nav {
+        z-index: 10000;
+    }
+    
+    .nav-menu {
+        z-index: 10001;
+    }
+    
+    .nav-label {
+        z-index: 10002;
+    }
 } 

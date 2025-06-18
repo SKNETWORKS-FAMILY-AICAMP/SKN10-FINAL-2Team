@@ -63,205 +63,333 @@
 .mypage-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 20px;
 }
 
 .mypage-header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 30px;
 }
 
 .mypage-header h1 {
-    font-size: 2.5rem;
+    font-size: 2em;
     color: #333;
-    margin-bottom: 1rem;
 }
 
+/* Nowa struktura - karty wyświetlane pionowo */
 .mypage-content {
-    display: grid;
-    gap: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
 }
 
-/* 건강 점수 스타일 */
-.health-score-section {
+.mypage-menu {
+    width: 250px;
     background: #fff;
-    padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.menu-item:hover {
+    background-color: #f5f5f5;
+}
+
+.menu-item i {
+    margin-right: 10px;
+    color: #666;
+}
+
+.menu-item span {
+    color: #333;
+    font-size: 1.1em;
+}
+
+.mypage-main {
+    flex: 1;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 30px;
+}
+
+.health-score-section {
     text-align: center;
+    margin-bottom: 30px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .score-circle {
-    width: 150px;
-    height: 150px;
+    display: inline-block;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     background: #EADCA6;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     align-items: center;
-    margin: 2rem auto;
+    justify-content: center;
+    margin: 20px auto;
 }
 
 .score {
-    font-size: 3rem;
+    font-size: 2.5em;
     font-weight: bold;
-    color: #fff;
+    color: #333;
 }
 
 .score-label {
-    font-size: 1.2rem;
-    color: #fff;
+    font-size: 1.2em;
+    color: #666;
+    margin-left: 5px;
 }
 
-/* 추천 영양제 스타일 */
-.recommended-supplements-section {
+.health-score {
+    font-size: 3em;
+    font-weight: bold;
+    color: #4CAF50;
+    margin: 20px 0;
+}
+
+.health-status {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+.status-good {
+    color: #4CAF50;
+}
+
+.status-normal {
+    color: #2196F3;
+}
+
+.status-warning {
+    color: #FFC107;
+}
+
+.status-bad {
+    color: #F44336;
+}
+
+.health-recommendations-section {
+    margin-bottom: 30px;
     background: #fff;
-    padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.health-recommendations-section h2 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.recommendations-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recommendation-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #f9f9f9;
+    border-radius: 5px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.recommendation-item:before {
+    content: "•";
+    color: #4CAF50;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.recommended-supplements-section {
+    margin-bottom: 30px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.recommended-supplements-section h2 {
+    color: #333;
+    margin-bottom: 15px;
 }
 
 .supplements-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
 }
 
 .supplement-card {
     background: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    border: 1px solid #EADCA6;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .supplement-card h3 {
     color: #333;
-    margin-bottom: 1rem;
+    margin-bottom: 10px;
+    font-size: 1.2em;
 }
 
-.reason {
+.supplement-card .reason {
     color: #666;
-    margin-bottom: 0.5rem;
+    margin-bottom: 10px;
+    font-size: 0.9em;
 }
 
-.benefits {
+.supplement-card .benefits {
     color: #888;
-    font-size: 0.9rem;
+    font-size: 0.9em;
 }
 
-/* 건강 추천사항 스타일 */
-.health-recommendations-section {
-    background: #fff;
-    padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.recommendations-list {
-    margin-top: 1.5rem;
-}
-
-.recommendation-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 0.5rem;
-}
-
-.recommendation-item i {
-    color: #EADCA6;
-    margin-right: 1rem;
-}
-
-/* 설문 이력 스타일 */
 .survey-history-section {
     background: #fff;
-    padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-.history-list {
-    margin-top: 1.5rem;
+.history-timeline {
+    position: relative;
 }
 
 .history-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f9f9f9;
+    border-radius: 5px;
+    border-left: 4px solid #EADCA6;
 }
 
 .history-date {
-    color: #666;
+    font-weight: bold;
+    color: #333;
 }
 
 .history-score {
-    color: #333;
-    font-weight: 500;
-}
-
-/* 버튼 스타일 */
-.btn-primary {
-    display: inline-block;
-    padding: 0.8rem 1.5rem;
-    background: #EADCA6;
-    color: #fff;
-    border-radius: 0.5rem;
-    text-decoration: none;
-    transition: background 0.3s;
-}
-
-.btn-primary:hover {
-    background: #d4c595;
+    color: #666;
 }
 
 .btn-secondary {
     display: inline-block;
-    padding: 0.5rem 1rem;
-    background: #f8f9fa;
-    color: #333;
-    border: 1px solid #EADCA6;
-    border-radius: 0.5rem;
+    padding: 8px 16px;
+    background: #6c757d;
+    color: #FFFFFF;
     text-decoration: none;
-    transition: all 0.3s;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.2s;
 }
 
 .btn-secondary:hover {
+    background: #5a6268;
+    text-decoration: none;
+    color: #FFFFFF;
+}
+
+.no-survey-message {
+    text-align: center;
+    padding: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.no-survey-message h2 {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.no-survey-message p {
+    color: #888;
+    margin-bottom: 20px;
+}
+
+.btn-primary {
+    display: inline-block;
+    padding: 12px 24px;
     background: #EADCA6;
-    color: #fff;
+    color: #FFFFFF;
+    text-decoration: none;
+    border-radius: 6px;
+    font-family: 'Pretendard';
+    font-weight: 700;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background: #DCA628;
+    text-decoration: none;
+    color: #FFFFFF;
+}
+
+@media (max-width: 768px) {
+    .mypage-content {
+        flex-direction: column;
+    }
+
+    .mypage-menu {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .supplements-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .chatbot-section {
-    background-color: #ffffff;
-    padding: 2rem;
+    background: #fff;
     border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-top: 2rem;
+    padding: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-align: center;
+    margin-top: 30px;
 }
 
 .chatbot-section h2 {
     color: #333;
-    margin-bottom: 1rem;
+    margin-bottom: 20px;
 }
 
 .chatbot-section .btn-primary {
-    display: inline-block;
-    padding: 0.8rem 1.5rem;
-    background-color: #4CAF50;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    transition: background-color 0.3s;
+    background: #007bff;
+    color: #FFFFFF;
+    padding: 15px 30px;
+    font-size: 18px;
 }
 
 .chatbot-section .btn-primary:hover {
-    background-color: #45a049;
+    background: #0056b3;
+    text-decoration: none;
+    color: #FFFFFF;
 } 

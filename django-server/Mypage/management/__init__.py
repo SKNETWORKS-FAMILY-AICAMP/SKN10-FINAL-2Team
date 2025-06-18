@@ -1,0 +1,1 @@
+# Management commands for Mypage app 
