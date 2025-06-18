@@ -5,6 +5,8 @@ from rest_framework import status
 from .models import Products
 from django.http import JsonResponse
 from Mypage.models import Like
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
 
 def get_product_details(request, product_id=None):
     """
@@ -14,15 +16,18 @@ def get_product_details(request, product_id=None):
     GET /product/details/?ids=1,2,3 - 여러 상품 정보 반환
     """
     try:
+        user_id = request.user.id if request.user.is_authenticated else None
         if product_id:
             # 단일 상품 조회
             product = get_object_or_404(Products, id=product_id)
             
             # 임시 사용자 ID (실제 구현에서는 인증된 사용자 정보 사용)
-            user_id = 1
+            user = request.user
+            user_id = user.id
             
             # 좋아요 여부 확인
-            is_liked = Like.objects.filter(user_id=user_id, product=product).exists()
+            if user_id:
+                is_liked = Like.objects.filter(user_id=user_id, product=product).exists()
             
             product_data = {
                 'id': product.id,
@@ -62,7 +67,8 @@ def get_product_details(request, product_id=None):
             products = Products.objects.filter(id__in=id_list)
             
             # 임시 사용자 ID (실제 구현에서는 인증된 사용자 정보 사용)
-            user_id = 1
+            user = request.user
+            user_id = user.id
             
             # 좋아요한 상품 ID 목록 가져오기
             liked_product_ids = Like.objects.filter(user_id=user_id).values_list('product_id', flat=True)

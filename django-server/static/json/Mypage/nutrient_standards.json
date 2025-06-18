@@ -44,6 +44,11 @@
         "unit": "μg",
         "description": "세포 분열, DNA 합성"
     },
+    "비오틴": {
+        "recommended_amount": 30,
+        "unit": "μg",
+        "description": "모발, 피부, 손톱 건강"
+    },
     "칼슘": {
         "recommended_amount": 1000,
         "unit": "mg",
@@ -69,9 +74,134 @@
         "unit": "μg",
         "description": "항산화 작용, 갑상선 기능"
     },
+    "구리": {
+        "recommended_amount": 0.9,
+        "unit": "mg",
+        "description": "철분 흡수, 항산화 작용"
+    },
+    "망간": {
+        "recommended_amount": 2.3,
+        "unit": "mg",
+        "description": "뼈 형성, 대사 작용"
+    },
+    "크롬": {
+        "recommended_amount": 35,
+        "unit": "μg",
+        "description": "혈당 조절, 지방 대사"
+    },
+    "몰리브덴": {
+        "recommended_amount": 45,
+        "unit": "μg",
+        "description": "효소 활성화, 아미노산 대사"
+    },
+    "요오드": {
+        "recommended_amount": 150,
+        "unit": "μg",
+        "description": "갑상선 호르몬 생성"
+    },
+    "칼륨": {
+        "recommended_amount": 3500,
+        "unit": "mg",
+        "description": "혈압 조절, 근육 기능"
+    },
+    "나트륨": {
+        "recommended_amount": 2300,
+        "unit": "mg",
+        "description": "체액 균형, 신경 기능"
+    },
+    "인": {
+        "recommended_amount": 700,
+        "unit": "mg",
+        "description": "뼈와 치아 형성, 에너지 대사"
+    },
     "오메가3": {
         "recommended_amount": 1.6,
         "unit": "g",
         "description": "심장 건강, 뇌 기능"
+    },
+    "오메가6": {
+        "recommended_amount": 17,
+        "unit": "g",
+        "description": "세포막 형성, 염증 조절"
+    },
+    "DHA": {
+        "recommended_amount": 250,
+        "unit": "mg",
+        "description": "뇌 건강, 시력 개선"
+    },
+    "EPA": {
+        "recommended_amount": 250,
+        "unit": "mg",
+        "description": "심장 건강, 염증 감소"
+    },
+    "코엔자임Q10": {
+        "recommended_amount": 30,
+        "unit": "mg",
+        "description": "에너지 생산, 항산화 작용"
+    },
+    "루테인": {
+        "recommended_amount": 10,
+        "unit": "mg",
+        "description": "눈 건강, 시력 보호"
+    },
+    "제아잔틴": {
+        "recommended_amount": 2,
+        "unit": "mg",
+        "description": "눈 건강, 항산화 작용"
+    },
+    "프로바이오틱스": {
+        "recommended_amount": 10,
+        "unit": "billion CFU",
+        "description": "장 건강, 면역력 강화"
+    },
+    "콜라겐": {
+        "recommended_amount": 10,
+        "unit": "g",
+        "description": "피부, 관절, 뼈 건강"
+    },
+    "크레아틴": {
+        "recommended_amount": 5,
+        "unit": "g",
+        "description": "근육 에너지, 운동 성능"
+    },
+    "글루타민": {
+        "recommended_amount": 5,
+        "unit": "g",
+        "description": "근육 회복, 면역력"
+    },
+    "BCAA": {
+        "recommended_amount": 5,
+        "unit": "g",
+        "description": "근육 성장, 회복"
+    },
+    "단백질": {
+        "recommended_amount": 50,
+        "unit": "g",
+        "description": "근육 형성, 조직 수리"
+    },
+    "식이섬유": {
+        "recommended_amount": 25,
+        "unit": "g",
+        "description": "소화 건강, 혈당 조절"
+    },
+    "탄수화물": {
+        "recommended_amount": 275,
+        "unit": "g",
+        "description": "에너지 공급, 뇌 기능"
+    },
+    "지방": {
+        "recommended_amount": 65,
+        "unit": "g",
+        "description": "호르몬 생성, 영양소 흡수"
+    },
+    "당류": {
+        "recommended_amount": 50,
+        "unit": "g",
+        "description": "에너지 공급 (제한 권장)"
+    },
+    "콜레스테롤": {
+        "recommended_amount": 300,
+        "unit": "mg",
+        "description": "세포막 형성 (제한 권장)"
     }
 } 

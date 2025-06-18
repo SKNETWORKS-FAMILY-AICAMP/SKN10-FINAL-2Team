@@ -1,6 +1,18 @@
 {
   "questions": [
     {
+      "name": "age",
+      "text": "Q. 연령대를 선택해주세요",
+      "type": "select",
+      "options": ["19-29세", "30-49세", "50-64세", "65세 이상"]
+    },
+    {
+      "name": "gender",
+      "text": "Q. 성별을 선택해주세요",
+      "type": "select",
+      "options": ["남성", "여성"]
+    },
+    {
       "name": "height",
       "text": "Q. 키가 얼마나 되시나요?",
       "type": "number"

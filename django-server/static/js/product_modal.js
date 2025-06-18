@@ -19,7 +19,7 @@ function toggleLike(event, productId) {
         event.stopPropagation();
         event.preventDefault();
     }
-    
+    const accessToken = localStorage.getItem('accessToken');
     // productId가 문자열로 전달된 경우 숫자로 변환
     productId = parseInt(productId);
     
@@ -63,6 +63,7 @@ function toggleLike(event, productId) {
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCsrfToken(),  // CSRF 토큰 필요
+            'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
             product_id: productId
@@ -166,7 +167,7 @@ function showProductDetail(productId, event) {
     if (event) {
         event.stopPropagation();
     }
-    
+    // 클릭 로그 추가.
     console.log("showProductDetail 호출됨:", productId);
     
     // productId가 문자열로 전달된 경우 숫자로 변환
@@ -389,10 +390,34 @@ function displayProductDetail(product) {
     if (urlElem) {
         if (product.url) {
             urlElem.href = product.url;
+            // 구매 로그 추가 해야 됨
             urlElem.classList.remove('hidden');
         } else {
             urlElem.classList.add('hidden');
         }
+    }
+    if (urlElem) {
+        urlElem.onclick = function (e) {
+            const accessToken = localStorage.getItem('accessToken');
+            const productId = product.id;
+            if(accessToken){
+                checkUserAuthentication();
+                fetch('/mypage/product/purchase/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': `Bearer ${accessToken}`,
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: `product_id=${encodeURIComponent(productId)}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('🛒 구매 로그 저장 완료:', data);
+                });
+            }
+        }; 
+        
     }
     
     // 모달 표시 (애니메이션 적용)
@@ -471,8 +496,28 @@ function attachProductCardListeners() {
         const productId = card.getAttribute('data-product-id');
         card.addEventListener('click', (e) => {
             e.stopPropagation(); // 이벤트 버블링 방지
+            const accessToken = localStorage.getItem('accessToken');
+            if (accessToken) {
+                checkUserAuthentication();
+                const accessToken = localStorage.getItem('accessToken');
+                fetch('/mypage/product/click/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': `Bearer ${accessToken}`,
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: `product_id=${encodeURIComponent(productId)}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('✅ 클릭 로그 저장 완료:', data);
+                });
+            }
             showProductDetail(productId, e);
         });
+        
+
     });
 }
 

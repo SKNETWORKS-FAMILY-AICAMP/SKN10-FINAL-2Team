@@ -4,9 +4,286 @@
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/header.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/mypage.css' %}">
+<style>
+.mypage-container {
+    width: 468px;
+    height: 780px;
+    margin: 120px auto 60px auto;
+    border-radius: 6px;
+    background: #fff;
+    box-sizing: border-box;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
+    border: none;
+    overflow-y: auto;
+}
+
+.mypage-header {
+    text-align: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.mypage-header h1 {
+    font-size: 1.8em;
+    color: #DDC66F;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.mypage-header p {
+    font-size: 1.1em;
+    color: #333;
+    margin: 0;
+}
+
+.mypage-content {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.health-score-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    border-left: 4px solid #DDC66F;
+}
+
+.health-score-section h2 {
+    font-size: 1.3em;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.score-circle {
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #DDC66F;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px auto;
+}
+
+.score {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: white;
+}
+
+.score-label {
+    font-size: 1em;
+    color: white;
+    margin-left: 2px;
+}
+
+.health-status {
+    margin-top: 10px;
+    font-size: 1.1em;
+    font-weight: 500;
+}
+
+.status-good {
+    color: #DDC66F;
+}
+
+.status-normal {
+    color: #EADCA6;
+}
+
+.status-warning {
+    color: #C4A94C;
+}
+
+.status-bad {
+    color: #B39B3A;
+}
+
+.recommended-supplements-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #EADCA6;
+}
+
+.recommended-supplements-section h2 {
+    font-size: 1.3em;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.supplements-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.supplement-card {
+    background: white;
+    border-radius: 6px;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.supplement-card h3 {
+    font-size: 1.1em;
+    color: #DDC66F;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.supplement-card .reason {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.supplement-card .benefits {
+    font-size: 0.9em;
+    color: #333;
+}
+
+.health-recommendations-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #C4A94C;
+}
+
+.health-recommendations-section h2 {
+    font-size: 1.3em;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.recommendations-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recommendation-item {
+    padding: 8px 0;
+    color: #333;
+    font-size: 0.95em;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.recommendation-item:last-child {
+    border-bottom: none;
+}
+
+.recommendation-item:before {
+    content: "•";
+    color: #DDC66F;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.survey-history-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #DDC66F;
+}
+
+.survey-history-section h2 {
+    font-size: 1.3em;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-item {
+    background: white;
+    border-radius: 6px;
+    padding: 12px;
+    border: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-date {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.history-score {
+    font-size: 0.9em;
+    color: #DDC66F;
+    font-weight: 600;
+}
+
+.btn-primary, .btn-secondary {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #DDC66F;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-family: 'Pretendard';
+    font-weight: 700;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover, .btn-secondary:hover {
+    background: #C4A94C;
+    text-decoration: none;
+    color: white;
+}
+
+/* 스크롤바 스타일 */
+.mypage-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mypage-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.mypage-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.mypage-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 500px) {
+    .mypage-container {
+        width: 100vw;
+        margin: 0;
+    }
+}
+</style>
 {% endblock %}
 
-{% block content %}
+{% block mypage_content %}
 <div class="mypage-container">
     <div class="mypage-header">
         <h1>마이페이지</h1>
@@ -22,6 +299,17 @@
                     <span class="score">{{ health_score }}</span>
                     <span class="score-label">점</span>
                 </div>
+                <div class="health-status">
+                    {% if health_score >= 80 %}
+                        <span class="status-good">매우 좋음</span>
+                    {% elif health_score >= 60 %}
+                        <span class="status-normal">좋음</span>
+                    {% elif health_score >= 40 %}
+                        <span class="status-warning">보통</span>
+                    {% else %}
+                        <span class="status-bad">주의 필요</span>
+                    {% endif %}
+                </div>
             {% else %}
                 <p>아직 설문을 진행하지 않았습니다.</p>
                 <a href="{% url 'mypage:survey' %}" class="btn-primary">설문하러 가기</a>
@@ -34,11 +322,11 @@
             {% if recommended_supplements %}
                 <div class="supplements-grid">
                     {% for supplement in recommended_supplements %}
-                        <div class="supplement-card">
-                            <img src="{{ supplement.image_url }}" alt="{{ supplement.name }}">
-                            <h3>{{ supplement.name }}</h3>
-                            <p>{{ supplement.description }}</p>
-                        </div>
+                    <div class="supplement-card">
+                        <h3>{{ supplement.name }}</h3>
+                        <p class="reason">{{ supplement.reason }}</p>
+                        <p class="benefits">{{ supplement.benefits }}</p>
+                    </div>
                     {% endfor %}
                 </div>
             {% else %}
@@ -50,9 +338,11 @@
         <div class="health-recommendations-section">
             <h2>건강 추천사항</h2>
             {% if recommendations %}
-                <div class="recommendations">
-                    {{ recommendations|linebreaks }}
-                </div>
+                <ul class="recommendations-list">
+                    {% for recommendation in recommendations %}
+                    <li class="recommendation-item">{{ recommendation }}</li>
+                    {% endfor %}
+                </ul>
             {% else %}
                 <p>아직 추천사항이 없습니다.</p>
             {% endif %}
@@ -64,43 +354,17 @@
             {% if survey_history %}
                 <div class="history-list">
                     {% for survey in survey_history %}
-                        <div class="history-item">
-                            <div class="history-date">{{ survey.created_at|date:"Y년 m월 d일" }}</div>
-                            <div class="history-score">건강 점수: {{ survey.health_score }}점</div>
-                            <a href="{% url 'mypage:survey_result' %}" class="btn-secondary">상세보기</a>
-                        </div>
+                    <div class="history-item">
+                        <div class="history-date">{{ survey.created_at|date:"Y년 m월 d일" }}</div>
+                        <div class="history-score">건강 점수: {{ survey.health_score }}점</div>
+                        <a href="{% url 'mypage:survey_result' %}" class="btn-secondary">상세보기</a>
+                    </div>
                     {% endfor %}
                 </div>
             {% else %}
                 <p>아직 설문 이력이 없습니다.</p>
             {% endif %}
         </div>
-
-        <div class="chatbot-section">
-            <h2>챗봇과 대화하기</h2>
-            <a href="{% url 'mypage:chatbot' %}" class="btn-primary">챗봇과 대화하기</a>
-        </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function navigateTo(page) {
-    switch(page) {
-        case 'mypage':
-            window.location.href = "{% url 'mypage:mypage' %}";
-            break;
-        case 'survey':
-            window.location.href = "{% url 'mypage:survey' %}";
-            break;
-        case 'favorite':
-            window.location.href = "{% url 'mypage:favorite' %}";
-            break;
-        case 'analysis':
-            window.location.href = "{% url 'mypage:analysis' %}";
-            break;
-    }
-}
-</script>
 {% endblock %} 

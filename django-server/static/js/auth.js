@@ -17,12 +17,12 @@ function logoutUser() {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     // 로그인 페이지로 리다이렉트 (YOUR_LOGIN_URL을 실제 로그인 페이지 URL로 변경)
-    window.location.href = '/'; 
+    window.location.href = '/login/'; 
 }
 
 function redirectToLogin() {
     console.log("Redirecting to login page.");
-    window.location.href = '/login'; // Replace with your actual login page URL
+    window.location.href = '/login/'; // Replace with your actual login page URL
 }
 
 /**
