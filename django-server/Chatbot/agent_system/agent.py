@@ -13,7 +13,7 @@ from .state import AgentState
 from .node.input_analysis import analyze_input
 from .node.general_chat import handle_general_chat
 from .node.supplement.extract import is_enough_supplement_info, extract_supplement_info
-from .node.supplement.query import build_kag_query, execute_kag_query
+from .node.supplement.query import execute_kag_query
 from .node.supplement.rerank import rerank_node, select_products_node
 from .node.supplement.response import generate_supplement_response
 
@@ -92,7 +92,6 @@ class SupplementRecommendationAgent:
             # builder.add_node("extract_health_info", extract_health_info)
             builder.add_node("is_enough_supplement_info", is_enough_supplement_info)
             builder.add_node("extract_supplement_info", extract_supplement_info)  # 함수명 매핑
-            builder.add_node("build_kag_query", build_kag_query)
             builder.add_node("execute_kag_query", execute_kag_query)  # 함수명 매핑
             builder.add_node("rerank_node", rerank_node)  # 노드 이름 변경
             builder.add_node("select_products_node", select_products_node)  # 노드 이름 변경
@@ -134,8 +133,7 @@ class SupplementRecommendationAgent:
             builder.add_edge("general_chat", END)
             
             # 영양제 추천 플로우 (단순화)
-            builder.add_edge("extract_supplement_info", "build_kag_query")
-            builder.add_edge("build_kag_query", "execute_kag_query")
+            builder.add_edge("extract_supplement_info", "execute_kag_query")
             builder.add_edge("execute_kag_query", "rerank_node")
             builder.add_edge("rerank_node", "select_products_node")
             builder.add_edge("select_products_node", "generate_supplement_response")
@@ -143,7 +141,6 @@ class SupplementRecommendationAgent:
 
             # 시작점 설정
             builder.set_entry_point("analyze_input")
-
 
             # PostgreSQL 체크포인터 설정
             pool = cls.get_db_connection_pool()
@@ -181,7 +178,7 @@ class SupplementRecommendationAgent:
         return {"configurable": {"thread_id": str(thread_id)}}
     
     @classmethod
-    def process_message(cls, thread_id: str, message: str, user_health_info: Optional[Dict[str, Any]] = None):
+    def process_message(cls, thread_id: str, message: str, user_id: int, user_health_info: Optional[Dict[str, Any]] = None):
         """
         사용자 메시지를 처리하고 응답을 생성합니다.
         
@@ -203,10 +200,12 @@ class SupplementRecommendationAgent:
         existing_state = workflow.get_state(config)
         print(f"기존 상태 조회 성공: {thread_id}")
         print(f"기존 상태: {existing_state.next}")
-
+        workflow.update_state(config, {"user_id": user_id})
+        
         # interrupt 상태에서 재시작하는 경우
         if existing_state.next and len(existing_state.next) > 0:
             print("체크포인트에서 재시작 중...")
+
             # 새로운 사용자 메시지 추가
             workflow.update_state(config, {"messages": [HumanMessage(content=message)]})
             
@@ -222,6 +221,10 @@ class SupplementRecommendationAgent:
             print("새로운 대화 시작")
             # 새로운 대화 시작
             initial_state = {"messages": [HumanMessage(content=message)]}
+
+            # 이전대화에서 추천된 product_ids 초기화
+            workflow.update_state(config, {"product_ids": []})
+            
             if user_health_info:
                 initial_state["user_health_info"] = user_health_info
             

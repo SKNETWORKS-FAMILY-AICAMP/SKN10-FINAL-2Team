@@ -23,6 +23,9 @@ class AgentState(TypedDict):
     에이전트 시스템의 상태를 정의하는 TypedDict 클래스.
     LangGraph 워크플로우에서 상태 관리에 사용됩니다.
     """
+    # 사용자 id
+    user_id: Annotated[Optional[int], overwrite_reducer]
+
     # 메시지 기록
     messages: Annotated[Sequence[BaseMessage], add_messages]
     
@@ -31,6 +34,9 @@ class AgentState(TypedDict):
     
     # 대화 타입 (general, nutrient, supplement)
     conversation_type: Annotated[Optional[str], overwrite_reducer]
+
+    # 개인화 추천여부 (True or False)
+    is_personalized: Annotated[bool, overwrite_reducer]
     
     # AI 최종 답변
     response: Annotated[Optional[str], overwrite_reducer]

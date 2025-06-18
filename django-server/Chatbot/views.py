@@ -109,7 +109,8 @@ class ChatWithNutiAPIView(APIView):
             result = SupplementRecommendationAgent.process_message(
                 thread_id=str(chat_room_id),
                 message=user_query,
-                user_health_info=user_health_info
+                user_health_info=user_health_info,
+                user_id=user.id
             )
             
             ai_response = result.get("response", "")
