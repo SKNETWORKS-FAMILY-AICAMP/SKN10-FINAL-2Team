@@ -461,12 +461,12 @@ body {
                 </select>
             </div>
             <div class="form-group">
-                <label for="editStatus">상태</label>
-                <select id="editStatus" required>
-                    <option value="부족">부족</option>
-                    <option value="적정">적정</option>
-                    <option value="과다">과다</option>
-                </select>
+                <label for="editAmountInput">입력수량</label>
+                <input type="number" id="editAmountInput" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="editUnitInput">단위</label>
+                <input type="text" id="editUnitInput" required>
             </div>
             <button type="submit" class="btn-save">저장</button>
         </form>
@@ -1037,7 +1037,7 @@ function createNutrientTable(data) {
     thead.innerHTML = `
         <tr>
             <th>영양소</th>
-            <th>상태</th>
+            <th>입력수량</th>
             <th>등록일</th>
             <th>작업</th>
         </tr>
@@ -1050,10 +1050,10 @@ function createNutrientTable(data) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${item.nutrient_name}</td>
-            <td>${item.status}</td>
+            <td>${item.amount}${item.unit}</td>
             <td>${new Date(item.created_at).toLocaleDateString()}</td>
             <td>
-                <button class="btn-edit" onclick="editIntake(${item.id}, '${item.nutrient_name}', '${item.status}')">수정</button>
+                <button class="btn-edit" onclick="editIntake(${item.id}, '${item.nutrient_name}', ${item.amount}, '${item.unit}')">수정</button>
                 <button class="btn-delete" onclick="deleteIntake(${item.id})">삭제</button>
             </td>
         `;
@@ -1082,10 +1082,11 @@ window.onclick = function(event) {
 }
 
 // 수정 모달 열기
-function editIntake(id, nutrientName, status) {
+function editIntake(id, nutrientName, amount, unit) {
     document.getElementById('intakeId').value = id;
     document.getElementById('editNutrient').value = nutrientName;
-    document.getElementById('editStatus').value = status;
+    document.getElementById('editAmountInput').value = amount;
+    document.getElementById('editUnitInput').value = unit;
     modal.style.display = "block";
 }
 
@@ -1095,7 +1096,8 @@ editForm.onsubmit = async function(e) {
     
     const id = document.getElementById('intakeId').value;
     const nutrient = document.getElementById('editNutrient').value;
-    const status = document.getElementById('editStatus').value;
+    const amount = document.getElementById('editAmountInput').value;
+    const unit = document.getElementById('editUnitInput').value;
     
     try {
         const response = await fetch('/mypage/update-nutrient-intake/', {
@@ -1107,7 +1109,8 @@ editForm.onsubmit = async function(e) {
             body: JSON.stringify({
                 intake_id: id,
                 nutrient: nutrient,
-                status: status
+                amount: parseFloat(amount),
+                unit: unit
             })
         });
         

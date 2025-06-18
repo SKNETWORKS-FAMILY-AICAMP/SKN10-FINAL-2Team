@@ -518,7 +518,7 @@ def add_manual_nutrient_intake(request):
         data = json.loads(request.body)
         nutrient_name = data.get('nutrient_name')
         unit = data.get('unit')
-        # amount i date nie są już używane w modelu UserNutrientIntake
+        amount = data.get('amount', 0.0)
 
         # 영양소 기준치 데이터 로드
         json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
@@ -550,11 +550,12 @@ def add_manual_nutrient_intake(request):
         else:
             print(f"새 영양소 생성: {nutrient_name}, 권장량: {nutrient.daily_recommended}")
 
-        # 영양소 섭취 기록 생성 (amount, date 없이)
+        # 영양소 섭취 기록 생성 (amount, unit만)
         intake = UserNutrientIntake.objects.create(
             user=request.user,
             nutrient=nutrient,
-            status='수동입력'  # 또는 적절한 상태값
+            amount=amount,
+            unit=unit
         )
 
         # 영양분석 실행
@@ -570,7 +571,8 @@ def add_manual_nutrient_intake(request):
             'intake': {
                 'id': intake.id,
                 'nutrient_name': nutrient.name,
-                'unit': nutrient.unit
+                'amount': intake.amount,
+                'unit': intake.unit
             }
         })
     except Exception as e:
@@ -1207,7 +1209,8 @@ def get_nutrient_history(request):
             history.append({
                 'id': intake.id,
                 'nutrient_name': intake.nutrient.name,
-                'status': intake.status,
+                'amount': intake.amount,
+                'unit': intake.unit,
                 'created_at': intake.created_at.strftime('%Y-%m-%d %H:%M:%S')
             })
 
@@ -1229,10 +1232,11 @@ def update_nutrient_intake(request):
         data = json.loads(request.body)
         intake_id = data.get('intake_id')
         nutrient_name = data.get('nutrient')
-        status = data.get('status')
+        amount = data.get('amount', 0.0)
+        unit = data.get('unit', '')
 
         # Sprawdź, czy wszystkie wymagane pola są obecne
-        if not all([intake_id, nutrient_name, status]):
+        if not all([intake_id, nutrient_name]):
             return JsonResponse({
                 'status': 'error',
                 'message': '모든 필수 필드를 입력해주세요.'
@@ -1251,7 +1255,8 @@ def update_nutrient_intake(request):
         try:
             intake = UserNutrientIntake.objects.get(id=intake_id, user=request.user)
             intake.nutrient = nutrient
-            intake.status = status
+            intake.amount = amount
+            intake.unit = unit
             intake.save()
 
             return JsonResponse({
