@@ -158,6 +158,7 @@ def analysis_view(request):
         # 사용자가 좋아요한 영양제 가져오기
         likes = Like.objects.filter(user=request.user).select_related('product')
         liked_supplements = [like.product for like in likes]
+        print(f"[DEBUG] liked_supplements: {liked_supplements}")  # 추가: 콘솔에 리스트 출력
 
         # 추천 영양제 가져오기
         latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
@@ -184,6 +185,7 @@ def analysis_view(request):
                 'file_path': json_path,
             }
         }
+        print(f"[DEBUG] context['liked_supplements']: {context['liked_supplements']}")  # 추가: context 전달 확인
         return render(request, 'Mypage/analysis.html', context)
     except Exception as e:
         messages.error(request, f'영양소 분석 결과를 불러오는 중 오류가 발생했습니다: {str(e)}')

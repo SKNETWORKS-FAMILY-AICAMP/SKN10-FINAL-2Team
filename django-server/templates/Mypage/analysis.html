@@ -406,6 +406,26 @@ body {
         </div>
     </div>
 
+    <!-- 좋아요한 영양제 리스트 표시 -->
+    <div class="favorite-products-section" style="margin: 20px 0;">
+      <h2>내가 좋아요한 영양제</h2>
+      {% if liked_supplements %}
+        <ul style="list-style: none; padding: 0;">
+          {% for product in liked_supplements %}
+            <li style="margin-bottom: 10px;">
+              <strong>{{ product.title }}</strong>
+              {% if product.image_link %}
+                <img src="{{ product.image_link }}" alt="{{ product.title }}" style="height:40px;vertical-align:middle;">
+              {% endif %}
+              <span style="font-size:12px;color:#888;">{{ product.brand }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div>좋아요한 영양제가 없습니다.</div>
+      {% endif %}
+    </div>
+
     <!-- Ukryte inputy -->
     <input type="file" id="ocr-upload" accept="image/*" style="display:none" onchange="handleOcrUpload(event)">
 
@@ -1082,6 +1102,60 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
         });
+});
+</script>
+
+<!-- 영양소 입력 자동완성 입력창 -->
+<div style="position:relative; margin-bottom:20px;">
+  <input type="text" id="nutrient-input" placeholder="영양소를 입력하세요..." autocomplete="off" style="width:300px; padding:8px;">
+  <ul id="autocomplete-list" style="border:1px solid #ccc; display:none; position:absolute; background:white; z-index:1000; width:300px; list-style:none; margin:0; padding:0;"></ul>
+</div>
+
+<script>
+const nutrients = [
+  "비타민 A", "베타카로틴", "비타민 D", "비타민 E", "비타민 K",
+  "비타민 B1", "비타민 B2", "나이아신", "판토텐산", "비타민 B6",
+  "엽산", "비타민 B12", "비오틴", "비타민 C", "칼슘", "마그네슘",
+  "철", "아연", "구리", "셀레늄", "요오드", "망간", "몰리브덴",
+  "칼륨", "크롬", "루테인", "인", "메티오닌", "시스테인", "류신",
+  "트립토판", "이소류신", "라이신", "트레오닌", "페닐알라닌", "티로신"
+];
+
+const input = document.getElementById('nutrient-input');
+const list = document.getElementById('autocomplete-list');
+
+input.addEventListener('input', function() {
+  const value = this.value.trim();
+  list.innerHTML = '';
+  if (!value) {
+    list.style.display = 'none';
+    return;
+  }
+  const filtered = nutrients.filter(n => n.includes(value));
+  if (filtered.length === 0) {
+    list.style.display = 'none';
+    return;
+  }
+  filtered.forEach(nutrient => {
+    const li = document.createElement('li');
+    li.textContent = nutrient;
+    li.style.cursor = 'pointer';
+    li.style.padding = '6px 10px';
+    li.onmouseover = function() { li.style.background = '#f0f0f0'; };
+    li.onmouseout = function() { li.style.background = 'white'; };
+    li.onclick = function() {
+      input.value = nutrient;
+      list.style.display = 'none';
+    };
+    list.appendChild(li);
+  });
+  list.style.display = 'block';
+});
+
+document.addEventListener('click', function(e) {
+  if (e.target !== input) {
+    list.style.display = 'none';
+  }
 });
 </script>
 {% endblock %} 
