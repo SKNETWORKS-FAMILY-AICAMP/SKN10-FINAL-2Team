@@ -1047,10 +1047,12 @@ function createNutrientTable(data) {
     // 테이블 바디
     const tbody = document.createElement('tbody');
     data.forEach(item => {
+        const amount = (item.amount !== undefined && item.amount !== null && item.amount !== 0) ? item.amount : '';
+        const unit = item.unit ? item.unit : '';
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${item.nutrient_name}</td>
-            <td>${item.amount}${item.unit}</td>
+            <td>${amount}${unit}</td>
             <td>${new Date(item.created_at).toLocaleDateString()}</td>
             <td>
                 <button class="btn-edit" onclick="editIntake(${item.id}, '${item.nutrient_name}', ${item.amount}, '${item.unit}')">수정</button>
