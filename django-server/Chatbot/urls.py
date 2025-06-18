@@ -2,6 +2,8 @@ from django.urls import path
 from . import views
 from .views import ChatWithNutiAPIView
 
+app_name = 'chatbot'
+
 urlpatterns = [
     path('ChatWithNuti/', ChatWithNutiAPIView.as_view(), name='chat_with_nuti'),
     path('chat-rooms/', views.get_chat_rooms, name='get_chat_rooms'),

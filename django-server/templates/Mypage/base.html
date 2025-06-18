@@ -216,7 +216,7 @@ main {
             <img src="{% static 'image/Logo.png' %}" alt="T&P Logo">
         </div>
         <div class="nav-menu">
-            <div class="nav-label chatbot" onclick="location.href='{% url 'chatbot:chat' %}'">챗봇</div>
+            <div class="nav-label chatbot" onclick="location.href='{% url 'chatbot:chat_with_nuti' %}'">챗봇</div>
             <div class="nav-label mypage" onclick="toggleMypageMenu()">마이페이지
                 <div class="mypage-dropdown" id="mypageDropdown">
                     <a href="{% url 'mypage:mypage' %}" class="mypage-dropdown-item">내 정보</a>
