@@ -31,16 +31,11 @@ class Nutrient(models.Model):
 class UserNutrientIntake(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     nutrient = models.ForeignKey(Nutrient, on_delete=models.CASCADE)
-    amount = models.FloatField()
-    date = models.DateField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-date']
+    status = models.CharField(max_length=20)  # 예: '복용중', '중단', '예정' 등
+    created_at = models.DateTimeField(auto_now_add=True)  # 등록일
 
     def __str__(self):
-        return f"{self.user.username}'s {self.nutrient.name} intake on {self.date}"
+        return f"{self.user.username}'s nutrient status - {self.nutrient.name}"
 
 class NutrientAnalysis(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -108,9 +103,6 @@ class UserHealthReport(models.Model):
     def __str__(self):
         return f"{self.user.username}'s health report - {self.created_at}" 
 
-from django.db import models
-from django.conf import settings
-from Product.models import Products
 
 class Like(models.Model):
     id = models.AutoField(primary_key=True)
@@ -227,7 +219,7 @@ class OCRResult(models.Model):
 
     def __str__(self):
         return f"OCRResult for {self.user.email} at {self.created_at.strftime('%Y-%m-%d %H:%M')}"
-from Product.models import Products    
+
 class UserLog(models.Model):
     ACTION_CHOICES = [
         ('click', 'Click'),

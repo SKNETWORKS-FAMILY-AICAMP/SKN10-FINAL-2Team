@@ -406,26 +406,6 @@ body {
         </div>
     </div>
 
-    <!-- 좋아요한 영양제 리스트 표시 -->
-    <div class="favorite-products-section" style="margin: 20px 0;">
-      <h2>내가 좋아요한 영양제</h2>
-      {% if liked_supplements %}
-        <ul style="list-style: none; padding: 0;">
-          {% for product in liked_supplements %}
-            <li style="margin-bottom: 10px;">
-              <strong>{{ product.title }}</strong>
-              {% if product.image_link %}
-                <img src="{{ product.image_link }}" alt="{{ product.title }}" style="height:40px;vertical-align:middle;">
-              {% endif %}
-              <span style="font-size:12px;color:#888;">{{ product.brand }}</span>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <div>좋아요한 영양제가 없습니다.</div>
-      {% endif %}
-    </div>
-
     <!-- Ukryte inputy -->
     <input type="file" id="ocr-upload" accept="image/*" style="display:none" onchange="handleOcrUpload(event)">
 
@@ -456,9 +436,10 @@ body {
     <div class="modal-content">
         <span class="close" onclick="closeModal('manualInputModal')">&times;</span>
         <h2>영양소 직접입력</h2>
-        <div class="input-group">
+        <div class="input-group" style="position:relative;">
             <label for="nutrientNameInput">영양소 이름:</label>
-            <input type="text" id="nutrientNameInput" placeholder="예: 비타민C">
+            <input type="text" id="nutrientNameInput" placeholder="예: 비타민C" autocomplete="off">
+            <ul id="autocomplete-list" style="border:1px solid #ccc; display:none; position:absolute; background:white; z-index:1000; width:90%; list-style:none; margin:0; padding:0;"></ul>
         </div>
         <div class="input-group">
             <label for="unitInput">단위:</label>
@@ -1105,12 +1086,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- 영양소 입력 자동완성 입력창 -->
-<div style="position:relative; margin-bottom:20px;">
-  <input type="text" id="nutrient-input" placeholder="영양소를 입력하세요..." autocomplete="off" style="width:300px; padding:8px;">
-  <ul id="autocomplete-list" style="border:1px solid #ccc; display:none; position:absolute; background:white; z-index:1000; width:300px; list-style:none; margin:0; padding:0;"></ul>
-</div>
-
 <script>
 const nutrients = [
   "비타민 A", "베타카로틴", "비타민 D", "비타민 E", "비타민 K",
@@ -1121,10 +1096,10 @@ const nutrients = [
   "트립토판", "이소류신", "라이신", "트레오닌", "페닐알라닌", "티로신"
 ];
 
-const input = document.getElementById('nutrient-input');
+const nutrientInput = document.getElementById('nutrientNameInput');
 const list = document.getElementById('autocomplete-list');
 
-input.addEventListener('input', function() {
+nutrientInput.addEventListener('input', function() {
   const value = this.value.trim();
   list.innerHTML = '';
   if (!value) {
@@ -1144,7 +1119,7 @@ input.addEventListener('input', function() {
     li.onmouseover = function() { li.style.background = '#f0f0f0'; };
     li.onmouseout = function() { li.style.background = 'white'; };
     li.onclick = function() {
-      input.value = nutrient;
+      nutrientInput.value = nutrient;
       list.style.display = 'none';
     };
     list.appendChild(li);
@@ -1152,8 +1127,17 @@ input.addEventListener('input', function() {
   list.style.display = 'block';
 });
 
+// 모달이 닫힐 때 자동완성 리스트도 닫기
+const manualModal = document.getElementById('manualInputModal');
+manualModal.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal')) {
+    list.style.display = 'none';
+  }
+});
+
+// 입력란 이외 클릭 시 자동완성 닫기 (리스트 클릭 허용)
 document.addEventListener('click', function(e) {
-  if (e.target !== input) {
+  if (e.target !== nutrientInput && !list.contains(e.target)) {
     list.style.display = 'none';
   }
 });
