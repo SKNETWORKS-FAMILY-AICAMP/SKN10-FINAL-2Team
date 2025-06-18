@@ -2,9 +2,16 @@ from typing import Dict, Any, List
 import os
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
+from datetime import datetime, date
+from django.utils import timezone
+from django.db.models import Sum
+from django.db.models.functions import TruncDate
 
 from ...state import AgentState
 from ..base import get_llm_response
+from ....models import NutritionDailyRec
+from .....Mypage.models import UserNutrientIntake
+from .....Account.models import CustomUser
 
 # 환경변수 로드
 load_dotenv()
@@ -20,7 +27,8 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
     결과가 20개 미만일 경우 단계적으로 필터링을 제거하며 추가 결과를 가져옵니다.
     """
     extracted_info = state.get("extracted_info", {})
-    is_personalized = state.get("is_personalized", {})
+    is_personalized = state.get("is_personalized", False)
+    user_id = state.get("user_id")
     all_results = []
 
     if not is_personalized:
@@ -87,13 +95,165 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
             new_results = [r for r in results if r["id"] not in existing_ids]
             print(f"중복 제거 후 추가된 결과 수: {len(new_results)}개")
             all_results.extend(new_results)
-    
     else:
-        pass
+        print("\n=== 맞춤형 영양제 검색 시작 ===")
+        
+        if not user_id:
+            print("사용자 ID가 없습니다.")
+            return {"kag_results": []}
+            
+        try:
+            user = CustomUser.objects.get(id=user_id)
+            print(f"사용자 정보: {user.email}, 성별: {user.gender}, 생년월일: {user.birth_date}")
+            
+            # 사용자 나이 계산
+            today = date.today()
+            age = today.year - user.birth_date.year - ((today.month, today.day) < (user.birth_date.month, user.birth_date.day))
+            print(f"사용자 나이: {age}")
+            
+            # 나이대 계산 (예: 6~8, 9~11 등)
+            age_range = None
+            for rec in NutritionDailyRec.objects.values('age_range').distinct():
+                range_str = rec['age_range']
+                if '~' in range_str:
+                    start, end = map(int, range_str.split('~'))
+                    if start <= age <= end:
+                        age_range = range_str
+                        break
+            
+            if not age_range:
+                print("적절한 나이대를 찾을 수 없습니다.")
+                return {"kag_results": []}
+            
+            print(f"사용자 나이대: {age_range}")
+            
+            # 영양소별 처리
+            if extracted_info.get("nutrients"):
+                for nutrient in extracted_info["nutrients"]:
+                    print(f"\n=== {nutrient} 영양소 처리 중 ===")
+                    
+                    # 1. 사용자의 영양소 섭취량 확인
+                    recent_intake = UserNutrientIntake.objects.filter(
+                        user_id=user_id,
+                        nutrient__name=nutrient,
+                    ).aggregate(total=Sum('amount'))['total'] or 0
+                    
+                    print(f"{nutrient} 섭취량: {recent_intake}")
+                    
+                    # 2. 1일 권장 섭취량 확인
+                    daily_rec = NutritionDailyRec.objects.filter(
+                        sex=user.gender,
+                        age_range=age_range,
+                        nutrient=nutrient
+                    ).first()
+                    
+                    if not daily_rec:
+                        print(f"{nutrient}의 1일 권장 섭취량 정보가 없습니다.")
+                        continue
+                        
+                    daily_amount = daily_rec.daily
+                    print(f"{nutrient} 1일 권장 섭취량: {daily_amount}")
+                    
+                    # 3. 섭취량과 권장량 비교
+                    if recent_intake < daily_amount:
+                        # 부족한 경우 해당 영양소를 포함한 영양제 검색
+                        deficiency = daily_amount - recent_intake
+                        print(f"{nutrient} 부족량: {deficiency}")
+                        
+                        query = f"""
+                        MATCH (n:Nutrient {{name: '{nutrient}'}})-[c:CONTAINS]->(s:Supplement)
+                        WHERE c.amount >= {deficiency}
+                        RETURN s.id
+                        ORDER BY c.amount ASC
+                        LIMIT 5
+                        """
+                        
+                        print(f"생성된 쿼리:\n{query}")
+                        results = execute_query(query)
+                        print(f"검색 결과 수: {len(results)}개")
+                        
+                        # 중복 제거하면서 추가
+                        existing_ids = {r["id"] for r in all_results}
+                        new_results = [r for r in results if r["id"] not in existing_ids]
+                        all_results.extend(new_results)
+                        
+                    else:
+                        # 과다 섭취인 경우 관련 영양소 검색
+                        print(f"{nutrient} 과다 섭취 중. 관련 영양소 검색")
+                        
+                        # 1. 관련 영양소 찾기
+                        related_nutrients_query = f"""
+                        MATCH (n1:Nutrient {{name: '{nutrient}'}})-[:HAS_TAG]->(t:Tag)<-[:HAS_TAG]-(n2:Nutrient)
+                        WHERE n1 <> n2
+                        RETURN n2.name as name
+                        """
+                        
+                        print(f"관련 영양소 검색 쿼리:\n{related_nutrients_query}")
+                        related_nutrients = execute_query(related_nutrients_query)
+                        print(f"관련 영양소 수: {len(related_nutrients)}개")
+                        
+                        # 2. 각 관련 영양소의 섭취량과 권장량 비교
+                        for related in related_nutrients:
+                            related_nutrient = related["name"]
+                            print(f"\n=== {related_nutrient} 영양소 처리 중 ===")
+                            
+                            # 관련 영양소의 섭취량 확인
+                            related_intake = UserNutrientIntake.objects.filter(
+                                user_id=user_id,
+                                nutrient__name=related_nutrient
+                            ).aggregate(total=Sum('amount'))['total'] or 0
+                            
+                            print(f"{related_nutrient} 섭취량: {related_intake}")
+                            
+                            # 관련 영양소의 1일 권장 섭취량 확인
+                            related_daily_rec = NutritionDailyRec.objects.filter(
+                                sex=user.gender,
+                                age_range=age_range,
+                                nutrient=related_nutrient
+                            ).first()
+                            
+                            if not related_daily_rec:
+                                print(f"{related_nutrient}의 1일 권장 섭취량 정보가 없습니다.")
+                                continue
+                                
+                            related_daily_amount = related_daily_rec.daily
+                            print(f"{related_nutrient} 1일 권장 섭취량: {related_daily_amount}")
+                            
+                            # 관련 영양소가 부족한 경우에만 영양제 추천
+                            if related_intake < related_daily_amount:
+                                deficiency = related_daily_amount - related_intake
+                                print(f"{related_nutrient} 부족량: {deficiency}")
+                                
+                                query = f"""
+                                MATCH (n:Nutrient {{name: '{related_nutrient}'}})-[c:CONTAINS]->(s:Supplement)
+                                WHERE c.amount >= {deficiency}
+                                RETURN s.id
+                                ORDER BY c.amount ASC
+                                LIMIT 3
+                                """
+                                
+                                print(f"생성된 쿼리:\n{query}")
+                                results = execute_query(query)
+                                print(f"검색 결과 수: {len(results)}개")
+                                
+                                # 중복 제거하면서 추가
+                                existing_ids = {r["id"] for r in all_results}
+                                new_results = [r for r in results if r["id"] not in existing_ids]
+                                all_results.extend(new_results)
+                            else:
+                                print(f"{related_nutrient}도 과다 섭취 중입니다. 다른 영양소를 찾습니다.")
+            
+            print("\n=== 맞춤형 검색 완료 ===")
+            print(f"최종 검색 결과 수: {len(all_results)}개")
+            
+        except CustomUser.DoesNotExist:
+            print("사용자를 찾을 수 없습니다.")
+            return {"kag_results": []}
+        except Exception as e:
+            print(f"오류 발생: {str(e)}")
+            return {"kag_results": []}
     
-    print("\n=== 검색 완료 ===")
-    print(f"최종 검색 결과 수: {len(all_results)}개")
-    return {"kag_results": all_results[:20]} 
+    return {"kag_results": all_results[:20]}
 
 def build_query(filtered_info: Dict[str, Any]) -> str:
     """주어진 정보로 Cypher 쿼리를 생성하는 내부 함수"""
