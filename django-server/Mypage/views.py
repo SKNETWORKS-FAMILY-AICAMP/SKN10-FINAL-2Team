@@ -581,6 +581,10 @@ def add_manual_nutrient_intake(request):
 def analyze_nutrients(request):
     try:
         print("영양분석 시작")
+        
+        # 이전 분석 결과 삭제
+        NutrientAnalysis.objects.filter(user=request.user).delete()
+        
         # 최근 7일간의 영양소 섭취 기록 가져오기
         end_date = timezone.now().date()
         start_date = end_date - timedelta(days=7)
@@ -762,6 +766,33 @@ def get_favorite_products(request):
             'message': str(e)
         }, status=500)
 
+def parse_number(value_str):
+    """
+    Parsuje liczbę z przecinkami w prawidłowy sposób:
+    - "10,000" -> 10.0
+    - "1,234" -> 1.234
+    - "1.5" -> 1.5
+    """
+    try:
+        # Jeśli to liczba bez przecinków, po prostu konwertuj
+        if ',' not in value_str:
+            return float(value_str)
+        
+        # Usuń spacje
+        value_str = value_str.strip()
+        
+        # Sprawdź czy to format amerykański (np. 10,000)
+        parts = value_str.split(',')
+        if len(parts) == 2 and len(parts[1]) == 3:
+            # Format amerykański: zamień przecinek na kropkę
+            return float(parts[0])
+        
+        # W przeciwnym razie usuń wszystkie przecinki
+        return float(value_str.replace(',', ''))
+    except ValueError:
+        print(f"Błąd parsowania liczby: {value_str}")
+        return 0.0
+
 def parse_ingredients(text):
     ingredients = {}
     
@@ -881,7 +912,8 @@ def parse_ingredients(text):
             matches = re.finditer(pattern, line)
             for match in matches:
                 name = match.group(1).strip()
-                value = match.group(2).replace(',', '')  # Usuń przecinki z liczby
+                raw_value = match.group(2)
+                value = str(parse_number(raw_value))  # Użyj nowej funkcji parse_number
                 unit = match.group(3)
                 
                 # Sprawdź czy nazwa zawiera główne składniki odżywcze
@@ -1459,13 +1491,13 @@ def save_ocr_ingredients(request):
                 import re
                 match = re.match(r'([\d,]+\.?\d*)\s*([a-zA-Z㎍mgREµ]+)', ingredient_value)
                 if match:
-                    amount = float(match.group(1).replace(',', ''))
+                    amount = parse_number(match.group(1))
                     unit = match.group(2)
                 else:
                     # Try to extract just the number
                     num_match = re.search(r'([\d,]+\.?\d*)', ingredient_value)
                     if num_match:
-                        amount = float(num_match.group(1).replace(',', ''))
+                        amount = parse_number(num_match.group(1))
             elif isinstance(ingredient_value, (int, float)):
                 amount = float(ingredient_value)
             

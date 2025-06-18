@@ -7,6 +7,61 @@
 <link rel="stylesheet" href="{% static 'css/Mypage/header.css' %}">
 <link rel="stylesheet" href="{% static 'css/Mypage/mypage.css' %}">
 <style>
+/* Główny kontener - stabilny layout */
+body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Header - przyklejony na górze */
+header {
+    position: fixed;
+    width: 100%;
+    height: 80px;
+    background: #FFFFFF;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+    top: 0;
+    left: 0;
+}
+
+/* Główna treść - z marginesem górnym */
+main {
+    margin-top: 80px;
+    min-height: calc(100vh - 80px);
+    padding: 2rem;
+    display: flex;
+    gap: 2rem;
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+}
+
+/* Sidebar - stabilne pozycjonowanie */
+.sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 100px;
+    height: fit-content;
+    z-index: 100;
+}
+
+/* Content area - stabilne pozycjonowanie */
+.content {
+    flex-grow: 1;
+    background: transparent;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: none;
+    position: relative;
+    z-index: 1;
+    min-height: calc(100vh - 120px);
+}
+
 /* 네비게이션 메뉴 오버라이드 */
 .nav-menu {
     display: flex !important;
@@ -46,13 +101,6 @@
 .logo img {
     height: 40px;
     width: auto;
-}
-
-.sidebar {
-    position: fixed;
-    left: 20px;
-    top: 100px;
-    z-index: 100;
 }
 
 .dropdown {
@@ -139,6 +187,25 @@
 .mypage-dropdown-item:last-child {
     border-radius: 0 0 6px 6px !important;
 }
+
+/* Responsywność */
+@media (max-width: 768px) {
+    main {
+        padding: 1rem;
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        position: relative;
+        top: 0;
+        margin-bottom: 1rem;
+    }
+    
+    .content {
+        min-height: auto;
+    }
+}
 </style>
 {% endblock %}
 
@@ -198,33 +265,25 @@ function toggleDropdown() {
 }
 
 function toggleMypageMenu() {
-    const mypageDropdown = document.getElementById('mypageDropdown');
-    mypageDropdown.style.display = mypageDropdown.style.display === 'block' ? 'none' : 'block';
+    const dropdown = document.getElementById('mypageDropdown');
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    // 드롭다운 외부 클릭 시 닫기
-    document.addEventListener('click', function(event) {
-        const dropdown = document.querySelector('.dropdown');
-        const dropdownMenu = document.getElementById('dropdownMenu');
-        const mypageLabel = document.querySelector('.nav-label.mypage');
-        const mypageDropdown = document.getElementById('mypageDropdown');
-        
-        // 마이페이지 라벨 클릭은 제외
-        if (event.target === mypageLabel) {
-            return;
-        }
-        
-        // 마이페이지 드롭다운 외부 클릭 시 닫기
-        if (!mypageLabel.contains(event.target)) {
-            mypageDropdown.style.display = 'none';
-        }
-        
-        // 사이드바 드롭다운 외부 클릭 시 닫기
-        if (!dropdown.contains(event.target)) {
-            dropdownMenu.style.display = 'none';
-        }
-    });
+// Zamknij dropdown po kliknięciu poza nim
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('mypageDropdown');
+    const mypageLabel = document.querySelector('.nav-label.mypage');
+    
+    if (!mypageLabel.contains(event.target)) {
+        dropdown.style.display = 'none';
+    }
+    
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    const dropdownToggle = document.querySelector('.dropdown-toggle');
+    
+    if (!dropdownToggle.contains(event.target)) {
+        dropdownMenu.style.display = 'none';
+    }
 });
 </script>
 {% endblock %} 

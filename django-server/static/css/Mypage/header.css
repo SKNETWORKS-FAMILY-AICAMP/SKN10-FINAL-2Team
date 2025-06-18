@@ -6,6 +6,8 @@ header {
     background: #FFFFFF;
     box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.12);
     z-index: 1000;
+    top: 0;
+    left: 0;
 }
 
 nav {
@@ -16,6 +18,8 @@ nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: relative;
+    z-index: 1001;
 }
 
 /* Logo styles */
@@ -24,6 +28,8 @@ nav {
     align-items: center;
     gap: 5px;
     cursor: pointer;
+    position: relative;
+    z-index: 1002;
 }
 
 .logo-t, .logo-p {
@@ -54,6 +60,8 @@ nav {
     display: flex;
     gap: 60px;
     align-items: center;
+    position: relative;
+    z-index: 1002;
 }
 
 .nav-label {
@@ -65,6 +73,8 @@ nav {
     transition: color 0.3s;
     padding: 10px 20px;
     border-radius: 8px;
+    position: relative;
+    z-index: 1003;
 }
 
 .nav-label:hover {
@@ -82,6 +92,8 @@ nav {
     display: flex;
     align-items: center;
     gap: 20px;
+    position: relative;
+    z-index: 1002;
 }
 
 .login-item a {
@@ -106,12 +118,16 @@ main {
     padding: 2rem;
     display: flex;
     gap: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
 /* Sidebar styles */
 .sidebar {
     width: 250px;
     flex-shrink: 0;
+    position: relative;
+    z-index: 100;
 }
 
 .dropdown {
@@ -131,6 +147,8 @@ main {
     cursor: pointer;
     text-align: left;
     transition: all 0.3s;
+    position: relative;
+    z-index: 101;
 }
 
 .dropdown-toggle:hover {
@@ -179,6 +197,8 @@ main {
     border-radius: 12px;
     padding: 0;
     box-shadow: none;
+    position: relative;
+    z-index: 1;
 }
 
 /* Footer */
@@ -189,6 +209,8 @@ footer {
     color: #666;
     font-size: 0.9rem;
     border-top: 1px solid #E6E6E6;
+    position: relative;
+    z-index: 1;
 }
 
 /* Responsive design */
@@ -198,33 +220,62 @@ footer {
     }
 
     .nav-menu {
-        gap: 20px;
+        gap: 30px;
     }
 
     .nav-label {
         font-size: 16px;
-        padding: 8px 16px;
+        padding: 8px 12px;
     }
 
     .logo-t, .logo-p {
-        font-size: 36px;
+        font-size: 32px;
     }
 
     .logo-rectangle {
-        width: 28px;
-        height: 36px;
+        width: 24px;
+        height: 32px;
     }
 
     .logo-rectangle-2 {
-        width: 20px;
-        height: 24px;
+        width: 16px;
+        height: 20px;
     }
 
     main {
+        padding: 1rem;
         flex-direction: column;
     }
 
     .sidebar {
         width: 100%;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Dodatkowe style dla lepszej stabilności */
+body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Napraw problemy z z-index na różnych urządzeniach */
+@media (max-width: 480px) {
+    header {
+        z-index: 9999;
+    }
+    
+    nav {
+        z-index: 10000;
+    }
+    
+    .nav-menu {
+        z-index: 10001;
+    }
+    
+    .nav-label {
+        z-index: 10002;
     }
 } 
