@@ -13,21 +13,23 @@ function getCookie(name) {
     return cookieValue;
 }
 
-export function logoutUser() {
+function logoutUser() {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     // 로그인 페이지로 리다이렉트 (YOUR_LOGIN_URL을 실제 로그인 페이지 URL로 변경)
-    window.location.href = '/'; 
+    window.location.href = '/login/'; 
 }
-export function redirectToLogin() {
+
+function redirectToLogin() {
     console.log("Redirecting to login page.");
-    window.location.href = '/login'; // Replace with your actual login page URL
+    window.location.href = '/login/'; // Replace with your actual login page URL
 }
+
 /**
  * 사용자 인증 상태를 확인하고, 필요시 토큰을 재발급합니다.
  * @returns {boolean} 사용자가 현재 인증된 상태인지 여부 (Access Token 유효 또는 성공적으로 재발급됨)
  */
-export async function checkUserAuthentication() {
+async function checkUserAuthentication() {
     let accessToken = localStorage.getItem('accessToken');
     const refreshToken = localStorage.getItem('refreshToken');
 

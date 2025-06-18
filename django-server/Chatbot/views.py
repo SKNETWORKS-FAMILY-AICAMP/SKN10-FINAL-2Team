@@ -135,17 +135,23 @@ class ChatWithNutiAPIView(APIView):
                 final_state = agent_workflow.invoke({"user_query": user_query}, thread_config)
                 
             ai_response = final_state.get("final_recommendation", "")
+            product_ids = final_state.get("product_ids", [])
+            
+            # 상품 ID 리스트는 이미 정수 ID 리스트이므로 추가 처리 필요 없음
+            # product_ids = [product.get('id') for product in product_ids if product.get('id')]
 
-            # AI 응답 저장
+            # AI 응답 저장 (product_ids만 포함)
             ChatMessages.objects.create(
                 chat_room=chat_room,
                 sender_type='assistant',
-                message=ai_response
+                message=ai_response,
+                product_ids=product_ids
             )
 
             # 응답 반환
             return Response({
                 "final_recommendation": ai_response,
+                "product_ids": product_ids,  # 상품 ID 리스트만 반환
                 "chat_room_id": chat_room_id
             }, status=status.HTTP_200_OK)
 
@@ -174,6 +180,7 @@ def get_chat_messages(request, room_id):
             'id': msg.id,
             'sender_type': msg.sender_type,
             'message': msg.message,
+            'product_ids': msg.product_ids,
             'created_at': msg.created_at.isoformat()
         } for msg in messages], safe=False)
     except Exception as e:

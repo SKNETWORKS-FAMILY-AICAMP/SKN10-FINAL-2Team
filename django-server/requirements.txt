@@ -22,3 +22,10 @@ numpy
 Pillow
 pytesseract
 python-dateutil
+langgraph-cli[inmem]
+langgraph-supervisor
+langchain
+langchain-community
+langchain-openai
+langchain-core
+langchain-neo4j

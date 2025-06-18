@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'Account',
     'Chatbot',
     'Mypage',
@@ -89,11 +90,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'topDB',         # 데이터베이스 이름
-        'USER': 'topAdmin',      # 사용자 이름
-        'PASSWORD': 'root1234',  # 비밀번호
-        'HOST': 'localhost',     # 호스트명
-        'PORT': '5432'           # 포트번호
+        'NAME': 'postgre',    # 데이터베이스 이름.
+        "USER": "postgres",  # 사용자 이름.
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),    # 비밀번호
+        "HOST": os.environ.get("POSTGRES_HOST"),    # 호스트명
+        "PORT": "5432"          # 포트번호
     }
 }
 
@@ -135,7 +136,7 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 import os
-SOCIALACCOUNT_ADAPTER = 'Account.adapters.CustomSocialAccountAdapter'
+SOCIALACCOUNT_ADAPTER ='Account.adapters.CustomSocialAccountAdapter'
 ACCOUNT_ADAPTER = 'Account.adapters.CustomAccountAdapter'
 LOGIN_REDIRECT_URL = '/login/success/' # 로그인 성공 후 리다이렉트될 URL
 ACCOUNT_LOGOUT_REDIRECT_URL = '/' # 로그아웃 후 리다이렉트될 URL
