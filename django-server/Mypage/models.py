@@ -31,11 +31,12 @@ class Nutrient(models.Model):
 class UserNutrientIntake(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     nutrient = models.ForeignKey(Nutrient, on_delete=models.CASCADE)
-    status = models.CharField(max_length=20)  # 예: '복용중', '중단', '예정' 등
+    amount = models.FloatField(default=0.0)  # 입력수량
+    unit = models.CharField(max_length=20, default='')  # 단위 (mg, 정 등)
     created_at = models.DateTimeField(auto_now_add=True)  # 등록일
 
     def __str__(self):
-        return f"{self.user.username}'s nutrient status - {self.nutrient.name}"
+        return f"{self.user.username}'s nutrient intake - {self.nutrient.name}"
 
 class NutrientAnalysis(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -279,7 +280,20 @@ class KDRIs(models.Model):
     energy = models.FloatField()  # 에너지(kcal/일)
     carbohydrates = models.FloatField()  # 탄수화물(g/일)
     dietary_fiber = models.FloatField()  # 식이섬유(g/일)
+    linoleic_acid = models.FloatField(default=0.0)  # 리놀레산(g/일)
+    alpha_linolenic_acid = models.FloatField(default=0.0)  # 알파-리놀렌산(g/일)
+    epa_dha = models.FloatField(default=0.0)  # EPA+DHA(mg/일)
     protein = models.FloatField()  # 단백질(g/일)
+    methionine_cysteine = models.FloatField(default=0.0)  # 메티오닌+시스테인(g/일)
+    leucine = models.FloatField(default=0.0)  # 류신(g/일)
+    isoleucine = models.FloatField(default=0.0)  # 이소류신(g/일)
+    valine = models.FloatField(default=0.0)  # 발린(g/일)
+    lysine = models.FloatField(default=0.0)  # 라이신(g/일)
+    phenylalanine_tyrosine = models.FloatField(default=0.0)  # 페닐알라닌+티로신(g/일)
+    threonine = models.FloatField(default=0.0)  # 트레오닌(g/일)
+    tryptophan = models.FloatField(default=0.0)  # 트립토판(g/일)
+    histidine = models.FloatField(default=0.0)  # 히스티딘(g/일)
+    water = models.FloatField(default=0.0)  # 수분(mL/일)
     vitamin_a = models.FloatField()  # 비타민 A(µg RAE/일)
     vitamin_d = models.FloatField()  # 비타민 D(µg/일)
     vitamin_e = models.FloatField()  # 비타민 E(mg ɑ-TE/일)
@@ -291,14 +305,23 @@ class KDRIs(models.Model):
     vitamin_b6 = models.FloatField()  # 비타민 B6(mg/일)
     folate = models.FloatField()  # 엽산(µg DFE/일)
     vitamin_b12 = models.FloatField()  # 비타민B12(µg/일)
+    pantothenic_acid = models.FloatField(default=0.0)  # 판토텐산(mg/일)
+    biotin = models.FloatField(default=0.0)  # 비오틴(µg/일)
     calcium = models.FloatField()  # 칼슘(mg/일)
     phosphorus = models.FloatField()  # 인(mg/일)
     sodium = models.FloatField()  # 나트륨(mg/일)
+    chloride = models.FloatField(default=0.0)  # 염소(mg/일)
     potassium = models.FloatField()  # 칼륨(mg/일)
     magnesium = models.FloatField()  # 마그네슘(mg/일)
     iron = models.FloatField()  # 철(mg/일)
     zinc = models.FloatField()  # 아연(mg/일)
+    copper = models.FloatField(default=0.0)  # 구리(µg/일)
+    fluoride = models.FloatField(default=0.0)  # 불소(mg/일)
+    manganese = models.FloatField(default=0.0)  # 망간(mg/일)
+    iodine = models.FloatField(default=0.0)  # 요오드(µg/일)
     selenium = models.FloatField()  # 셀레늄(µg/일)
+    molybdenum = models.FloatField(default=0.0)  # 몰리브덴(µg/일)
+    chromium = models.FloatField(default=0.0)  # 크롬(µg/일)
 
     class Meta:
         verbose_name_plural = "KDRIs"

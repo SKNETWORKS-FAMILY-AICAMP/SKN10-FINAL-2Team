@@ -33,8 +33,8 @@ class NutrientAdmin(admin.ModelAdmin):
 
 @admin.register(UserNutrientIntake)
 class UserNutrientIntakeAdmin(admin.ModelAdmin):
-    list_display = ('user', 'nutrient', 'status', 'created_at')
-    list_filter = ('nutrient', 'status')
+    list_display = ('user', 'nutrient', 'amount', 'unit', 'created_at')
+    list_filter = ('nutrient',)
 
 @admin.register(NutrientAnalysis)
 class NutrientAnalysisAdmin(admin.ModelAdmin):

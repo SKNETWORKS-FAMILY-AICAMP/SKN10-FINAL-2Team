@@ -518,8 +518,7 @@ def add_manual_nutrient_intake(request):
         data = json.loads(request.body)
         nutrient_name = data.get('nutrient_name')
         unit = data.get('unit')
-        amount = data.get('amount')
-        date = data.get('date', timezone.now().date())
+        # amount i date nie są już używane w modelu UserNutrientIntake
 
         # 영양소 기준치 데이터 로드
         json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
@@ -551,12 +550,11 @@ def add_manual_nutrient_intake(request):
         else:
             print(f"새 영양소 생성: {nutrient_name}, 권장량: {nutrient.daily_recommended}")
 
-        # 영양소 섭취 기록 생성
+        # 영양소 섭취 기록 생성 (amount, date 없이)
         intake = UserNutrientIntake.objects.create(
             user=request.user,
             nutrient=nutrient,
-            amount=amount,
-            date=date
+            status='수동입력'  # 또는 적절한 상태값
         )
 
         # 영양분석 실행
@@ -572,7 +570,6 @@ def add_manual_nutrient_intake(request):
             'intake': {
                 'id': intake.id,
                 'nutrient_name': nutrient.name,
-                'amount': amount,
                 'unit': nutrient.unit
             }
         })
@@ -1201,25 +1198,22 @@ def import_kdris_data():
 @login_required
 def get_nutrient_history(request):
     try:
-        # 모든 영양소 섭취 기록 가져오기
         intakes = UserNutrientIntake.objects.filter(
             user=request.user
-        ).select_related('nutrient').order_by('-date', '-created_at')
+        ).select_related('nutrient').order_by('-created_at')
 
         history = []
         for intake in intakes:
             history.append({
                 'id': intake.id,
                 'nutrient_name': intake.nutrient.name,
-                'amount': intake.amount,
-                'unit': intake.nutrient.unit,
-                'date': intake.date.strftime('%Y-%m-%d'),
+                'status': intake.status,
                 'created_at': intake.created_at.strftime('%Y-%m-%d %H:%M:%S')
             })
 
         return JsonResponse({
             'status': 'success',
-            'data': history
+            'history': history
         })
     except Exception as e:
         print(f"영양소 기록 가져오기 오류: {str(e)}")
@@ -1233,39 +1227,53 @@ def get_nutrient_history(request):
 def update_nutrient_intake(request):
     try:
         data = json.loads(request.body)
-        intake_id = data.get('id')
-        amount = data.get('amount')
-        date = data.get('date')
+        intake_id = data.get('intake_id')
+        nutrient_name = data.get('nutrient')
+        status = data.get('status')
 
-        intake = UserNutrientIntake.objects.get(id=intake_id, user=request.user)
-        
-        if amount is not None:
-            intake.amount = amount
-        if date is not None:
-            intake.date = date
-            
-        intake.save()
+        # Sprawdź, czy wszystkie wymagane pola są obecne
+        if not all([intake_id, nutrient_name, status]):
+            return JsonResponse({
+                'status': 'error',
+                'message': '모든 필수 필드를 입력해주세요.'
+            }, status=400)
 
-        # 영양분석 실행
+        # Pobierz obiekt nutrient
         try:
-            analyze_nutrients(request)
-        except Exception as e:
-            print(f"영양분석 실행 중 오류 발생: {str(e)}")
+            nutrient = Nutrient.objects.get(name=nutrient_name)
+        except Nutrient.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': '해당 영양소를 찾을 수 없습니다.'
+            }, status=404)
 
-        return JsonResponse({
-            'status': 'success',
-            'message': '영양소 섭취 기록이 수정되었습니다.'
-        })
-    except UserNutrientIntake.DoesNotExist:
+        # Pobierz i zaktualizuj intake
+        try:
+            intake = UserNutrientIntake.objects.get(id=intake_id, user=request.user)
+            intake.nutrient = nutrient
+            intake.status = status
+            intake.save()
+
+            return JsonResponse({
+                'status': 'success',
+                'message': '영양소 섭취 기록이 업데이트되었습니다.'
+            })
+        except UserNutrientIntake.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': '해당 섭취 기록을 찾을 수 없습니다.'
+            }, status=404)
+
+    except json.JSONDecodeError:
         return JsonResponse({
             'status': 'error',
-            'message': '해당 기록을 찾을 수 없습니다.'
-        }, status=404)
+            'message': '잘못된 요청 형식입니다.'
+        }, status=400)
     except Exception as e:
         return JsonResponse({
             'status': 'error',
             'message': str(e)
-        }, status=400)
+        }, status=500)
 
 @login_required
 @require_POST
@@ -1730,3 +1738,18 @@ def product_purchase(request):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+def get_nutrients_list(request):
+    try:
+        nutrients = Nutrient.objects.all().order_by('name')
+        nutrients_list = [{'id': n.id, 'name': n.name} for n in nutrients]
+        return JsonResponse({
+            'status': 'success',
+            'nutrients': nutrients_list
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
