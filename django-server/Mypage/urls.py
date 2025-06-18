@@ -23,4 +23,6 @@ urlpatterns = [
     path('chatbot/', views.chatbot_view, name='chatbot'),
     path('ocr_extract/', views.ocr_extract, name='ocr_extract'),
     path('save-ocr-ingredients/', views.save_ocr_ingredients, name='save_ocr_ingredients'),
+    path('api/like/', views.like_api, name='like_api'),
+    path('product/purchase/', views.product_purchase, name='product_purchase'),
 ]

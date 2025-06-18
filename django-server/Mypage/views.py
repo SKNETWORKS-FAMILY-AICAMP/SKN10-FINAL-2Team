@@ -17,6 +17,8 @@ from PIL import Image
 import re
 from django.contrib import messages
 import csv
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
 @login_required
 def mypage_view(request):
@@ -1569,3 +1571,153 @@ def save_ocr_ingredients(request):
             'status': 'error',
             'message': str(e)
         }, status=400)
+
+@login_required
+def like_list(request):
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    like_list = Like.objects.filter(user=user).select_related('product')
+    for like in like_list:
+        setattr(like.product, 'is_liked', True)
+    return render(request, 'Mypage/like.html', {'user': user, 'like_list': like_list})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def like_delete(request):
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        like = Like.objects.get(user=user, product_id=product_id)
+        like.delete()
+        UserLog.objects.create(user=user, product=product, action='unlike')
+        return JsonResponse({'success': True})
+    except Like.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def like_add(request):
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        Like.objects.get_or_create(user=user, product_id=product_id)
+        UserLog.objects.create(user=user, product=product, action='like')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def product_click(request):
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        # UserLog 저장 (click)
+        UserLog.objects.create(user=user, product=product, action='click')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+def chatbot_view(request):
+    try:
+        return render(request, 'Chatbot/ChatNuti.html', {
+            'user': request.user
+        })
+    except Exception as e:
+        messages.error(request, f'챗봇 페이지를 불러오는 중 오류가 발생했습니다: {str(e)}')
+        return redirect('mypage')
+
+@csrf_exempt
+@api_view(["POST", "DELETE", "GET"])
+@permission_classes([IsAuthenticated])
+def like_api(request):
+    """
+    좋아요 API 엔드포인트
+    POST: 좋아요 추가
+    DELETE: 좋아요 제거
+    GET: 좋아요 상태 확인
+    """
+    # 로그인한 사용자 ID 사용
+    user_id = request.user.id
+    
+    if request.method == "GET":
+        # 쿼리 파라미터에서 product_id 가져오기
+        product_id = request.GET.get('product_id')
+        if not product_id:
+            return JsonResponse({"error": "상품 ID가 필요합니다."}, status=400)
+        
+        product = get_object_or_404(Products, id=product_id)
+        is_liked = Like.objects.filter(user_id=user_id, product=product).exists()
+        
+        return JsonResponse({
+            "is_liked": is_liked
+        })
+        
+    elif request.method in ["POST", "DELETE"]:
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            if not product_id:
+                return JsonResponse({"error": "상품 ID가 필요합니다."}, status=400)
+            
+            product = get_object_or_404(Products, id=product_id)
+            
+            if request.method == "POST":
+                # 좋아요 추가 (이미 있으면 무시)
+                like, created = Like.objects.get_or_create(
+                    user=request.user,
+                    product=product
+                )
+                return JsonResponse({
+                    "message": "좋아요가 추가되었습니다." if created else "이미 좋아요가 되어있습니다.",
+                    "is_liked": True
+                })
+                
+            elif request.method == "DELETE":
+                # 좋아요 제거
+                like = Like.objects.filter(user=request.user, product=product)
+                if like.exists():
+                    like.delete()
+                    return JsonResponse({
+                        "message": "좋아요가 제거되었습니다.",
+                        "is_liked": False
+                    })
+                else:
+                    return JsonResponse({
+                        "message": "좋아요가 되어있지 않습니다.",
+                        "is_liked": False
+                    })
+                    
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "잘못된 JSON 형식입니다."}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    
+    return JsonResponse({"error": "지원하지 않는 메서드입니다."}, status=405)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def product_purchase(request):
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        # UserLog 저장 (click)
+        UserLog.objects.create(user=user, product=product, action='purchase')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
