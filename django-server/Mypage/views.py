@@ -10,6 +10,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
+
 from datetime import datetime, timedelta
 from Product.models import Products  # 파일 상단에 추가
 import pytesseract
@@ -1597,6 +1599,9 @@ def like_delete(request):
         return JsonResponse({'success': True})
     except Like.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
+    except Exception as e:
+        print("LIKE_API ERROR:", e)
+        return JsonResponse({"error": str(e)}, status=500)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -1611,7 +1616,8 @@ def like_add(request):
         UserLog.objects.create(user=user, product=product, action='like')
         return JsonResponse({'success': True})
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+        print("LIKE_API ERROR:", e)
+        return JsonResponse({"error": str(e)}, status=500)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -1702,6 +1708,7 @@ def like_api(request):
         except json.JSONDecodeError:
             return JsonResponse({"error": "잘못된 JSON 형식입니다."}, status=400)
         except Exception as e:
+            print("LIKE_API ERROR:", e)
             return JsonResponse({"error": str(e)}, status=500)
     
     return JsonResponse({"error": "지원하지 않는 메서드입니다."}, status=405)
