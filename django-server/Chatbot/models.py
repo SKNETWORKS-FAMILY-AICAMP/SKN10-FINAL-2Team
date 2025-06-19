@@ -55,6 +55,7 @@ class ChatRooms(models.Model):
     
     title = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+    state = models.JSONField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} (User: {self.user.email})"
@@ -116,3 +117,20 @@ class ModelVersion(models.Model):
 
     def __str__(self):
         return f"{self.model_name} ({self.version})"
+
+
+
+class NutritionDailyRec(models.Model):
+    CATEGORY_CHOICES = [
+        ('남자', '남자'),
+        ('여자', '여자'),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    sex = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
+    age_range = models.CharField(max_length=20, verbose_name='연령대')
+    nutrient = models.CharField(max_length=50)
+    daily = models.FloatField()
+    
+    def __str__(self):
+        return f"{self.sex} {self.age} - {self.nutrient}: {self.daily}"
