@@ -7,6 +7,9 @@ from django.http import JsonResponse
 from Mypage.models import Like
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+import os, json
+from django.conf import settings
+from django.http import JsonResponse
 
 def get_product_details(request, product_id=None):
     """
@@ -137,3 +140,35 @@ def product_list(request):
     }
     
     return render(request, 'Product/product_list.html', context)
+
+
+
+def get_weighted_scores(request):
+    products = Products.objects.order_by('sales_ranks')[:10]
+    print(products)
+    return JsonResponse({'results': products})
+
+
+def get_popular_products(request):
+    products = Products.objects.order_by('-average_rating')[:10]
+    print(products)
+    return JsonResponse({'products': products})
+
+
+def get_best_selling_products(request):
+    products = Products.objects.order_by('sales_ranks')[:10]
+
+    data = [
+        {
+            'id': p.id,
+            'title': p.title,
+            'url': p.url,
+            'image_link': p.image_link or 'https://via.placeholder.com/150',
+            'average_rating': p.average_rating,
+            'price_value': p.price_value,
+            'sales_ranks': p.sales_ranks,
+        }
+        for p in products
+    ]
+
+    return JsonResponse({'results': data})
