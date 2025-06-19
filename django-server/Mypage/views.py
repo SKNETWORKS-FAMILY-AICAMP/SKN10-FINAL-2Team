@@ -1,5 +1,6 @@
 import os
 import json
+import pandas as pd
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import JsonResponse
@@ -583,6 +584,7 @@ def add_manual_nutrient_intake(request):
         }, status=400)
 
 @login_required
+@require_POST
 def analyze_nutrients(request):
     try:
         print("영양분석 시작")
@@ -596,7 +598,7 @@ def analyze_nutrients(request):
         
         intakes = UserNutrientIntake.objects.filter(
             user=request.user,
-            date__range=[start_date, end_date]
+            created_at__date__range=[start_date, end_date]
         ).select_related('nutrient')
         
         print(f"가져온 섭취 기록 수: {intakes.count()}")
@@ -720,9 +722,15 @@ def get_nutrient_data(request):
         if not latest_analysis:
             print("사용자의 영양분석 결과가 없습니다.")
             return JsonResponse({
-                'status': 'error',
-                'message': '영양분석 결과가 없습니다.'
-            }, status=404)
+                'status': 'success',
+                'data': {
+                    'total_nutrients': {},
+                    'analysis_result': '',
+                    'overall_score': 0,
+                    'details': '',
+                    'recommendations': ''
+                }
+            })
 
         print(f"총 영양소 수: {latest_analysis.total_nutrients}")
         
@@ -1758,3 +1766,132 @@ def get_nutrients_list(request):
             'status': 'error',
             'message': str(e)
         }, status=500)
+
+@login_required
+def load_liked_products_nutrients(request):
+    """
+    좋아요한 제품들의 영양성분 정보를 Products 테이블에서 가져와서 UserNutrientIntake에 저장
+    """
+    try:
+        # 사용자가 좋아요한 제품들 가져오기
+        liked_products = Like.objects.filter(user=request.user).select_related('product')
+        
+        print(f"좋아요한 제품 수: {liked_products.count()}")
+        
+        if not liked_products.exists():
+            return JsonResponse({
+                'status': 'info',
+                'message': '좋아요한 제품이 없습니다.'
+            })
+        
+        added_count = 0
+        not_found_count = 0
+        
+        for like in liked_products:
+            product = like.product
+            product_title = product.title
+            print(f"\n처리 중인 제품: {product_title}")
+            
+            # 제품의 ingredients 정보 가져오기
+            ingredients = product.ingredients
+            print(f"ingredients 길이: {len(str(ingredients))}")
+            print(f"ingredients 내용: {str(ingredients)[:200]}...")
+            
+            if ingredients and isinstance(ingredients, str) and ingredients.strip():
+                # ingredients에서 영양성분 정보 파싱
+                nutrients = parse_nutrients_from_table_info(ingredients)
+                print(f"파싱된 영양성분: {nutrients}")
+                
+                # 각 영양성분을 UserNutrientIntake에 저장
+                for nutrient_name, amount_info in nutrients.items():
+                    # Nutrient 모델에서 해당 영양소 찾기 또는 생성
+                    nutrient, created = Nutrient.objects.get_or_create(
+                        name=nutrient_name,
+                        defaults={
+                            'description': f'{nutrient_name} 영양소',
+                            'daily_recommended': 100,  # 기본값
+                            'unit': 'mg',
+                            'category': '기타'
+                        }
+                    )
+                    
+                    # UserNutrientIntake에 저장
+                    UserNutrientIntake.objects.create(
+                        user=request.user,
+                        nutrient=nutrient,
+                        amount=amount_info.get('amount', 0),
+                        unit=amount_info.get('unit', 'mg')
+                    )
+                    
+                    added_count += 1
+                    print(f"영양성분 추가: {nutrient_name} - {amount_info}")
+            else:
+                not_found_count += 1
+                print(f"제품에 ingredients 정보가 없음: {product_title}")
+        
+        print(f"총 추가된 영양성분: {added_count}개")
+        print(f"찾을 수 없는 제품: {not_found_count}개")
+        
+        # 영양분석 실행 - 제거하여 무한 루프 방지
+        # try:
+        #     analyze_nutrients(request)
+        # except Exception as e:
+        #     print(f"영양분석 실행 중 오류 발생: {str(e)}")
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'좋아요한 제품 {len(liked_products)}개 중 {added_count}개의 영양성분 정보가 추가되었습니다.',
+            'added_count': added_count,
+            'not_found_count': not_found_count
+        })
+        
+    except Exception as e:
+        print(f"좋아요한 제품 영양성분 로드 오류: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'영양성분 정보 로드 중 오류가 발생했습니다: {str(e)}'
+        }, status=500)
+
+def parse_nutrients_from_table_info(table_info):
+    """
+    table_info 문자열에서 영양성분 정보를 파싱
+    """
+    nutrients = {}
+    
+    try:
+        # JSON 형태로 저장된 경우
+        if table_info.startswith('{') or table_info.startswith('['):
+            data = json.loads(table_info)
+            if isinstance(data, dict):
+                for key, value in data.items():
+                    if isinstance(value, (int, float)) and value > 0:
+                        nutrients[key] = {'amount': value, 'unit': 'mg'}
+            elif isinstance(data, list):
+                for item in data:
+                    if isinstance(item, dict):
+                        for key, value in item.items():
+                            if isinstance(value, (int, float)) and value > 0:
+                                nutrients[key] = {'amount': value, 'unit': 'mg'}
+    except:
+        pass
+    
+    # 문자열에서 영양성분 정보 추출 (예: "비타민C: 100mg", "칼슘: 500mg" 등)
+    if not nutrients:
+        # 정규식으로 영양성분 정보 추출
+        import re
+        patterns = [
+            r'([가-힣A-Za-z\s]+):\s*([\d.]+)\s*(mg|g|mcg|µg|IU)',
+            r'([가-힣A-Za-z\s]+)\s*([\d.]+)\s*(mg|g|mcg|µg|IU)',
+        ]
+        
+        for pattern in patterns:
+            matches = re.findall(pattern, table_info, re.IGNORECASE)
+            for match in matches:
+                nutrient_name = match[0].strip()
+                amount = float(match[1])
+                unit = match[2].lower()
+                
+                if amount > 0 and nutrient_name:
+                    nutrients[nutrient_name] = {'amount': amount, 'unit': unit}
+    
+    return nutrients
