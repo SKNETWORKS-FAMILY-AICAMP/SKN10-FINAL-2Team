@@ -503,9 +503,12 @@ function showAnalysisResults() {
     document.querySelector('.main-cards').style.display = 'none';
     document.getElementById('analysis-results').style.display = 'block';
     
-    // Załaduj dane analizy
-    updateNutrientAnalysis();
+    // 자동으로 영양분석 실행
+    runNutrientAnalysis();
     loadNutrientHistory();
+    
+    // 자동으로 좋아요한 제품 불러오기
+    loadFavoriteProducts();
 }
 
 function navigateTo(page) {
@@ -647,30 +650,53 @@ function loadFavoriteProducts() {
     // Pokaż wyniki analizy
     showAnalysisResults();
     
-    fetch('/mypage/like/')
+    // 로딩 메시지 표시
+    const historyDiv = document.getElementById('nutrientHistory');
+    historyDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner"></div><p>좋아요한 제품의 영양성분 정보를 불러오는 중...</p></div>';
+    
+    fetch('/mypage/load-liked-products-nutrients/')
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                const container = document.getElementById('product-details');
-                container.innerHTML = '<h3>좋아요한 영양제</h3>';
+                // 성공 메시지 표시
+                const successDiv = document.createElement('div');
+                successDiv.innerHTML = `<div style="color: #2e7d32; padding: 15px; background: #e8f5e8; border-radius: 5px; margin: 10px 0;">
+                    <strong>✅ 영양성분 정보 로드 완료!</strong><br>
+                    ${data.message}<br>
+                    추가된 영양성분: ${data.added_count}개
+                </div>`;
+                historyDiv.parentNode.insertBefore(successDiv, historyDiv.nextSibling);
                 
-                data.products.forEach(product => {
-                    const productElement = document.createElement('div');
-                    productElement.className = 'product-item';
-                    productElement.innerHTML = `
-                        <h4>${product.name}</h4>
-                        <p>${product.manufacturer}</p>
-                        <button class="btn btn-secondary" onclick="addToAnalysis(${product.id})">분석에 추가</button>
-                    `;
-                    container.appendChild(productElement);
-                });
+                // 3초 후 성공 메시지 제거
+                setTimeout(() => {
+                    if (successDiv.parentNode) {
+                        successDiv.parentNode.removeChild(successDiv);
+                    }
+                }, 3000);
+                
+                // 영양분석과 기록 업데이트
+                updateNutrientAnalysis();
+                loadNutrientHistory();
+            } else if (data.status === 'info') {
+                // 좋아요한 제품이 없는 경우
+                historyDiv.innerHTML = `<div style="color: #1976d2; padding: 15px; background: #e3f2fd; border-radius: 5px; margin: 10px 0;">
+                    <strong>ℹ️ 정보</strong><br>
+                    ${data.message}
+                </div>`;
             } else {
-                alert('좋아요한 제품을 불러오는데 실패했습니다.');
+                // 오류 발생
+                historyDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
+                    <strong>❌ 오류 발생</strong><br>
+                    ${data.message}
+                </div>`;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('좋아요한 제품을 불러오는데 실패했습니다.');
+            historyDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
+                <strong>❌ 서버 오류</strong><br>
+                좋아요한 제품의 영양성분 정보를 불러오는 중 오류가 발생했습니다.
+            </div>`;
         });
 }
 
@@ -697,6 +723,75 @@ function showManualInput() {
     modal.style.display = "block";
 }
 
+// 영양분석 실행
+function runNutrientAnalysis() {
+    console.log('영양분석 실행 시작');
+    
+    // 로딩 메시지 표시
+    const analysisDiv = document.getElementById('nutrientAnalysis');
+    analysisDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner"></div><p>영양분석을 실행하고 있습니다...</p></div>';
+    
+    fetch('/mypage/analyze-nutrients/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('영양분석 결과:', data);
+        if (data.status === 'success') {
+            // 분석 결과 업데이트
+            updateNutrientAnalysis();
+            
+            // 성공 메시지 표시 (tylko jeśli nie ma danych)
+            if (data.message && data.message.includes('아직 영양소 섭취 기록이 없습니다')) {
+                const successDiv = document.createElement('div');
+                successDiv.innerHTML = `<div style="color: #ff9800; padding: 15px; background: #fff3e0; border-radius: 5px; margin: 10px 0;">
+                    <strong>ℹ️ 분석 완료</strong><br>
+                    ${data.message}
+                </div>`;
+                analysisDiv.parentNode.insertBefore(successDiv, analysisDiv.nextSibling);
+                
+                // 5초 후 메시지 제거
+                setTimeout(() => {
+                    if (successDiv.parentNode) {
+                        successDiv.parentNode.removeChild(successDiv);
+                    }
+                }, 5000);
+            } else {
+                // 일반적인 성공 메시지
+                const successDiv = document.createElement('div');
+                successDiv.innerHTML = `<div style="color: #2e7d32; padding: 15px; background: #e8f5e8; border-radius: 5px; margin: 10px 0;">
+                    <strong>✅ 영양분석 완료!</strong><br>
+                    ${data.message}
+                </div>`;
+                analysisDiv.parentNode.insertBefore(successDiv, analysisDiv.nextSibling);
+                
+                // 3초 후 성공 메시지 제거
+                setTimeout(() => {
+                    if (successDiv.parentNode) {
+                        successDiv.parentNode.removeChild(successDiv);
+                    }
+                }, 3000);
+            }
+        } else {
+            analysisDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
+                <strong>❌ 영양분석 실패</strong><br>
+                ${data.message}
+            </div>`;
+        }
+    })
+    .catch(error => {
+        console.error('영양분석 오류:', error);
+        analysisDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
+            <strong>❌ 서버 오류</strong><br>
+            영양분석 중 오류가 발생했습니다. 다시 시도해주세요.
+        </div>`;
+    });
+}
+
 function updateNutrientAnalysis() {
     console.log('영양분석 데이터 가져오기 시작');
     fetch('/mypage/get-nutrient-data/')
@@ -706,6 +801,19 @@ function updateNutrientAnalysis() {
             if (data.status === 'success') {
                 const analysisDiv = document.getElementById('nutrientAnalysis');
                 console.log('total_nutrients:', data.data.total_nutrients);
+                
+                // 데이터가 비어있는 경우 처리
+                if (!data.data.total_nutrients || Object.keys(data.data.total_nutrients).length === 0) {
+                    analysisDiv.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <h3>📊 영양분석 결과</h3>
+                            <p>아직 영양소 섭취 기록이 없습니다.</p>
+                            <p>영양소를 추가하거나 좋아요한 제품을 불러와서 분석을 시작해보세요.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
                 const nutrients = JSON.parse(data.data.total_nutrients);
                 console.log('파싱된 영양소 데이터:', nutrients);
                 
