@@ -62,7 +62,20 @@
                 dropdown.style.display = 'none';
             }
         });
-    </script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const currentPath = window.location.pathname;
+
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                if (item.getAttribute('href') === currentPath) {
+                    item.classList.add('selected');
+
+                    // 드롭다운 버튼 텍스트도 선택된 것으로 바꾸고 싶다면:
+                    const toggle = item.closest('.dropdown').querySelector('.dropdown-toggle');
+                    if (toggle) toggle.textContent = item.textContent;
+                }
+            });
+        });
+            </script>
 
     {% block extra_js %}{% endblock %}
 </body>

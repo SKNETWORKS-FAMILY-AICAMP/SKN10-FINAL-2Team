@@ -73,10 +73,10 @@ header nav ul li a {
 }
 
 header nav #auth-button {
-    margin-right: 250px;
+    margin-right: 450px;
     border: none;
-    color: #000;
-    font-size: 16px;
+    color: #DDC66F;
+    font-size: 20px;
     cursor: pointer;
 }
 
@@ -90,11 +90,7 @@ header nav ul li  {
     justify-content: center;
     height: 80px;
 }
-#auth-button {
-  margin-right: 100px;
-  color: #DDC66F;
-  text-decoration: none;
-}
+
 .content {
     max-width: 1420px;
     margin: 0 auto;
