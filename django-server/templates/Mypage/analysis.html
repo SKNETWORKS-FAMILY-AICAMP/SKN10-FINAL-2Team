@@ -351,7 +351,14 @@ body {
 </style>
 {% endblock %}
 
-{% block content %}
+{% block mypage_content %}
+{% if error_message %}
+<div style="background: #ffebee; color: #d32f2f; padding: 15px; margin: 20px; border-radius: 5px; border: 1px solid #f44336;">
+    <strong>⚠️ 오류 발생</strong><br>
+    {{ error_message }}
+</div>
+{% endif %}
+
 <div class="analysis-container">
     <!-- Główne karty -->
     <div class="main-cards" id="mainCards">
@@ -403,6 +410,11 @@ body {
     <!-- Ukryte inputy -->
     <input type="file" id="ocr-upload" accept="image/*" style="display:none" onchange="handleOcrUpload(event)">
 
+    <!-- OCR 결과 표시 영역 (항상 접근 가능) -->
+    <div id="ocr-error" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 1000; max-width: 80%; max-height: 80%; overflow-y: auto;">
+        <!-- OCR 오류 및 결과 메시지가 여기에 표시됩니다 -->
+    </div>
+
     <!-- Sekcja wyników analizy (początkowo ukryta) -->
     <div id="analysis-results" class="analysis-results">
         <button class="back-button" onclick="showMainCards()">← 메인으로 돌아가기</button>
@@ -417,7 +429,10 @@ body {
         </div>
 
         <div class="history-section">
-            <h2>영양소 섭취 기록</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>영양소 섭취 기록</h2>
+                <button onclick="deleteAllNutrientRecords()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">전체 삭제</button>
+            </div>
             <div id="nutrientHistory">
                 <!-- 여기에 영양소 섭취 기록이 표시됩니다 -->
             </div>
@@ -473,15 +488,75 @@ body {
     </div>
 </div>
 
+<!-- 좋아요한 제품 선택 모달 -->
+<div id="productSelectionModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div class="modal-header">
+            <h3>좋아요한 제품 선택</h3>
+            <span class="close" onclick="closeModal('productSelectionModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>영양성분 정보를 가져올 제품을 선택해주세요:</p>
+            <div id="likedProductsList" style="margin: 20px 0;">
+                <!-- 제품 목록이 여기에 로드됩니다 -->
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button onclick="selectAllProducts()" style="padding: 8px 16px; border: none; background: #DDC66F; color: white; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">전체 선택</button>
+                <button onclick="deselectAllProducts()" style="padding: 8px 16px; border: none; background: #DDC66F; color: white; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">전체 해제</button>
+                <button onclick="loadSelectedProducts()" style="padding: 8px 16px; background: #DDC66F; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">선택한 제품 영양성분 가져오기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+// 페이지 로드 시 디버깅
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded, checking elements...');
+    
+    // 파일 input 요소 확인
+    const fileInput = document.getElementById('ocr-upload');
+    if (fileInput) {
+        console.log('File input found:', fileInput);
+        console.log('File input attributes:', {
+            id: fileInput.id,
+            type: fileInput.type,
+            accept: fileInput.accept,
+            style: fileInput.style.display
+        });
+    } else {
+        console.error('File input not found on page load!');
+    }
+    
+    // 카드 요소들 확인
+    const uploadCard = document.querySelector('.upload-card');
+    if (uploadCard) {
+        console.log('Upload card found:', uploadCard);
+        console.log('Upload card onclick:', uploadCard.onclick);
+    } else {
+        console.error('Upload card not found!');
+    }
+});
+
 // Obsługa kliknięć w karty
 function handleCardClick(cardType) {
+    console.log('Card clicked:', cardType); // 디버깅 로그 추가
+    
     switch(cardType) {
         case 'upload':
-            document.getElementById('ocr-upload').click();
+            console.log('Upload card clicked, triggering file input...'); // 디버깅 로그 추가
+            const fileInput = document.getElementById('ocr-upload');
+            if (fileInput) {
+                console.log('File input found, clicking...'); // 디버깅 로그 추가
+                fileInput.click();
+            } else {
+                console.error('File input not found!'); // 오류 로그 추가
+                alert('파일 업로드 기능을 찾을 수 없습니다.');
+            }
             break;
         case 'favorite':
-            loadFavoriteProducts();
+            // 좋아요한 제품 선택 모달 표시
+            showProductSelectionModal();
             break;
         case 'manual':
             showManualInput();
@@ -507,8 +582,7 @@ function showAnalysisResults() {
     runNutrientAnalysis();
     loadNutrientHistory();
     
-    // 자동으로 좋아요한 제품 불러오기
-    loadFavoriteProducts();
+    // 좋아요한 제품은 사용자가 직접 클릭할 때만 로드
 }
 
 function navigateTo(page) {
@@ -546,9 +620,22 @@ function getCookie(name) {
 
 // 이미지 업로드 처리
 function handleOcrUpload(event) {
+    console.log('handleOcrUpload called'); // 디버깅 로그 추가
+    console.log('Event:', event); // 이벤트 객체 로그
+    
     const file = event.target.files[0];
     console.log('Plik wybrany:', file);
-    if (!file) return;
+    
+    if (!file) {
+        console.log('No file selected'); // 파일이 선택되지 않은 경우 로그
+        return;
+    }
+    
+    console.log('File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+    }); // 파일 상세 정보 로그
     
     // Pokaż wyniki analizy
     showAnalysisResults();
@@ -558,6 +645,14 @@ function handleOcrUpload(event) {
     
     // 로딩 메시지 표시
     const errorDiv = document.getElementById('ocr-error');
+    if (!errorDiv) {
+        console.error('Element ocr-error not found');
+        alert('오류: OCR 결과를 표시할 요소를 찾을 수 없습니다.');
+        return;
+    }
+    
+    console.log('Starting OCR request...'); // OCR 요청 시작 로그
+    
     errorDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner"></div><p>이미지를 분석하고 있습니다...</p></div>';
     errorDiv.style.display = 'block';
     
@@ -580,124 +675,195 @@ function handleOcrUpload(event) {
             
             // Message가 있는 경우 (영양소 추출 실패)
             if (ingredients.Message) {
-                let errorMessage = ingredients.Message;
-                
-                // 디버그 정보가 있는 경우 추가 정보 표시
-                if (ingredients.debug_info) {
-                    const debugInfo = ingredients.debug_info;
-                    errorMessage += '<br><br><strong>디버그 정보:</strong><br>';
-                    errorMessage += `- 원본 텍스트: ${debugInfo.raw_text || '없음'}<br>`;
-                    errorMessage += `- 숫자 포함: ${debugInfo.has_numbers ? '예' : '아니오'}<br>`;
-                    errorMessage += `- 단위 포함: ${debugInfo.has_units ? '예' : '아니오'}`;
-                    
-                    // 원본 텍스트가 있는 경우 표시
-                    if (debugInfo.raw_text) {
-                        errorMessage += '<br><br><strong>인식된 텍스트:</strong><br>';
-                        errorMessage += `<div style="background: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap;">${debugInfo.raw_text}</div>`;
-                    }
-                }
-                
-                errorDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">${errorMessage}</div>`;
+                // 오류 메시지를 표시하지 않고 조용히 처리
+                errorDiv.style.display = 'none';
+                return;
             } else {
                 // 성공적으로 영양소 추출된 경우
+                console.log('Extracted ingredients:', ingredients);
+                
+                // OCR 결과를 자동으로 영양분석에 저장
+                saveOcrIngredientsToAnalysis(ingredients);
+                
                 showProductDetails({
                     ingredients: ingredients,
                     compatibility: data.compatibility
                 });
                 errorDiv.style.display = 'none';
                 
-                // 성공 메시지 표시
-                const successDiv = document.createElement('div');
-                successDiv.innerHTML = `<div style="color: #2e7d32; padding: 15px; background: #e8f5e8; border-radius: 5px; margin: 10px 0;">
-                    <strong>✅ 영양소 추출 성공!</strong><br>
-                    ${ingredients.debug_info ? `${ingredients.debug_info.extracted_count}개의 영양소가 인식되었습니다.` : '영양소 정보가 성공적으로 추출되었습니다.'}
-                </div>`;
-                errorDiv.parentNode.insertBefore(successDiv, errorDiv.nextSibling);
+                // 성공 메시지를 alert로 표시 (한 번만)
+                alert('✅ 영양소 추출 성공!\n' + 
+                      (ingredients.debug_info ? `${ingredients.debug_info.extracted_count}개의 영양소가 인식되었습니다.` : '영양소 정보가 성공적으로 추출되었습니다.'));
                 
-                // 3초 후 성공 메시지 제거
-                setTimeout(() => {
-                    if (successDiv.parentNode) {
-                        successDiv.parentNode.removeChild(successDiv);
-                    }
-                }, 3000);
+                // 자동으로 영양분석 화면으로 이동
+                showAnalysisResults();
             }
         } else if (data.status === 'debug') {
-            errorDiv.innerHTML = `
-                <div style="background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                    <strong>🔍 OCR 디버그 모드</strong><br>
-                    <strong>인식된 텍스트:</strong><br>
-                    <pre style="white-space: pre-wrap; font-size: 12px; background: white; padding: 10px; border-radius: 3px;">${data.raw_text || '텍스트가 인식되지 않았습니다.'}</pre>
-                </div>
-            `;
+            // 디버그 모드도 조용히 처리
+            errorDiv.style.display = 'none';
+            // 자동으로 영양분석 화면으로 이동
+            showAnalysisResults();
         } else {
-            errorDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
-                <strong>❌ 오류 발생</strong><br>
-                ${data.message || '영양소 인식에 실패했습니다.'}
-            </div>`;
+            // OCR 성공했지만 영양소 추출 실패한 경우도 조용히 처리
+            errorDiv.style.display = 'none';
+            // 자동으로 영양분석 화면으로 이동
+            showAnalysisResults();
         }
     })
     .catch((err) => {
         console.error('OCR fetch error:', err);
-        errorDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
-            <strong>❌ 서버 오류</strong><br>
-            이미지 처리 중 오류가 발생했습니다. 다시 시도해주세요.<br>
-            <small>오류 상세: ${err.message}</small>
-        </div>`;
+        // 오류 메시지를 표시하지 않고 조용히 처리
+        // errorDiv가 존재하는 경우에만 숨김
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
     });
 }
 
 function loadFavoriteProducts() {
-    // Pokaż wyniki analizy
-    showAnalysisResults();
+    // 좋아요한 제품 선택 모달 표시
+    showProductSelectionModal();
+}
+
+function showProductSelectionModal() {
+    const modal = document.getElementById('productSelectionModal');
+    modal.style.display = 'block';
+    
+    // 좋아요한 제품 목록 로드
+    loadLikedProductsList();
+}
+
+function loadLikedProductsList() {
+    const productsListDiv = document.getElementById('likedProductsList');
+    productsListDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner"></div><p>좋아요한 제품 목록을 불러오는 중...</p></div>';
+    
+    // Django context에서 전달된 liked_supplements 데이터 사용
+    const likedSupplements = JSON.parse('{{ liked_supplements|escapejs }}');
+    
+    if (likedSupplements && likedSupplements.length > 0) {
+        let html = '';
+        likedSupplements.forEach(product => {
+            html += `
+                <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" value="${product.id}" style="margin-right: 10px;" onchange="updateSelectedCount()">
+                        <div>
+                            <strong>${product.title}</strong><br>
+                            <small style="color: #666;">${product.brand || product.manufacturer || '설명 없음'}</small>
+                        </div>
+                    </label>
+                </div>
+            `;
+        });
+        productsListDiv.innerHTML = html;
+        updateSelectedCount();
+    } else {
+        // 좋아요한 제품이 없는 경우 API로 재시도
+        fetch('/mypage/get-favorite-products/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' && data.data.length > 0) {
+                    let html = '';
+                    data.data.forEach(product => {
+                        html += `
+                            <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" value="${product.id}" style="margin-right: 10px;" onchange="updateSelectedCount()">
+                                    <div>
+                                        <strong>${product.title}</strong><br>
+                                        <small style="color: #666;">${product.brand || product.manufacturer || '설명 없음'}</small>
+                                    </div>
+                                </label>
+                            </div>
+                        `;
+                    });
+                    productsListDiv.innerHTML = html;
+                    updateSelectedCount();
+                } else {
+                    productsListDiv.innerHTML = '<p style="text-align: center; color: #666;">좋아요한 제품이 없습니다.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                productsListDiv.innerHTML = '<p style="text-align: center; color: #d32f2f;">제품 목록을 불러오는 중 오류가 발생했습니다.</p>';
+            });
+    }
+}
+
+function selectAllProducts() {
+    const checkboxes = document.querySelectorAll('#likedProductsList input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelectedCount();
+}
+
+function deselectAllProducts() {
+    const checkboxes = document.querySelectorAll('#likedProductsList input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('#likedProductsList input[type="checkbox"]:checked');
+    const count = checkboxes.length;
+    console.log(`선택된 제품 수: ${count}`);
+}
+
+function loadSelectedProducts() {
+    const checkboxes = document.querySelectorAll('#likedProductsList input[type="checkbox"]:checked');
+    const selectedProductIds = Array.from(checkboxes).map(checkbox => checkbox.value);
+    
+    if (selectedProductIds.length === 0) {
+        alert('선택된 제품이 없습니다.');
+        return;
+    }
+    
+    // 모달 닫기
+    closeModal('productSelectionModal');
     
     // 로딩 메시지 표시
     const historyDiv = document.getElementById('nutrientHistory');
-    historyDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner"></div><p>좋아요한 제품의 영양성분 정보를 불러오는 중...</p></div>';
+    historyDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner"></div><p>선택한 제품의 영양성분 정보를 불러오는 중...</p></div>';
     
-    fetch('/mypage/load-liked-products-nutrients/')
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // 성공 메시지 표시
-                const successDiv = document.createElement('div');
-                successDiv.innerHTML = `<div style="color: #2e7d32; padding: 15px; background: #e8f5e8; border-radius: 5px; margin: 10px 0;">
-                    <strong>✅ 영양성분 정보 로드 완료!</strong><br>
-                    ${data.message}<br>
-                    추가된 영양성분: ${data.added_count}개
-                </div>`;
-                historyDiv.parentNode.insertBefore(successDiv, historyDiv.nextSibling);
-                
-                // 3초 후 성공 메시지 제거
-                setTimeout(() => {
-                    if (successDiv.parentNode) {
-                        successDiv.parentNode.removeChild(successDiv);
-                    }
-                }, 3000);
-                
-                // 영양분석과 기록 업데이트
-                updateNutrientAnalysis();
-                loadNutrientHistory();
-            } else if (data.status === 'info') {
-                // 좋아요한 제품이 없는 경우
-                historyDiv.innerHTML = `<div style="color: #1976d2; padding: 15px; background: #e3f2fd; border-radius: 5px; margin: 10px 0;">
-                    <strong>ℹ️ 정보</strong><br>
-                    ${data.message}
-                </div>`;
-            } else {
-                // 오류 발생
-                historyDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
-                    <strong>❌ 오류 발생</strong><br>
-                    ${data.message}
-                </div>`;
-            }
+    fetch('/mypage/load-selected-products-nutrients/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            product_ids: selectedProductIds
         })
-        .catch(error => {
-            console.error('Error:', error);
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // 성공 메시지를 alert로 표시 (한 번만)
+            alert('✅ 영양성분 정보 로드 완료!\n' + data.message + '\n추가된 영양성분: ' + data.added_count + '개');
+            
+            // 영양분석과 기록 업데이트
+            updateNutrientAnalysis();
+            loadNutrientHistory();
+            
+            // 자동으로 영양분석 화면으로 이동
+            showAnalysisResults();
+        } else {
             historyDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
-                <strong>❌ 서버 오류</strong><br>
-                좋아요한 제품의 영양성분 정보를 불러오는 중 오류가 발생했습니다.
+                <strong>❌ 오류 발생</strong><br>
+                ${data.message}
             </div>`;
-        });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        historyDiv.innerHTML = `<div style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 5px; margin: 10px 0;">
+            <strong>❌ 서버 오류</strong><br>
+            선택한 제품의 영양성분 정보를 불러오는 중 오류가 발생했습니다.
+        </div>`;
+    });
 }
 
 function addToAnalysis(productId) {
@@ -867,10 +1033,13 @@ function updateNutrientAnalysis() {
         });
 }
 
-// 페이지 로드 시
+// 페이지 로드시 영양소 섭취 기록 로드
 document.addEventListener('DOMContentLoaded', function() {
     // Początkowo pokaż tylko główne karty
     showMainCards();
+    
+    // 영양소 섭취 기록 로드
+    loadNutrientHistory();
 });
 
 // 영양소 섭취 기록 가져오기
@@ -925,6 +1094,9 @@ function submitManualInput() {
                 // 영양분석과 기록 업데이트
                 updateNutrientAnalysis();
                 loadNutrientHistory();
+                
+                // 자동으로 영양분석 화면으로 이동
+                showAnalysisResults();
             } else {
                 alert('오류가 발생했습니다: ' + data.message);
             }
@@ -960,7 +1132,7 @@ function updateNutrientIntake() {
                 'X-CSRFToken': getCookie('csrftoken')
             },
             body: JSON.stringify({
-                id: id,
+                intake_id: id,
                 amount: parseFloat(amount),
                 date: date
             })
@@ -987,23 +1159,52 @@ function updateNutrientIntake() {
 }
 
 // 영양소 섭취 기록 삭제
-function deleteNutrientIntake(id) {
-    if (confirm('정말로 이 기록을 삭제하시겠습니까?')) {
-        fetch('/mypage/delete-nutrient-intake/', {
+async function deleteIntake(id) {
+    if (!confirm('정말로 이 기록을 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/mypage/delete-nutrient-intake/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
             body: JSON.stringify({
-                id: id
+                intake_id: id
             })
+        });
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            // 영양분석과 기록 모두 업데이트
+            updateNutrientAnalysis();
+            loadNutrientHistory();
+        } else {
+            alert('삭제 중 오류가 발생했습니다: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('삭제 중 오류가 발생했습니다.');
+    }
+}
+
+// 모든 영양소 섭취 기록 삭제
+function deleteAllNutrientRecords() {
+    if (confirm('정말로 모든 영양소 섭취 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+        fetch('/mypage/delete-all-nutrient-records/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                alert('영양소 섭취 기록이 삭제되었습니다.');
-                // 영양분석과 기록 업데이트
+                alert('모든 영양소 섭취 기록이 삭제되었습니다.');
+                // 영양분석과 기록 모두 업데이트
                 updateNutrientAnalysis();
                 loadNutrientHistory();
             } else {
@@ -1012,12 +1213,89 @@ function deleteNutrientIntake(id) {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('영양소 섭취 기록 삭제에 실패했습니다.');
+            alert('전체 삭제에 실패했습니다.');
         });
     }
 }
 
-// OCR로 인식된 성분 저장
+// OCR로 인식된 텍스트를 영양분석에 추가
+function saveRawText(rawText) {
+    if (confirm('인식된 텍스트를 영양분석에 추가하시겠습니까?')) {
+        // 텍스트에서 영양소 정보를 추출하여 저장
+        const nutrients = extractNutrientsFromText(rawText);
+        
+        if (Object.keys(nutrients).length > 0) {
+            // 추출된 영양소 정보를 저장
+            saveExtractedNutrients(nutrients);
+        } else {
+            // 텍스트 자체를 저장
+            saveTextAsNote(rawText);
+        }
+    }
+}
+
+// 텍스트에서 영양소 정보 추출 (간단한 버전)
+function extractNutrientsFromText(text) {
+    const nutrients = {};
+    const patterns = [
+        /([A-Za-z가-힣]+)\s+([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)/gi,
+        /([A-Za-z가-힣]+)\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)/gi
+    ];
+    
+    patterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(text)) !== null) {
+            const nutrientName = match[1].trim();
+            const amount = parseFloat(match[2].replace(',', ''));
+            const unit = match[3];
+            
+            if (nutrientName.length > 1 && !isNaN(amount)) {
+                nutrients[nutrientName] = `${amount} ${unit}`;
+            }
+        }
+    });
+    
+    return nutrients;
+}
+
+// 추출된 영양소 정보 저장
+function saveExtractedNutrients(nutrients) {
+    fetch('/mypage/save-ocr-ingredients/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            ingredients: nutrients,
+            date: new Date().toISOString().split('T')[0]
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('영양소 정보가 성공적으로 저장되었습니다.');
+            updateNutrientAnalysis();
+            loadNutrientHistory();
+            showAnalysisResults();
+        } else {
+            alert('저장 중 오류가 발생했습니다: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('저장 중 오류가 발생했습니다.');
+    });
+}
+
+// 텍스트를 메모로 저장
+function saveTextAsNote(text) {
+    // 간단한 메모 저장 (나중에 구현 가능)
+    alert('텍스트가 메모로 저장되었습니다.');
+    showAnalysisResults();
+}
+
+// OCR로 인식된 성분 저장 (기존 함수)
 function saveIngredients(ingredients) {
     if (confirm('인식된 성분을 데이터베이스에 저장하시겠습니까?')) {
         fetch('/mypage/save-ocr-ingredients/', {
@@ -1038,6 +1316,9 @@ function saveIngredients(ingredients) {
                 // 영양분석과 기록 업데이트
                 updateNutrientAnalysis();
                 loadNutrientHistory();
+                
+                // 자동으로 영양분석 화면으로 이동
+                showAnalysisResults();
             } else {
                 alert('오류가 발생했습니다: ' + data.message);
             }
@@ -1059,6 +1340,16 @@ function openModal(modalId) {
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     modal.style.display = "none";
+}
+
+// 모달 외부 클릭시 닫기
+window.onclick = function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
 }
 
 function showProductDetails(product) {
@@ -1184,13 +1475,6 @@ closeBtn.onclick = function() {
     modal.style.display = "none";
 }
 
-// 모달 외부 클릭시 닫기
-window.onclick = function(event) {
-    if (event.target == modal) {
-        modal.style.display = "none";
-    }
-}
-
 // 수정 모달 열기
 function editIntake(id, nutrientName, amount, unit) {
     document.getElementById('intakeId').value = id;
@@ -1227,6 +1511,8 @@ editForm.onsubmit = async function(e) {
         const data = await response.json();
         if (data.status === 'success') {
             modal.style.display = "none";
+            // 영양분석과 기록 모두 업데이트
+            updateNutrientAnalysis();
             loadNutrientHistory();
         } else {
             alert('수정 중 오류가 발생했습니다: ' + data.message);
@@ -1237,38 +1523,74 @@ editForm.onsubmit = async function(e) {
     }
 }
 
-// 영양소 섭취 삭제
-async function deleteIntake(id) {
-    if (!confirm('정말로 이 기록을 삭제하시겠습니까?')) {
-        return;
+// OCR 결과를 영양분석에 자동 저장하는 함수
+function saveOcrIngredientsToAnalysis(ingredients) {
+    console.log('Saving OCR ingredients to analysis:', ingredients);
+    
+    // 각 영양소를 개별적으로 저장
+    const savePromises = [];
+    
+    for (const [nutrientName, amountInfo] of Object.entries(ingredients)) {
+        // amountInfo format: "100 mg" 또는 "10,000 mcg"
+        try {
+            const parts = amountInfo.split(' ');
+            if (parts.length >= 2) {
+                const amountStr = parts[0].replace(',', ''); // 콤마 제거
+                const unit = parts[1];
+                const amount = parseFloat(amountStr);
+                
+                if (!isNaN(amount)) {
+                    console.log(`Saving nutrient: ${nutrientName} = ${amount} ${unit}`);
+                    
+                    const savePromise = fetch('/mypage/add-manual-nutrient/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({
+                            nutrient_name: nutrientName,
+                            unit: unit,
+                            amount: amount
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            console.log(`Successfully saved ${nutrientName}`);
+                            return { success: true, nutrient: nutrientName };
+                        } else {
+                            console.error(`Failed to save ${nutrientName}:`, data.message);
+                            return { success: false, nutrient: nutrientName, error: data.message };
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`Error saving ${nutrientName}:`, error);
+                        return { success: false, nutrient: nutrientName, error: error.message };
+                    });
+                    
+                    savePromises.push(savePromise);
+                }
+            }
+        } catch (error) {
+            console.error(`Error parsing ${nutrientName}:`, error);
+        }
     }
     
-    try {
-        const response = await fetch('/mypage/delete-nutrient-intake/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                intake_id: id
-            })
-        });
+    // 모든 저장 작업이 완료된 후 결과 확인
+    Promise.all(savePromises).then(results => {
+        const successCount = results.filter(r => r.success).length;
+        const totalCount = results.length;
         
-        const data = await response.json();
-        if (data.status === 'success') {
+        console.log(`OCR 영양소 저장 완료: ${successCount}/${totalCount} 성공`);
+        
+        if (successCount > 0) {
+            // 영양분석과 기록 업데이트
+            updateNutrientAnalysis();
             loadNutrientHistory();
-        } else {
-            alert('삭제 중 오류가 발생했습니다: ' + data.message);
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('삭제 중 오류가 발생했습니다.');
-    }
+    });
 }
-
-// 페이지 로드시 영양소 섭취 기록 로드
-document.addEventListener('DOMContentLoaded', loadNutrientHistory);
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
