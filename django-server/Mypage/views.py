@@ -22,6 +22,7 @@ from django.contrib import messages
 import csv
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+import ast
 
 @login_required
 def mypage_view(request):
@@ -159,6 +160,17 @@ def analysis_view(request):
         # 사용자가 좋아요한 영양제 가져오기
         likes = Like.objects.filter(user=request.user).select_related('product')
         liked_supplements = [like.product for like in likes]
+        
+        # 좋아요한 제품 데이터를 JSON으로 직렬화
+        liked_supplements_json = json.dumps([
+            {
+                'id': product.id,
+                'title': product.title,
+                'description': product.brand or product.manufacturer or product.supplement_type or '설명 없음'
+            }
+            for product in liked_supplements
+        ])
+        
         print(f"[DEBUG] liked_supplements: {liked_supplements}")  # 추가: 콘솔에 리스트 출력
 
         # 추천 영양제 가져오기
@@ -180,7 +192,7 @@ def analysis_view(request):
         context = {
             'latest_analysis': latest_analysis,
             'nutrient_standards': nutrient_standards,
-            'liked_supplements': liked_supplements,
+            'liked_supplements': liked_supplements_json,  # JSON 문자열로 전달
             'recommended_supplements': recommended_supplements,
             'debug_info': {
                 'file_path': json_path,
@@ -189,8 +201,15 @@ def analysis_view(request):
         print(f"[DEBUG] context['liked_supplements']: {context['liked_supplements']}")  # 추가: context 전달 확인
         return render(request, 'Mypage/analysis.html', context)
     except Exception as e:
-        messages.error(request, f'영양소 분석 결과를 불러오는 중 오류가 발생했습니다: {str(e)}')
-        return redirect('mypage:mypage')
+        print(f"[ERROR] analysis_view 오류: {str(e)}")
+        # 오류 정보를 포함한 context로 렌더링
+        context = {
+            'error_message': f'영양소 분석 결과를 불러오는 중 오류가 발생했습니다: {str(e)}',
+            'liked_supplements': '[]',  # 빈 배열
+            'recommended_supplements': [],
+            'nutrient_standards': {}
+        }
+        return render(request, 'Mypage/analysis.html', context)
 
 def calculate_health_score(survey_result):
     score = 100
@@ -530,26 +549,51 @@ def add_manual_nutrient_intake(request):
             print(f"영양소 기준치 파일 로드 실패: {str(e)}")
             nutrient_standards = {}
 
-        # 영양소가 존재하는지 확인하고, 없으면 생성
-        nutrient, created = Nutrient.objects.get_or_create(
-            name=nutrient_name,
-            defaults={
-                'unit': unit,
-                'daily_recommended': nutrient_standards.get(nutrient_name, {}).get('recommended_amount', 100),
-                'description': nutrient_standards.get(nutrient_name, {}).get('description', ''),
-                'category': '기타'  # 기본 카테고리
-            }
-        )
+        # 영양소가 존재하는지 확인하고, 없으면 생성 (ID 충돌 완전 방지)
+        nutrient = None
         
-        # 기존 영양소인 경우 권장량 업데이트
-        if not created:
+        # 먼저 기존 영양소 찾기
+        try:
+            nutrient = Nutrient.objects.get(name=nutrient_name)
+            # 기존 영양소인 경우 권장량 업데이트
             nutrient.unit = unit
             nutrient.daily_recommended = nutrient_standards.get(nutrient_name, {}).get('recommended_amount', 100)
             nutrient.description = nutrient_standards.get(nutrient_name, {}).get('description', '')
             nutrient.save()
             print(f"기존 영양소 업데이트: {nutrient_name}, 권장량: {nutrient.daily_recommended}")
-        else:
-            print(f"새 영양소 생성: {nutrient_name}, 권장량: {nutrient.daily_recommended}")
+        except Nutrient.DoesNotExist:
+            # 새 영양소 생성 (ID 충돌 방지를 위해 시퀀스 재설정 후 생성)
+            try:
+                # 시퀀스 재설정 (테이블명 대소문자 구분)
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT setval(pg_get_serial_sequence('\"Mypage_nutrient\"', 'id'), COALESCE((SELECT MAX(id) FROM \"Mypage_nutrient\"), 1));")
+                
+                # 새 영양소 생성
+                nutrient = Nutrient.objects.create(
+                    name=nutrient_name,
+                    unit=unit,
+                    daily_recommended=nutrient_standards.get(nutrient_name, {}).get('recommended_amount', 100),
+                    description=nutrient_standards.get(nutrient_name, {}).get('description', ''),
+                    category='기타'  # 기본 카테고리
+                )
+                print(f"새 영양소 생성: {nutrient_name}, 권장량: {nutrient.daily_recommended}")
+            except Exception as create_error:
+                print(f"영양소 생성 중 오류: {str(create_error)}")
+                # 생성 실패 시 기존 영양소를 다시 찾아보기
+                try:
+                    nutrient = Nutrient.objects.get(name=nutrient_name)
+                except Nutrient.DoesNotExist:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f'영양소 "{nutrient_name}" 생성에 실패했습니다. 오류: {str(create_error)}'
+                    }, status=400)
+
+        if not nutrient:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'영양소 "{nutrient_name}"를 찾을 수 없거나 생성할 수 없습니다.'
+            }, status=400)
 
         # 영양소 섭취 기록 생성 (amount, unit만)
         intake = UserNutrientIntake.objects.create(
@@ -877,7 +921,14 @@ def update_nutrient_intake(request):
 def delete_nutrient_intake(request):
     try:
         data = json.loads(request.body)
-        intake_id = data.get('id')
+        # intake_id와 id 두 가지 키 모두 처리
+        intake_id = data.get('intake_id') or data.get('id')
+        
+        if not intake_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': '삭제할 기록의 ID가 제공되지 않았습니다.'
+            }, status=400)
 
         intake = UserNutrientIntake.objects.get(id=intake_id, user=request.user)
         intake.delete()
@@ -962,32 +1013,40 @@ def load_liked_products_nutrients(request):
             
             if ingredients and isinstance(ingredients, str) and ingredients.strip():
                 # ingredients에서 영양성분 정보 파싱
-                nutrients = parse_nutrients_from_table_info(ingredients)
+                nutrients = parse_nutrients_from_text(ingredients)
                 print(f"파싱된 영양성분: {nutrients}")
                 
                 # 각 영양성분을 UserNutrientIntake에 저장
                 for nutrient_name, amount_info in nutrients.items():
-                    # Nutrient 모델에서 해당 영양소 찾기 또는 생성
-                    nutrient, created = Nutrient.objects.get_or_create(
-                        name=nutrient_name,
-                        defaults={
-                            'description': f'{nutrient_name} 영양소',
-                            'daily_recommended': 100,  # 기본값
-                            'unit': 'mg',
-                            'category': '기타'
-                        }
-                    )
-                    
-                    # UserNutrientIntake에 저장
-                    UserNutrientIntake.objects.create(
-                        user=request.user,
-                        nutrient=nutrient,
-                        amount=amount_info.get('amount', 0),
-                        unit=amount_info.get('unit', 'mg')
-                    )
-                    
-                    added_count += 1
-                    print(f"영양성분 추가: {nutrient_name} - {amount_info}")
+                    # amount_info format: "100 mg"
+                    try:
+                        amount_str, unit = amount_info.split(' ', 1)
+                        amount = float(amount_str)
+                        
+                        # Nutrient 모델에서 해당 영양소 찾기 또는 생성
+                        nutrient, created = Nutrient.objects.get_or_create(
+                            name=nutrient_name,
+                            defaults={
+                                'description': f'{nutrient_name} 영양소',
+                                'daily_recommended': 100,  # 기본값
+                                'unit': 'mg',
+                                'category': '기타'
+                            }
+                        )
+                        
+                        # UserNutrientIntake에 저장
+                        UserNutrientIntake.objects.create(
+                            user=request.user,
+                            nutrient=nutrient,
+                            amount=amount,
+                            unit=unit
+                        )
+                        
+                        added_count += 1
+                        print(f"영양성분 추가: {nutrient_name} - {amount}{unit}")
+                    except (ValueError, AttributeError) as e:
+                        print(f"영양소 파싱 오류 ({nutrient_name}): {str(e)}")
+                        continue
             else:
                 not_found_count += 1
                 print(f"제품에 ingredients 정보가 없음: {product_title}")
@@ -1009,92 +1068,130 @@ def load_liked_products_nutrients(request):
             'message': f'영양성분 정보 로드 중 오류가 발생했습니다: {str(e)}'
         }, status=500)
 
-def parse_nutrients_from_table_info(table_info):
-    """
-    table_info 문자열에서 영양성분 정보를 파싱
-    """
+def parse_nutrients_from_text(text):
+    """텍스트에서 영양소 정보 추출 (OCR용)"""
     nutrients = {}
     
+    # 1. 리스트/딕셔너리 구조 파싱 시도
     try:
-        # Python 딕셔너리/리스트 형태로 저장된 경우 (ast.literal_eval 사용)
-        import ast
-        data = ast.literal_eval(table_info)
-        print(f"Python 데이터 파싱 결과: {data}")
-        
-        if isinstance(data, dict):
-            for key, value in data.items():
-                if isinstance(value, (int, float)) and value > 0:
-                    nutrients[key] = {'amount': value, 'unit': 'mg'}
-        elif isinstance(data, list):
+        data = ast.literal_eval(text)
+        if isinstance(data, list):
             for item in data:
-                if isinstance(item, dict):
-                    # 새로운 형태: {'id': 14, 'ingredient_name': '비타민 C', 'amount': 4000, 'unit': 'mg'}
-                    if 'ingredient_name' in item and 'amount' in item:
-                        nutrient_name = item['ingredient_name']
-                        amount = item['amount']
-                        unit = item.get('unit', 'mg')
-                        
-                        if amount > 0 and nutrient_name:
-                            nutrients[nutrient_name] = {'amount': amount, 'unit': unit}
-                            print(f"영양성분 파싱 성공: {nutrient_name} - {amount}{unit}")
-                    else:
-                        # 기존 형태: {'비타민C': 100}
-                        for key, value in item.items():
-                            if isinstance(value, (int, float)) and value > 0:
-                                nutrients[key] = {'amount': value, 'unit': 'mg'}
+                if isinstance(item, dict) and 'ingredient_name' in item and 'amount' in item and 'unit' in item:
+                    nutrients[item['ingredient_name']] = f"{item['amount']} {item['unit']}"
+        elif isinstance(data, dict):
+            for k, v in data.items():
+                if isinstance(v, (int, float)):
+                    nutrients[k] = f"{v} mg"
+        if nutrients:
+            return nutrients
     except Exception as e:
-        print(f"Python 데이터 파싱 오류: {str(e)}")
-        
-        # JSON 형태로 저장된 경우 (fallback)
-        try:
-            if table_info.startswith('{') or table_info.startswith('['):
-                data = json.loads(table_info)
-                print(f"JSON 파싱 결과: {data}")
-                
-                if isinstance(data, dict):
-                    for key, value in data.items():
-                        if isinstance(value, (int, float)) and value > 0:
-                            nutrients[key] = {'amount': value, 'unit': 'mg'}
-                elif isinstance(data, list):
-                    for item in data:
-                        if isinstance(item, dict):
-                            # 새로운 형태: {'id': 14, 'ingredient_name': '비타민 C', 'amount': 4000, 'unit': 'mg'}
-                            if 'ingredient_name' in item and 'amount' in item:
-                                nutrient_name = item['ingredient_name']
-                                amount = item['amount']
-                                unit = item.get('unit', 'mg')
-                                
-                                if amount > 0 and nutrient_name:
-                                    nutrients[nutrient_name] = {'amount': amount, 'unit': unit}
-                                    print(f"영양성분 파싱 성공: {nutrient_name} - {amount}{unit}")
-                            else:
-                                # 기존 형태: {'비타민C': 100}
-                                for key, value in item.items():
-                                    if isinstance(value, (int, float)) and value > 0:
-                                        nutrients[key] = {'amount': value, 'unit': 'mg'}
-        except Exception as e2:
-            print(f"JSON 파싱 오류: {str(e2)}")
+        pass  # 파싱 실패 시 아래 문자열 파싱으로 진행
+
+    # 2. OCR 텍스트용 개선된 패턴 매칭 (영어 중심)
+    nutrient_patterns = [
+        # 영어 영양소 기본 패턴들
+        r'([A-Za-z]+)\s+([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        r'([A-Za-z]+)\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        # 콤마가 포함된 숫자 패턴 (10,000 mcg)
+        r'([A-Za-z]+)\s+([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        # 단위가 앞에 오는 패턴
+        r'([A-Za-z]+)\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        # 한글 패턴들 (기존)
+        r'비타민\s*([A-Z])\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        r'([A-Za-z가-힣]+)\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+    ]
     
-    # 문자열에서 영양성분 정보 추출 (예: "비타민C: 100mg", "칼슘: 500mg" 등)
-    if not nutrients:
-        # 정규식으로 영양성분 정보 추출
-        import re
-        patterns = [
-            r'([가-힣A-Za-z\s]+):\s*([\d.]+)\s*(mg|g|mcg|µg|IU)',
-            r'([가-힣A-Za-z\s]+)\s*([\d.]+)\s*(mg|g|mcg|µg|IU)',
-        ]
-        
-        for pattern in patterns:
-            matches = re.findall(pattern, table_info, re.IGNORECASE)
-            for match in matches:
-                nutrient_name = match[0].strip()
-                amount = float(match[1])
-                unit = match[2].lower()
+    for pattern in nutrient_patterns:
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            if len(match.groups()) >= 3:
+                nutrient_name = match.group(1).strip()
+                amount_str = match.group(2).replace(',', '')
+                unit = match.group(3)
                 
-                if amount > 0 and nutrient_name:
-                    nutrients[nutrient_name] = {'amount': amount, 'unit': unit}
+                # 영양소 이름이 너무 짧거나 숫자인 경우 제외
+                if len(nutrient_name) < 2 or nutrient_name.isdigit():
+                    continue
+                
+                try:
+                    amount = float(amount_str)
+                    # 이미 존재하는 영양소인 경우 더 큰 값으로 업데이트
+                    if nutrient_name in nutrients:
+                        existing_amount = float(nutrients[nutrient_name].split()[0])
+                        if amount > existing_amount:
+                            nutrients[nutrient_name] = f"{amount} {unit}"
+                    else:
+                        nutrients[nutrient_name] = f"{amount} {unit}"
+                except ValueError:
+                    continue
     
-    print(f"최종 파싱된 영양성분: {nutrients}")
+    # 3. 특별한 영어 영양소 패턴들 (OCR에서 자주 나오는 형태)
+    special_patterns = [
+        # Biotin 패턴들
+        (r'Biotin\s+([\d,\.]+)\s*mcg', 'Biotin'),
+        (r'Biotin\s+([\d,\.]+)\s*mg', 'Biotin'),
+        # Vitamin 패턴들
+        (r'Vitamin\s+C\s+([\d,\.]+)\s*mg', 'Vitamin C'),
+        (r'Vitamin\s+D\s+([\d,\.]+)\s*iu', 'Vitamin D'),
+        (r'Vitamin\s+B12\s+([\d,\.]+)\s*mcg', 'Vitamin B12'),
+        (r'Vitamin\s+B6\s+([\d,\.]+)\s*mg', 'Vitamin B6'),
+        (r'Vitamin\s+E\s+([\d,\.]+)\s*iu', 'Vitamin E'),
+        # 미네랄 패턴들
+        (r'Calcium\s+([\d,\.]+)\s*mg', 'Calcium'),
+        (r'Iron\s+([\d,\.]+)\s*mg', 'Iron'),
+        (r'Zinc\s+([\d,\.]+)\s*mg', 'Zinc'),
+        (r'Magnesium\s+([\d,\.]+)\s*mg', 'Magnesium'),
+        (r'Selenium\s+([\d,\.]+)\s*mcg', 'Selenium'),
+        # 기타 영양소들
+        (r'Folic\s+Acid\s+([\d,\.]+)\s*mcg', 'Folic Acid'),
+        (r'Omega\s*3\s+([\d,\.]+)\s*mg', 'Omega 3'),
+        (r'CoQ10\s+([\d,\.]+)\s*mg', 'CoQ10'),
+        # 한글 패턴들 (기존)
+        (r'비타민\s*C\s+([\d,\.]+)\s*mg', '비타민 C'),
+        (r'비타민\s*D\s+([\d,\.]+)\s*iu', '비타민 D'),
+        (r'비타민\s*B12\s+([\d,\.]+)\s*mcg', '비타민 B12'),
+    ]
+    
+    for pattern, nutrient_name in special_patterns:
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            amount_str = match.group(1).replace(',', '')
+            try:
+                amount = float(amount_str)
+                unit = 'mg' if 'mg' in pattern else ('mcg' if 'mcg' in pattern else 'iu')
+                nutrients[nutrient_name] = f"{amount} {unit}"
+            except ValueError:
+                continue
+    
+    # 4. 추가적인 OCR 텍스트 정리 및 패턴 매칭
+    # 줄바꿈이나 특수문자 제거 후 다시 시도
+    cleaned_text = re.sub(r'[^\w\s\d,\.:()-]', ' ', text)
+    cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
+    
+    # 정리된 텍스트에서 다시 패턴 매칭
+    for pattern in nutrient_patterns:
+        matches = re.finditer(pattern, cleaned_text, re.IGNORECASE)
+        for match in matches:
+            if len(match.groups()) >= 3:
+                nutrient_name = match.group(1).strip()
+                amount_str = match.group(2).replace(',', '')
+                unit = match.group(3)
+                
+                if len(nutrient_name) < 2 or nutrient_name.isdigit():
+                    continue
+                
+                try:
+                    amount = float(amount_str)
+                    if nutrient_name not in nutrients:  # 중복 방지
+                        nutrients[nutrient_name] = f"{amount} {unit}"
+                except ValueError:
+                    continue
+    
+    # 5. 디버깅을 위한 로그 추가
+    print(f"OCR 텍스트: {text[:200]}...")  # 처음 200자만 출력
+    print(f"추출된 영양소: {nutrients}")
+    
     return nutrients
 
 @login_required
@@ -1132,32 +1229,40 @@ def load_selected_products_nutrients(request):
             
             if ingredients and isinstance(ingredients, str) and ingredients.strip():
                 # ingredients에서 영양성분 정보 파싱
-                nutrients = parse_nutrients_from_table_info(ingredients)
+                nutrients = parse_nutrients_from_text(ingredients)
                 print(f"파싱된 영양성분: {nutrients}")
                 
                 # 각 영양성분을 UserNutrientIntake에 저장
                 for nutrient_name, amount_info in nutrients.items():
-                    # Nutrient 모델에서 해당 영양소 찾기 또는 생성
-                    nutrient, created = Nutrient.objects.get_or_create(
-                        name=nutrient_name,
-                        defaults={
-                            'description': f'{nutrient_name} 영양소',
-                            'daily_recommended': 100,  # 기본값
-                            'unit': 'mg',
-                            'category': '기타'
-                        }
-                    )
-                    
-                    # UserNutrientIntake에 저장
-                    UserNutrientIntake.objects.create(
-                        user=request.user,
-                        nutrient=nutrient,
-                        amount=amount_info.get('amount', 0),
-                        unit=amount_info.get('unit', 'mg')
-                    )
-                    
-                    added_count += 1
-                    print(f"영양성분 추가: {nutrient_name} - {amount_info}")
+                    # amount_info format: "100 mg"
+                    try:
+                        amount_str, unit = amount_info.split(' ', 1)
+                        amount = float(amount_str)
+                        
+                        # Nutrient 모델에서 해당 영양소 찾기 또는 생성
+                        nutrient, created = Nutrient.objects.get_or_create(
+                            name=nutrient_name,
+                            defaults={
+                                'description': f'{nutrient_name} 영양소',
+                                'daily_recommended': 100,  # 기본값
+                                'unit': 'mg',
+                                'category': '기타'
+                            }
+                        )
+                        
+                        # UserNutrientIntake에 저장
+                        UserNutrientIntake.objects.create(
+                            user=request.user,
+                            nutrient=nutrient,
+                            amount=amount,
+                            unit=unit
+                        )
+                        
+                        added_count += 1
+                        print(f"영양성분 추가: {nutrient_name} - {amount}{unit}")
+                    except (ValueError, AttributeError) as e:
+                        print(f"영양소 파싱 오류 ({nutrient_name}): {str(e)}")
+                        continue
             else:
                 not_found_count += 1
                 print(f"제품에 ingredients 정보가 없음: {product_title}")
@@ -1378,13 +1483,36 @@ def ocr_extract(request):
     }, status=400)
 
 def extract_nutrients_from_text(text):
-    """텍스트에서 영양소 정보 추출"""
+    """텍스트에서 영양소 정보 추출 (OCR용)"""
     nutrients = {}
     
-    # 영양소 패턴 (한국어 + 영어)
+    # 1. 리스트/딕셔너리 구조 파싱 시도
+    try:
+        data = ast.literal_eval(text)
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict) and 'ingredient_name' in item and 'amount' in item and 'unit' in item:
+                    nutrients[item['ingredient_name']] = f"{item['amount']} {item['unit']}"
+        elif isinstance(data, dict):
+            for k, v in data.items():
+                if isinstance(v, (int, float)):
+                    nutrients[k] = f"{v} mg"
+        if nutrients:
+            return nutrients
+    except Exception as e:
+        pass  # 파싱 실패 시 아래 문자열 파싱으로 진행
+
+    # 2. OCR 텍스트용 개선된 패턴 매칭 (영어 중심)
     nutrient_patterns = [
+        # 영어 영양소 기본 패턴들
+        r'([A-Za-z]+)\s+([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        r'([A-Za-z]+)\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        # 콤마가 포함된 숫자 패턴 (10,000 mcg)
+        r'([A-Za-z]+)\s+([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        # 단위가 앞에 오는 패턴
+        r'([A-Za-z]+)\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        # 한글 패턴들 (기존)
         r'비타민\s*([A-Z])\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
-        r'Vitamin\s*([A-Z])\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
         r'([A-Za-z가-힣]+)\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
     ]
     
@@ -1396,11 +1524,87 @@ def extract_nutrients_from_text(text):
                 amount_str = match.group(2).replace(',', '')
                 unit = match.group(3)
                 
+                # 영양소 이름이 너무 짧거나 숫자인 경우 제외
+                if len(nutrient_name) < 2 or nutrient_name.isdigit():
+                    continue
+                
                 try:
                     amount = float(amount_str)
-                    nutrients[nutrient_name] = f"{amount} {unit}"
+                    # 이미 존재하는 영양소인 경우 더 큰 값으로 업데이트
+                    if nutrient_name in nutrients:
+                        existing_amount = float(nutrients[nutrient_name].split()[0])
+                        if amount > existing_amount:
+                            nutrients[nutrient_name] = f"{amount} {unit}"
+                    else:
+                        nutrients[nutrient_name] = f"{amount} {unit}"
                 except ValueError:
                     continue
+    
+    # 3. 특별한 영어 영양소 패턴들 (OCR에서 자주 나오는 형태)
+    special_patterns = [
+        # Biotin 패턴들
+        (r'Biotin\s+([\d,\.]+)\s*mcg', 'Biotin'),
+        (r'Biotin\s+([\d,\.]+)\s*mg', 'Biotin'),
+        # Vitamin 패턴들
+        (r'Vitamin\s+C\s+([\d,\.]+)\s*mg', 'Vitamin C'),
+        (r'Vitamin\s+D\s+([\d,\.]+)\s*iu', 'Vitamin D'),
+        (r'Vitamin\s+B12\s+([\d,\.]+)\s*mcg', 'Vitamin B12'),
+        (r'Vitamin\s+B6\s+([\d,\.]+)\s*mg', 'Vitamin B6'),
+        (r'Vitamin\s+E\s+([\d,\.]+)\s*iu', 'Vitamin E'),
+        # 미네랄 패턴들
+        (r'Calcium\s+([\d,\.]+)\s*mg', 'Calcium'),
+        (r'Iron\s+([\d,\.]+)\s*mg', 'Iron'),
+        (r'Zinc\s+([\d,\.]+)\s*mg', 'Zinc'),
+        (r'Magnesium\s+([\d,\.]+)\s*mg', 'Magnesium'),
+        (r'Selenium\s+([\d,\.]+)\s*mcg', 'Selenium'),
+        # 기타 영양소들
+        (r'Folic\s+Acid\s+([\d,\.]+)\s*mcg', 'Folic Acid'),
+        (r'Omega\s*3\s+([\d,\.]+)\s*mg', 'Omega 3'),
+        (r'CoQ10\s+([\d,\.]+)\s*mg', 'CoQ10'),
+        # 한글 패턴들 (기존)
+        (r'비타민\s*C\s+([\d,\.]+)\s*mg', '비타민 C'),
+        (r'비타민\s*D\s+([\d,\.]+)\s*iu', '비타민 D'),
+        (r'비타민\s*B12\s+([\d,\.]+)\s*mcg', '비타민 B12'),
+    ]
+    
+    for pattern, nutrient_name in special_patterns:
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            amount_str = match.group(1).replace(',', '')
+            try:
+                amount = float(amount_str)
+                unit = 'mg' if 'mg' in pattern else ('mcg' if 'mcg' in pattern else 'iu')
+                nutrients[nutrient_name] = f"{amount} {unit}"
+            except ValueError:
+                continue
+    
+    # 4. 추가적인 OCR 텍스트 정리 및 패턴 매칭
+    # 줄바꿈이나 특수문자 제거 후 다시 시도
+    cleaned_text = re.sub(r'[^\w\s\d,\.:()-]', ' ', text)
+    cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
+    
+    # 정리된 텍스트에서 다시 패턴 매칭
+    for pattern in nutrient_patterns:
+        matches = re.finditer(pattern, cleaned_text, re.IGNORECASE)
+        for match in matches:
+            if len(match.groups()) >= 3:
+                nutrient_name = match.group(1).strip()
+                amount_str = match.group(2).replace(',', '')
+                unit = match.group(3)
+                
+                if len(nutrient_name) < 2 or nutrient_name.isdigit():
+                    continue
+                
+                try:
+                    amount = float(amount_str)
+                    if nutrient_name not in nutrients:  # 중복 방지
+                        nutrients[nutrient_name] = f"{amount} {unit}"
+                except ValueError:
+                    continue
+    
+    # 5. 디버깅을 위한 로그 추가
+    print(f"OCR 텍스트: {text[:200]}...")  # 처음 200자만 출력
+    print(f"추출된 영양소: {nutrients}")
     
     return nutrients
 
@@ -1412,7 +1616,7 @@ def like_api(request):
         likes = Like.objects.filter(user=request.user).select_related('product')
         liked_products = [{
             'id': like.product.id,
-            'name': like.product.name,
+            'title': like.product.title,
             'brand': like.product.brand
         } for like in likes]
         
