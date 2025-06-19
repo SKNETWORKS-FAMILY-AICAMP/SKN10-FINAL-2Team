@@ -500,10 +500,10 @@ body {
             <div id="likedProductsList" style="margin: 20px 0;">
                 <!-- 제품 목록이 여기에 로드됩니다 -->
             </div>
-            <div style="margin-top: 20px;">
-                <button onclick="selectAllProducts()" style="margin-right: 10px;">전체 선택</button>
-                <button onclick="deselectAllProducts()" style="margin-right: 10px;">전체 해제</button>
-                <button onclick="loadSelectedProducts()" style="background: #DDC66F; color: white;">선택한 제품 영양성분 가져오기</button>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button onclick="selectAllProducts()" style="padding: 8px 16px; border: none; background: #DDC66F; color: white; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">전체 선택</button>
+                <button onclick="deselectAllProducts()" style="padding: 8px 16px; border: none; background: #DDC66F; color: white; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">전체 해제</button>
+                <button onclick="loadSelectedProducts()" style="padding: 8px 16px; background: #DDC66F; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">선택한 제품 영양성분 가져오기</button>
             </div>
         </div>
     </div>

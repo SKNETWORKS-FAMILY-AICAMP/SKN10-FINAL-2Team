@@ -555,7 +555,7 @@ def add_manual_nutrient_intake(request):
         # 먼저 기존 영양소 찾기
         try:
             nutrient = Nutrient.objects.get(name=nutrient_name)
-            # 기존 영양소인 경우 권장량 업데이트
+        # 기존 영양소인 경우 권장량 업데이트
             nutrient.unit = unit
             nutrient.daily_recommended = nutrient_standards.get(nutrient_name, {}).get('recommended_amount', 100)
             nutrient.description = nutrient_standards.get(nutrient_name, {}).get('description', '')
@@ -1046,7 +1046,6 @@ def load_liked_products_nutrients(request):
                         print(f"영양성분 추가: {nutrient_name} - {amount}{unit}")
                     except (ValueError, AttributeError) as e:
                         print(f"영양소 파싱 오류 ({nutrient_name}): {str(e)}")
-                        continue
             else:
                 not_found_count += 1
                 print(f"제품에 ingredients 정보가 없음: {product_title}")
@@ -1163,7 +1162,7 @@ def parse_nutrients_from_text(text):
                 nutrients[nutrient_name] = f"{amount} {unit}"
             except ValueError:
                 continue
-    
+                
     # 4. 추가적인 OCR 텍스트 정리 및 패턴 매칭
     # 줄바꿈이나 특수문자 제거 후 다시 시도
     cleaned_text = re.sub(r'[^\w\s\d,\.:()-]', ' ', text)
@@ -1180,7 +1179,7 @@ def parse_nutrients_from_text(text):
                 
                 if len(nutrient_name) < 2 or nutrient_name.isdigit():
                     continue
-                
+                    
                 try:
                     amount = float(amount_str)
                     if nutrient_name not in nutrients:  # 중복 방지
@@ -1271,7 +1270,7 @@ def load_selected_products_nutrients(request):
         print(f"찾을 수 없는 제품: {not_found_count}개")
         
         return JsonResponse({
-            'status': 'success',
+            'status': 'success', 
             'message': f'선택한 제품 {len(selected_products)}개 중 {added_count}개의 영양성분 정보가 추가되었습니다.',
             'added_count': added_count,
             'not_found_count': not_found_count
@@ -1280,7 +1279,7 @@ def load_selected_products_nutrients(request):
     except Exception as e:
         print(f"선택한 제품 영양성분 로드 오류: {str(e)}")
         return JsonResponse({
-            'status': 'error',
+            'status': 'error', 
             'message': f'영양성분 정보 로드 중 오류가 발생했습니다: {str(e)}'
         }, status=500)
 
@@ -1352,7 +1351,7 @@ def get_product_nutrients(request, product_id):
                 'unit': 'µg'
             }
         ]
-        
+
         return JsonResponse({
             'status': 'success',
             'nutrients': nutrients
@@ -1382,7 +1381,7 @@ def product_click(request):
                 action='product_click',
                 details=f'Product ID: {product_id}'
             )
-            
+
             return JsonResponse({
                 'status': 'success',
                 'message': 'Aktywność została zarejestrowana'
@@ -1444,7 +1443,7 @@ def ocr_extract(request):
                     'status': 'error',
                     'message': '이미지에서 텍스트를 인식할 수 없습니다. 더 선명한 이미지를 업로드해주세요.'
                 }, status=400)
-            
+
             # 영양소 정보 추출 (간단한 패턴 매칭)
             nutrients = extract_nutrients_from_text(text)
             
@@ -1476,7 +1475,7 @@ def ocr_extract(request):
                 'status': 'error',
                 'message': f'이미지 처리 중 오류가 발생했습니다: {str(e)}'
             }, status=500)
-    
+
     return JsonResponse({
         'status': 'error',
         'message': '잘못된 요청입니다.'
@@ -1594,7 +1593,7 @@ def extract_nutrients_from_text(text):
                 
                 if len(nutrient_name) < 2 or nutrient_name.isdigit():
                     continue
-                
+                    
                 try:
                     amount = float(amount_str)
                     if nutrient_name not in nutrients:  # 중복 방지
