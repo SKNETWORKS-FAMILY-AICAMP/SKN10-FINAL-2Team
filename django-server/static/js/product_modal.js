@@ -609,30 +609,7 @@ function attachProductCardListeners() {
 }
 
 // 캐러셀 이동 함수
-function moveCarousel(direction) {
-    const carouselInner = document.querySelector('.carousel-inner');
-    if (!carouselInner) return;
-    
-    const productCards = carouselInner.querySelectorAll('.product-card');
-    if (productCards.length === 0) return;
-    
-    const cardWidth = productCards[0].offsetWidth + 16; // 카드 너비 + 마진
-    const visibleCards = Math.floor(carouselInner.offsetWidth / cardWidth);
-    
-    // 현재 위치 업데이트
-    let currentCarouselPosition = parseInt(carouselInner.getAttribute('data-position') || '0');
-    currentCarouselPosition += direction;
-    
-    // 범위 제한
-    if (currentCarouselPosition < 0) currentCarouselPosition = 0;
-    if (currentCarouselPosition > productCards.length - visibleCards) {
-        currentCarouselPosition = productCards.length - visibleCards;
-    }
-    
-    // 위치 저장 및 적용
-    carouselInner.setAttribute('data-position', currentCarouselPosition);
-    carouselInner.style.transform = `translateX(-${currentCarouselPosition * cardWidth}px)`;
-}
+ // function moveCarousel(direction) { ... }
 
 // 상품 카드 캐러셀 생성 함수
 function createProductCarousel(products, containerElement) {
@@ -706,10 +683,10 @@ function createProductCarousel(products, containerElement) {
     // 캐러셀 닫기 및 컨트롤 버튼 추가
     carouselHTML += `
             </div>
-            <button class="carousel-control prev" onclick="moveCarousel(-1)">
+            <button class="carousel-control prev">
                 <span class="material-icons">chevron_left</span>
             </button>
-            <button class="carousel-control next" onclick="moveCarousel(1)">
+            <button class="carousel-control next">
                 <span class="material-icons">chevron_right</span>
             </button>
         </div>
@@ -731,6 +708,30 @@ function createProductCarousel(products, containerElement) {
             }
         });
     });
+    
+    // 캐러셀 이동 함수 (이제 이 함수는 createProductCarousel 내부에만 존재)
+    function moveCarousel(direction) {
+        const carouselInner = carouselContainer.querySelector('.carousel-inner');
+        if (!carouselInner) return;
+        const productCards = carouselInner.querySelectorAll('.product-card');
+        if (productCards.length === 0) return;
+        const cardWidth = productCards[0].offsetWidth + 16; // 카드 너비 + 마진
+        const visibleCards = Math.floor(carouselInner.offsetWidth / cardWidth);
+        let currentCarouselPosition = parseInt(carouselInner.getAttribute('data-position') || '0');
+        currentCarouselPosition += direction;
+        if (currentCarouselPosition < 0) currentCarouselPosition = 0;
+        if (currentCarouselPosition > productCards.length - visibleCards) {
+            currentCarouselPosition = productCards.length - visibleCards;
+        }
+        carouselInner.setAttribute('data-position', currentCarouselPosition);
+        carouselInner.style.transform = `translateX(-${currentCarouselPosition * cardWidth}px)`;
+    }
+    
+    // 각 버튼에 이벤트 리스너 바인딩 (window.moveCarousel 사용 X)
+    const prevBtn = carouselContainer.querySelector('.carousel-control.prev');
+    const nextBtn = carouselContainer.querySelector('.carousel-control.next');
+    if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); moveCarousel(-1); });
+    if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); moveCarousel(1); });
     
     return carouselContainer;
 }

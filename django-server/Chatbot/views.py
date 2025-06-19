@@ -156,7 +156,7 @@ def get_chat_rooms(request):
 
 def get_chat_messages(request, room_id):
     try:
-        messages = ChatMessages.objects.filter(chat_room_id=room_id).order_by('created_at')
+        messages = ChatMessages.objects.filter(chat_room_id=room_id).order_by('created_at', 'id')
         return JsonResponse([{
             'id': msg.id,
             'sender_type': msg.sender_type,
