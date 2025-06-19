@@ -28,7 +28,7 @@ class Products(models.Model):
     country_of_origin = models.CharField(max_length=100, blank=True)
     sales_ranks = models.TextField(blank=True)
     popularity_score = models.FloatField(null=True, blank=True)
-    nutri = models.TextField(blank=True)
+    nutri = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.title

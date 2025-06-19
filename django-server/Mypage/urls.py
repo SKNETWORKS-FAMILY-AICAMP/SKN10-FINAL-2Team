@@ -16,6 +16,7 @@ urlpatterns = [
     path('update-nutrient-intake/', views.update_nutrient_intake, name='update_nutrient_intake'),
     path('delete-nutrient-intake/', views.delete_nutrient_intake, name='delete_nutrient_intake'),
     path('get-nutrients-list/', views.get_nutrients_list, name='get_nutrients_list'),
+    path('load-liked-products-nutrients/', views.load_liked_products_nutrients, name='load_liked_products_nutrients'),
     path('like/', views.like_list, name='like_list'),
     path('like-add/', views.like_add, name='like_add'),
     path('like-delete/', views.like_delete, name='like_delete'),
