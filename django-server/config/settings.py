@@ -143,8 +143,8 @@ AUTHENTICATION_BACKENDS = (
 
 STATIC_URL = 'static/'
 STATIC_PATH = os.path.join(BASE_DIR, 'static')
-
-STATICFILES_DIRS = (STATIC_PATH,)   # 튜플로 넣어줌. 리스트로 넣어도 됨.
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+#STATICFILES_DIRS = (STATIC_PATH,)   # 튜플로 넣어줌. 리스트로 넣어도 됨.
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
