@@ -34,7 +34,7 @@
 |---|---|---|---|
 |**최수헌**|팀장|프로젝트 관리 및 LLM|[HoneyWater8](https://github.com/HoneyWater8)|
 |**권석현**|팀원|DB|[seo-droid](https://github.com/seo-droid)|
-|**원유형**|팀원|Fine-tuning 및 AWS|[uhyeong](https://github.com/uhyeong)|
+|**원유형**|팀원|데이터수집 및 AWS|[uhyeong](https://github.com/uhyeong)|
 |**좌민서**|팀원|추천 시스템|[INe](https://github.com/INe904)|
 |**홍승표**|팀원|웹 개발|[redwin02](https://github.com/redwin-02)|
 
