@@ -172,7 +172,24 @@ function showProductDetail(productId, event) {
     
     // productId가 문자열로 전달된 경우 숫자로 변환
     productId = parseInt(productId);
-    
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+        checkUserAuthentication();
+        const accessToken = localStorage.getItem('accessToken');
+        fetch('/mypage/product/click/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': `Bearer ${accessToken}`,
+                'X-CSRFToken': getCsrfToken(),
+            },
+            body: `product_id=${encodeURIComponent(productId)}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log('✅ 클릭 로그 저장 완료:', data);
+        });
+    }
     // 캐시된 상품 정보가 있으면 좋아요 상태를 업데이트하고 표시
     if (productDetailsCache[productId]) {
         // 좋아요 상태를 캐시에서 업데이트
@@ -584,24 +601,6 @@ function attachProductCardListeners() {
         const productId = card.getAttribute('data-product-id');
         card.addEventListener('click', (e) => {
             e.stopPropagation(); // 이벤트 버블링 방지
-            const accessToken = localStorage.getItem('accessToken');
-            if (accessToken) {
-                checkUserAuthentication();
-                const accessToken = localStorage.getItem('accessToken');
-                fetch('/mypage/product/click/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Authorization': `Bearer ${accessToken}`,
-                        'X-CSRFToken': getCsrfToken(),
-                    },
-                    body: `product_id=${encodeURIComponent(productId)}`
-                })
-                .then(res => res.json())
-                .then(data => {
-                    console.log('✅ 클릭 로그 저장 완료:', data);
-                });
-            }
             showProductDetail(productId, e);
         });
         
