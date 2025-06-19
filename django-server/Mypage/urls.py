@@ -15,6 +15,7 @@ urlpatterns = [
     path('get-nutrient-history/', views.get_nutrient_history, name='get_nutrient_history'),
     path('update-nutrient-intake/', views.update_nutrient_intake, name='update_nutrient_intake'),
     path('delete-nutrient-intake/', views.delete_nutrient_intake, name='delete_nutrient_intake'),
+    path('get-nutrients-list/', views.get_nutrients_list, name='get_nutrients_list'),
     path('like/', views.like_list, name='like_list'),
     path('like-add/', views.like_add, name='like_add'),
     path('like-delete/', views.like_delete, name='like_delete'),
@@ -23,4 +24,6 @@ urlpatterns = [
     path('chatbot/', views.chatbot_view, name='chatbot'),
     path('ocr_extract/', views.ocr_extract, name='ocr_extract'),
     path('save-ocr-ingredients/', views.save_ocr_ingredients, name='save_ocr_ingredients'),
+    path('api/like/', views.like_api, name='like_api'),
+    path('product/purchase/', views.product_purchase, name='product_purchase'),
 ]

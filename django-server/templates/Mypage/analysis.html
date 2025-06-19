@@ -261,6 +261,7 @@
 
 /* Modal styles */
 .modal {
+    display: none;
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -268,7 +269,6 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0,0,0,0.5);
-    display: none;
 }
 
 .modal-content {
@@ -277,9 +277,8 @@
     padding: 20px;
     border: 1px solid #888;
     width: 80%;
-    max-width: 400px;
+    max-width: 500px;
     border-radius: 8px;
-    position: relative;
 }
 
 .close {
@@ -290,46 +289,41 @@
     cursor: pointer;
 }
 
-.close:hover {
+.close:hover,
+.close:focus {
     color: black;
+    text-decoration: none;
+    cursor: pointer;
 }
 
-.input-group {
-    margin-bottom: 16px;
+.form-group {
+    margin-bottom: 15px;
 }
 
-.input-group label {
+.form-group label {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     font-weight: bold;
 }
 
-.input-group input {
+.form-group select,
+.form-group input {
     width: 100%;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    box-sizing: border-box;
 }
 
-.input-group input:focus {
-    outline: none;
-    border-color: #DDC66F;
-}
-
-.btn-primary {
+.btn-save {
     background: #DDC66F;
     color: white;
-    padding: 10px 20px;
     border: none;
-    border-radius: 6px;
+    padding: 10px 20px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 700;
-    transition: background-color 0.2s;
 }
 
-.btn-primary:hover {
+.btn-save:hover {
     background: #C4A94C;
 }
 
@@ -436,9 +430,10 @@ body {
     <div class="modal-content">
         <span class="close" onclick="closeModal('manualInputModal')">&times;</span>
         <h2>영양소 직접입력</h2>
-        <div class="input-group">
+        <div class="input-group" style="position:relative;">
             <label for="nutrientNameInput">영양소 이름:</label>
-            <input type="text" id="nutrientNameInput" placeholder="예: 비타민C">
+            <input type="text" id="nutrientNameInput" placeholder="예: 비타민C" autocomplete="off">
+            <ul id="autocomplete-list" style="border:1px solid #ccc; display:none; position:absolute; background:white; z-index:1000; width:90%; list-style:none; margin:0; padding:0;"></ul>
         </div>
         <div class="input-group">
             <label for="unitInput">단위:</label>
@@ -449,6 +444,32 @@ body {
             <input type="number" id="amountInput" placeholder="예: 100">
         </div>
         <button class="btn-primary" onclick="submitManualInput()">저장</button>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>영양소 섭취 수정</h2>
+        <form id="editForm">
+            <input type="hidden" id="intakeId">
+            <div class="form-group">
+                <label for="editNutrient">영양소</label>
+                <select id="editNutrient" required>
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="editAmountInput">입력수량</label>
+                <input type="number" id="editAmountInput" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="editUnitInput">단위</label>
+                <input type="text" id="editUnitInput" required>
+            </div>
+            <button type="submit" class="btn-save">저장</button>
+        </form>
     </div>
 </div>
 
@@ -745,49 +766,24 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 영양소 섭취 기록 가져오기
-function loadNutrientHistory() {
-    fetch('/mypage/get-nutrient-history/')
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const historyDiv = document.getElementById('nutrientHistory');
-                let html = '<table class="history-table">';
-                html += `
-                    <thead>
-                        <tr>
-                            <th>날짜</th>
-                            <th>영양소</th>
-                            <th>섭취량</th>
-                            <th>작업</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                `;
-                
-                data.data.forEach(item => {
-                    html += `
-                        <tr>
-                            <td>${item.date}</td>
-                            <td>${item.nutrient_name}</td>
-                            <td>${item.amount} ${item.unit}</td>
-                            <td>
-                                <button onclick="openEditModal(${item.id}, ${item.amount}, '${item.date}')" class="btn-edit">수정</button>
-                                <button onclick="deleteNutrientIntake(${item.id})" class="btn-delete">삭제</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                
-                html += '</tbody></table>';
-                historyDiv.innerHTML = html;
-            } else {
-                document.getElementById('nutrientHistory').innerHTML = '<p>영양소 섭취 기록을 불러올 수 없습니다.</p>';
-            }
-        })
-        .catch(error => {
-            console.error('영양소 기록 가져오기 오류:', error);
-            document.getElementById('nutrientHistory').innerHTML = '<p>영양소 섭취 기록을 불러오는 중 오류가 발생했습니다.</p>';
-        });
+async function loadNutrientHistory() {
+    try {
+        const response = await fetch('/mypage/get-nutrient-history/');
+        const data = await response.json();
+        
+        const historyDiv = document.getElementById('nutrientHistory');
+        if (data.status === 'success') {
+            const table = createNutrientTable(data.history);
+            historyDiv.innerHTML = '';
+            historyDiv.appendChild(table);
+        } else {
+            historyDiv.innerHTML = '<p class="error-message">영양소 섭취 기록을 불러올 수 없습니다.</p>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('nutrientHistory').innerHTML = 
+            '<p class="error-message">영양소 섭취 기록을 불러오는 중 오류가 발생했습니다.</p>';
+    }
 }
 
 // 직접입력 저장
@@ -1030,13 +1026,148 @@ function showProductDetails(product) {
     
     detailsDiv.innerHTML = html;
 }
+
+// 영양소 섭취 기록 테이블 생성
+function createNutrientTable(data) {
+    const table = document.createElement('table');
+    table.className = 'history-table';
+    
+    // 테이블 헤더
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>영양소</th>
+            <th>입력수량</th>
+            <th>등록일</th>
+            <th>작업</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+    
+    // 테이블 바디
+    const tbody = document.createElement('tbody');
+    data.forEach(item => {
+        const amount = (item.amount !== undefined && item.amount !== null && item.amount !== 0) ? item.amount : '';
+        const unit = item.unit ? item.unit : '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${item.nutrient_name}</td>
+            <td>${amount}${unit}</td>
+            <td>${new Date(item.created_at).toLocaleDateString()}</td>
+            <td>
+                <button class="btn-edit" onclick="editIntake(${item.id}, '${item.nutrient_name}', ${item.amount}, '${item.unit}')">수정</button>
+                <button class="btn-delete" onclick="deleteIntake(${item.id})">삭제</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    
+    return table;
+}
+
+// 모달 관련 변수
+const modal = document.getElementById('editModal');
+const closeBtn = document.getElementsByClassName('close')[0];
+const editForm = document.getElementById('editForm');
+
+// 모달 닫기
+closeBtn.onclick = function() {
+    modal.style.display = "none";
+}
+
+// 모달 외부 클릭시 닫기
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+
+// 수정 모달 열기
+function editIntake(id, nutrientName, amount, unit) {
+    document.getElementById('intakeId').value = id;
+    document.getElementById('editNutrient').value = nutrientName;
+    document.getElementById('editAmountInput').value = amount;
+    document.getElementById('editUnitInput').value = unit;
+    modal.style.display = "block";
+}
+
+// 영양소 섭취 수정
+editForm.onsubmit = async function(e) {
+    e.preventDefault();
+    
+    const id = document.getElementById('intakeId').value;
+    const nutrient = document.getElementById('editNutrient').value;
+    const amount = document.getElementById('editAmountInput').value;
+    const unit = document.getElementById('editUnitInput').value;
+    
+    try {
+        const response = await fetch('/mypage/update-nutrient-intake/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                intake_id: id,
+                nutrient: nutrient,
+                amount: parseFloat(amount),
+                unit: unit
+            })
+        });
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            modal.style.display = "none";
+            loadNutrientHistory();
+        } else {
+            alert('수정 중 오류가 발생했습니다: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('수정 중 오류가 발생했습니다.');
+    }
+}
+
+// 영양소 섭취 삭제
+async function deleteIntake(id) {
+    if (!confirm('정말로 이 기록을 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/mypage/delete-nutrient-intake/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                intake_id: id
+            })
+        });
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            loadNutrientHistory();
+        } else {
+            alert('삭제 중 오류가 발생했습니다: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('삭제 중 오류가 발생했습니다.');
+    }
+}
+
+// 페이지 로드시 영양소 섭취 기록 로드
+document.addEventListener('DOMContentLoaded', loadNutrientHistory);
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Pobierz dane o składnikach odżywczych
-    fetch('/mypage/get_nutrient_data/')
+    fetch('/mypage/get-nutrient-data/')
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -1082,6 +1213,63 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
         });
+});
+</script>
+
+<script>
+const nutrients = [
+  "비타민 A", "베타카로틴", "비타민 D", "비타민 E", "비타민 K",
+  "비타민 B1", "비타민 B2", "나이아신", "판토텐산", "비타민 B6",
+  "엽산", "비타민 B12", "비오틴", "비타민 C", "칼슘", "마그네슘",
+  "철", "아연", "구리", "셀레늄", "요오드", "망간", "몰리브덴",
+  "칼륨", "크롬", "루테인", "인", "메티오닌", "시스테인", "류신",
+  "트립토판", "이소류신", "라이신", "트레오닌", "페닐알라닌", "티로신"
+];
+
+const nutrientInput = document.getElementById('nutrientNameInput');
+const list = document.getElementById('autocomplete-list');
+
+nutrientInput.addEventListener('input', function() {
+  const value = this.value.trim();
+  list.innerHTML = '';
+  if (!value) {
+    list.style.display = 'none';
+    return;
+  }
+  const filtered = nutrients.filter(n => n.includes(value));
+  if (filtered.length === 0) {
+    list.style.display = 'none';
+    return;
+  }
+  filtered.forEach(nutrient => {
+    const li = document.createElement('li');
+    li.textContent = nutrient;
+    li.style.cursor = 'pointer';
+    li.style.padding = '6px 10px';
+    li.onmouseover = function() { li.style.background = '#f0f0f0'; };
+    li.onmouseout = function() { li.style.background = 'white'; };
+    li.onclick = function() {
+      nutrientInput.value = nutrient;
+      list.style.display = 'none';
+    };
+    list.appendChild(li);
+  });
+  list.style.display = 'block';
+});
+
+// 모달이 닫힐 때 자동완성 리스트도 닫기
+const manualModal = document.getElementById('manualInputModal');
+manualModal.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal')) {
+    list.style.display = 'none';
+  }
+});
+
+// 입력란 이외 클릭 시 자동완성 닫기 (리스트 클릭 허용)
+document.addEventListener('click', function(e) {
+  if (e.target !== nutrientInput && !list.contains(e.target)) {
+    list.style.display = 'none';
+  }
 });
 </script>
 {% endblock %} 
