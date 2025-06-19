@@ -5,11 +5,11 @@
     --color-primary: #DDC66F;
     --color-primary-dark: #DCA628;
 
-    --color-secondary-blue-100: #BEC8D0;
-    --color-secondary-blue-200: #7D97A1;
-    --color-secondary-blue-300: #5C6B73;
-    --color-secondary-blue-400: #31444E;
-    --color-secondary-blue-500: #242729;
+    --color-secondary-blue-lightest: #BEC8D0;
+    --color-secondary-blue-light: #7D97A1;
+    --color-secondary-blue: #5C6B73;
+    --color-secondary-blue-dark: #31444E;
+    --color-secondary-blue-darker: #242729;
 }
 
 *{
@@ -49,14 +49,6 @@ header nav .Logo img {
   height: 50px;
 }
 
-header nav button {
-  margin-right: 250px;
-  border: none;
-  color: #000;
-  font-size: 16px;
-  cursor: pointer;
-}
-
 header nav ul {
   display: flex;
   list-style: none;
@@ -66,7 +58,7 @@ header nav ul {
 
 header nav ul li {
   margin: 0;
-  padding: 0 36px;
+  padding: 0 36px; 
   display: flex;
   align-items: center;
 }
@@ -77,9 +69,10 @@ header nav ul li a {
   line-height: 80px;  /* ✅ 핵심: 글자 한 줄일 때 수직 정렬 */
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
 }
 
-header nav button {
+header nav #auth-button {
     margin-right: 250px;
     border: none;
     color: #000;
@@ -133,7 +126,9 @@ header nav ul li  {
     border: 3px solid #000;
     border-radius: 70px;
     box-sizing: border-box;
-    padding-left: 50px;
+    padding-left: 100px;
+    padding-right: 20px;
+    font-size: 24px;
 }
 
 .content .top form span  {
@@ -142,18 +137,85 @@ header nav ul li  {
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
-    font-size: 16px;
-    color: gray;
+    color: #000;
 }
 
 .bottom {
-    width: 100%;
+    width: 1420px;
     height: 600px;
     border-radius: 24px;
     box-sizing: border-box;
-    margin: 64px auto 0;
     padding: 0px;
     background-color: gray;
+    margin: 0 auto;
+    margin-top: 60px;
+    overflow: hidden;
+}
+
+.swiper {
+    width: 100%;
+    height: 100%;
+    border-radius: 24px;
+}
+
+.swiper-slide {
+    text-align: center;
+    font-size: 18px;
+    background: #444;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.swiper-slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 24px;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+    color: #fff;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-top: -25px;
+    z-index: 10;
+    transition: 0.2s, color 0.2s;
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+    font-size: 20px;
+    font-weight: bold;
+    color: #a8a8a8;
+    opacity: 0.2;
+    transition: opacity 0.2s;
+}
+
+
+.swiper-button-next:hover:after,
+.swiper-button-prev:hover:after {
+    color: #a8a8a8;
+    opacity: 0.6;
+}
+
+.swiper-pagination {
+    bottom: 20px;
+}
+
+.swiper-pagination-bullet {
+    background: #fff;
+    opacity: 0.7;
+    width: 12px;
+    height: 12px;
+}
+
+.swiper-pagination-bullet-active {
+    background: #DDC66F;
+    opacity: 1;
 }
 
 .recoti {
@@ -172,25 +234,34 @@ header nav ul li  {
     align-self: flex-start; /* span은 위쪽에 붙음 */
 }
 
-.recoti ul {
+.recoti #tab-menu {
     display: flex; /* inline-flex도 상관없음 */
     list-style-type: none;
     margin: 0;
     padding: 0;
+    gap: 12px;
+    margin-top: 10px;
 }
 
-.recoti ul li {
+.recoti #tab-menu li {
     padding-left: 32px;
     font-size: 24px;
     cursor: pointer;
     transition: color 0.3s ease;
+    border-radius: 5px;
+    cursor: pointer;
+    user-select: none;
 }
 
-.recoti ul li:hover {
+.recoti #tab-menu .tab.active {
+    font-weight: bold;
+}
+
+.recoti #tab-menu li:hover {
     color: var(--color-primary-dark);
 }
 
-.recoti ul li.active {
+.recoti #tab-menu li.active {
     color: var(--color-primary-dark);
     font-weight: 600;
     border-bottom: 2px solid var(--color-primary-dark);
@@ -242,13 +313,22 @@ header nav ul li  {
 
 footer {
     width: 100%;
-    height: 285px;
-    background-color: gray;
-    display: flex;
+    height: 100px;
+    background-color: #000;
+    display: flex;  
     align-items: center;
     justify-content: center;
     margin-top: 60px;
+    font-size: 18px;
+    color: #fff;
 }
+
+footer .copy {
+    margin-left: 200px;
+    
+}
+
+
 
 /* 반응형 스타일 */
 @media (max-width: 1460px) {
