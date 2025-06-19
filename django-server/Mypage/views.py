@@ -754,456 +754,40 @@ def get_nutrient_data(request):
 @login_required
 def get_favorite_products(request):
     try:
+        print(f"사용자: {request.user}")
+        
         # 사용자가 좋아요한 영양제 가져오기
         likes = Like.objects.filter(user=request.user).select_related('product')
+        print(f"좋아요 수: {likes.count()}")
+        
         liked_products = []
         
         for like in likes:
             product = like.product
+            print(f"제품: {product.title}")
             liked_products.append({
                 'id': product.id,
                 'title': product.title,
-                'description': product.description,
-                'image_url': product.image_url,
-                'price': product.price,
+                'brand': product.brand,
+                'image_url': product.image_link,
+                'price': product.total_price,
+                'rating': product.average_rating,
+                'reviews_count': product.total_reviews,
                 'created_at': like.created_at.strftime('%Y-%m-%d %H:%M:%S')
             })
+        
+        print(f"반환할 제품 수: {len(liked_products)}")
         
         return JsonResponse({
             'status': 'success',
             'data': liked_products
         })
     except Exception as e:
+        print(f"get_favorite_products 오류: {str(e)}")
         return JsonResponse({
             'status': 'error',
             'message': str(e)
         }, status=500)
-
-def parse_number(value_str):
-    """
-    Parsuje liczbę z przecinkami w prawidłowy sposób:
-    - "10,000" -> 10.0
-    - "1,234" -> 1.234
-    - "1.5" -> 1.5
-    """
-    try:
-        # Jeśli to liczba bez przecinków, po prostu konwertuj
-        if ',' not in value_str:
-            return float(value_str)
-        
-        # Usuń spacje
-        value_str = value_str.strip()
-        
-        # Sprawdź czy to format amerykański (np. 10,000)
-        parts = value_str.split(',')
-        if len(parts) == 2 and len(parts[1]) == 3:
-            # Format amerykański: zamień przecinek na kropkę
-            return float(parts[0])
-        
-        # W przeciwnym razie usuń wszystkie przecinki
-        return float(value_str.replace(',', ''))
-    except ValueError:
-        print(f"Błąd parsowania liczby: {value_str}")
-        return 0.0
-
-def parse_ingredients(text):
-    ingredients = {}
-    
-    # Mapowanie nazw angielskich na koreańskie
-    name_mapping = {
-        'biotin': '비오틴',
-        'vitamin a': '비타민A',
-        'vitamin b1': '비타민B1',
-        'vitamin b2': '비타민B2',
-        'vitamin b3': '비타민B3',
-        'vitamin b6': '비타민B6',
-        'vitamin b12': '비타민B12',
-        'vitamin c': '비타민C',
-        'vitamin d': '비타민D',
-        'vitamin e': '비타민E',
-        'vitamin k': '비타민K',
-        'folate': '엽산',
-        'calcium': '칼슘',
-        'iron': '철',
-        'magnesium': '마그네슘',
-        'zinc': '아연',
-        'selenium': '셀레늄',
-        'copper': '구리',
-        'manganese': '망간',
-        'chromium': '크롬',
-        'molybdenum': '몰리브덴',
-        'iodine': '요오드',
-        'potassium': '칼륨',
-        'sodium': '나트륨',
-        'phosphorus': '인',
-        'omega-3': '오메가3',
-        'omega-6': '오메가6',
-        'dha': 'DHA',
-        'epa': 'EPA',
-        'coq10': '코엔자임Q10',
-        'lutein': '루테인',
-        'zeaxanthin': '제아잔틴',
-        'probiotics': '프로바이오틱스',
-        'collagen': '콜라겐',
-        'creatine': '크레아틴',
-        'glutamine': '글루타민',
-        'bcaa': 'BCAA',
-        'protein': '단백질',
-        'fiber': '식이섬유',
-        'carbohydrates': '탄수화물',
-        'fat': '지방',
-        'sugar': '당류',
-        'cholesterol': '콜레스테롤',
-        # 추가 영양소 매핑
-        'thiamin': '비타민B1',
-        'riboflavin': '비타민B2',
-        'niacin': '비타민B3',
-        'pantothenic acid': '판토텐산',
-        'pyridoxine': '비타민B6',
-        'cobalamin': '비타민B12',
-        'ascorbic acid': '비타민C',
-        'retinol': '비타민A',
-        'calciferol': '비타민D',
-        'tocopherol': '비타민E',
-        'phylloquinone': '비타민K',
-        'folic acid': '엽산',
-        'folacin': '엽산'
-    }
-    
-    # Lista głównych składników odżywczych do rozpoznania (angielskie i koreańskie)
-    main_nutrients = list(name_mapping.keys()) + list(name_mapping.values())
-    
-    # Słowa do ignorowania (instrukcje dawkowania, itp.)
-    ignore_words = [
-        'take', 'tablet', 'capsule', 'pill', 'serving', 'daily', 'dose', 'dosage',
-        'directions', 'use', 'recommended', 'suggested', 'intake', 'per', 'each',
-        'with', 'food', 'meal', 'water', 'morning', 'evening', 'night', 'before',
-        'after', 'during', 'breakfast', 'lunch', 'dinner', 'snack', 'other',
-        'ingredients', 'gelatin', 'rice', 'flour', 'natural', 'life', 'naruraisimo'
-    ]
-    
-    # Szukaj linii z wartościami odżywczymi - rozszerzone wzorce
-    patterns = [
-        # Format: Nazwa: Liczba Jednostka Procent
-        re.compile(r'([A-Za-z\s]+):\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)\s+([\d,]+%)'),
-        # Format: Nazwa: Liczba Jednostka
-        re.compile(r'([A-Za-z\s]+):\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
-        # Format: Nazwa Liczba Jednostka Procent
-        re.compile(r'([A-Za-z\s]+)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)\s+([\d,]+%)'),
-        # Format: Nazwa Liczba Jednostka
-        re.compile(r'([A-Za-z\s]+)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
-        # Format: Nazwa Liczba Jednostka (Procent)
-        re.compile(r'([A-Za-z\s]+)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)\s*\(([\d,]+%)\)'),
-        # Format: Nazwa (Procent) Liczba Jednostka
-        re.compile(r'([A-Za-z\s]+)\s*\(([\d,]+%)\)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
-        # Format: Nazwa Liczba Jednostka bez spacji
-        re.compile(r'([A-Za-z\s]+)([\d,]+\.?\d*)([a-zA-Z㎍mgREµ]+)'),
-        # Format: Nazwa z myślnikiem
-        re.compile(r'([A-Za-z\s-]+)\s+([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
-        # Format: Liczba Jednostka Nazwa
-        re.compile(r'([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)\s+([A-Za-z\s]+)'),
-        # Format: Nazwa - Liczba Jednostka
-        re.compile(r'([A-Za-z\s]+)\s*-\s*([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
-    ]
-    
-    print(f"OCR Raw text: {text}")  # Debug: pokaż surowy tekst
-    
-    for line in text.split('\n'):
-        line = line.strip()
-        if not line:
-            continue
-            
-        print(f"Processing line: {line}")  # Debug: pokaż każdą linię
-        
-        # Sprawdź czy linia zawiera słowa do ignorowania
-        line_lower = line.lower()
-        if any(ignore_word in line_lower for ignore_word in ignore_words):
-            print(f"Ignoring line (contains ignore words): {line}")
-            continue
-        
-        for pattern in patterns:
-            matches = re.finditer(pattern, line)
-            for match in matches:
-                name = match.group(1).strip()
-                raw_value = match.group(2)
-                value = str(parse_number(raw_value))  # Użyj nowej funkcji parse_number
-                unit = match.group(3)
-                
-                # Sprawdź czy nazwa zawiera główne składniki odżywcze
-                is_main_nutrient = any(nutrient.lower() in name.lower() for nutrient in main_nutrients)
-                
-                # Sprawdź czy nazwa nie zawiera słów do ignorowania
-                name_lower = name.lower()
-                contains_ignore_words = any(ignore_word in name_lower for ignore_word in ignore_words)
-                
-                if is_main_nutrient and not contains_ignore_words:
-                    # Mapuj angielską nazwę na koreańską
-                    korean_name = name_mapping.get(name_lower, name)
-                    
-                    # Dodaj procent jeśli istnieje
-                    if len(match.groups()) > 3 and match.group(4):
-                        percentage = match.group(4)
-                        ingredients[korean_name] = f"{value} {unit} ({percentage})"
-                    else:
-                        ingredients[korean_name] = f"{value} {unit}"
-                    
-                    print(f"Rozpoznano składnik: {name} -> {korean_name} = {ingredients[korean_name]}")  # Debug
-                else:
-                    print(f"Odrzucono: {name} (główny: {is_main_nutrient}, ignorowane: {contains_ignore_words})")
-    
-    # Jeśli nie znaleziono żadnych składników, spróbuj prostszego podejścia
-    if not ingredients:
-        print("Nie znaleziono składników standardowymi wzorcami, próbuję prostszego podejścia...")
-        simple_patterns = [
-            re.compile(r'([A-Za-z]+)\s*([\d,]+)'),
-            re.compile(r'([A-Za-z]+)\s*([\d,]+\.?\d*)'),
-            # 추가 패턴: 숫자와 단위만 있는 경우
-            re.compile(r'([\d,]+\.?\d*)\s+([a-zA-Z㎍mgREµ]+)'),
-        ]
-        
-        for line in text.split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-                
-            # Sprawdź czy linia zawiera słowa do ignorowania
-            line_lower = line.lower()
-            if any(ignore_word in line_lower for ignore_word in ignore_words):
-                continue
-                
-            for pattern in simple_patterns:
-                matches = re.finditer(pattern, line)
-                for match in matches:
-                    name = match.group(1).strip()
-                    value = match.group(2).replace(',', '')
-                    
-                    # 숫자만 있는 경우 건너뛰기
-                    if name.isdigit():
-                        continue
-                    
-                    # Sprawdź czy nazwa zawiera główne składniki odżywcze
-                    is_main_nutrient = any(nutrient.lower() in name.lower() for nutrient in main_nutrients)
-                    
-                    # Sprawdź czy nazwa nie zawiera słów do ignorowania
-                    name_lower = name.lower()
-                    contains_ignore_words = any(ignore_word in name_lower for ignore_word in ignore_words)
-                    
-                    if is_main_nutrient and not contains_ignore_words:
-                        # Mapuj angielską nazwę na koreańską
-                        korean_name = name_mapping.get(name_lower, name)
-                        ingredients[korean_name] = value
-                        print(f"Proste rozpoznanie: {name} -> {korean_name} = {value}")
-    
-    # 마지막 시도: 전체 텍스트에서 영양소 키워드 검색
-    if not ingredients:
-        print("마지막 시도: 전체 텍스트에서 영양소 키워드 검색...")
-        text_lower = text.lower()
-        
-        for nutrient in main_nutrients:
-            nutrient_lower = nutrient.lower()
-            if nutrient_lower in text_lower:
-                # 해당 영양소가 포함된 라인 찾기
-                for line in text.split('\n'):
-                    line_lower = line.lower()
-                    if nutrient_lower in line_lower:
-                        # 숫자 추출
-                        numbers = re.findall(r'[\d,]+\.?\d*', line)
-                        if numbers:
-                            value = numbers[0].replace(',', '')
-                            # 단위 추출
-                            units = re.findall(r'[a-zA-Z㎍mgREµ]+', line)
-                            unit = units[0] if units else 'mg'
-                            
-                            korean_name = name_mapping.get(nutrient_lower, nutrient)
-                            ingredients[korean_name] = f"{value} {unit}"
-                            print(f"키워드 검색 결과: {nutrient} -> {korean_name} = {ingredients[korean_name]}")
-                            break
-    
-    return ingredients
-
-@login_required
-@csrf_exempt
-@require_POST
-def ocr_extract(request):
-    if 'image' not in request.FILES:
-        return JsonResponse({'status': 'error', 'message': 'No image uploaded'}, status=400)
-    image_file = request.FILES['image']
-    try:
-        image = Image.open(image_file)
-        # Zmieniam na tylko angielski dla lepszej wydajności
-        text = pytesseract.image_to_string(image, lang='eng')
-        print(f"OCR Raw text: {text}")  # Debug: sprawdź co zwraca OCR
-        
-        # Sprawdź czy to jest żądanie debugowania
-        debug_mode = request.POST.get('debug', 'false').lower() == 'true'
-        if debug_mode:
-            return JsonResponse({
-                'status': 'debug', 
-                'raw_text': text,
-                'message': 'Raw OCR text for debugging'
-            })
-        
-        ingredients = parse_ingredients(text)
-        
-        # 영양소 추출 결과에 대한 상세한 메시지
-        if not ingredients:
-            # 추출된 텍스트에서 숫자와 단위가 있는지 확인
-            has_numbers = bool(re.search(r'[\d,]+\.?\d*', text))
-            has_units = bool(re.search(r'[a-zA-Z㎍mgREµ]+', text))
-            
-            if has_numbers and has_units:
-                ingredients = {
-                    'Message': '영양소 정보를 찾을 수 없습니다. 이미지가 영양성분표를 포함하고 있는지 확인해주세요.',
-                    'debug_info': {
-                        'raw_text': text,
-                        'has_numbers': has_numbers,
-                        'has_units': has_units
-                    }
-                }
-            else:
-                ingredients = {
-                    'Message': '이미지에서 텍스트를 인식할 수 없습니다. 더 선명한 이미지를 사용해주세요.',
-                    'debug_info': {
-                        'raw_text': text,
-                        'has_numbers': has_numbers,
-                        'has_units': has_units
-                    }
-                }
-        else:
-            # 성공적으로 추출된 경우에도 디버그 정보 추가
-            ingredients['debug_info'] = {
-                'raw_text': text,
-                'extracted_count': len([k for k in ingredients.keys() if k != 'debug_info'])
-            }
-        
-        # Sprawdź przydatność suplementu
-        compatibility_result = check_supplement_compatibility(request.user, ingredients)
-        
-        return JsonResponse({
-            'status': 'success', 
-            'ingredients': ingredients,
-            'compatibility': compatibility_result
-        })
-    except Exception as e:
-        print(f"OCR 처리 중 오류 발생: {str(e)}")
-        return JsonResponse({
-            'status': 'error', 
-            'message': f'이미지 처리 중 오류가 발생했습니다: {str(e)}'
-        })
-
-@login_required
-def like_list(request):
-    try:
-        # 사용자가 좋아요한 영양제 가져오기
-        like_list = Like.objects.filter(user=request.user).select_related('product')
-        
-        # 추천 영양제 가져오기
-        latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
-        if latest_survey:
-            recommended_supplements = get_recommended_supplements(latest_survey)
-        else:
-            recommended_supplements = []
-        
-        context = {
-            'user': request.user,
-            'like_list': like_list,
-            'recommended_supplements': recommended_supplements
-        }
-        return render(request, 'Mypage/like.html', context)
-    except Exception as e:
-        messages.error(request, f'좋아요 목록을 불러오는 중 오류가 발생했습니다: {str(e)}')
-        return redirect('mypage')
-
-@login_required
-@require_POST
-def like_delete(request):
-    try:
-        product_id = request.POST.get('product_id')
-        product = Products.objects.get(pk=product_id)
-        like = Like.objects.get(user=request.user, product_id=product_id)
-        like.delete()
-        UserLog.objects.create(user=request.user, product=product, action='unlike')
-        return JsonResponse({'success': True})
-    except Like.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-@login_required
-@require_POST
-def like_add(request):
-    try:
-        product_id = request.POST.get('product_id')
-        product = Products.objects.get(pk=product_id)
-        Like.objects.get_or_create(user=request.user, product_id=product_id)
-        UserLog.objects.create(user=request.user, product=product, action='like')
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-@require_POST
-# @login_required
-def product_click(request):
-    product_id = request.POST.get('product_id')
-    User = get_user_model()
-    user = User.objects.get(pk=1)
-    try:
-        product = Products.objects.get(pk=product_id)
-        # UserLog 저장 (click)
-        UserLog.objects.create(user=user, product=product, action='click')
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-@login_required
-def chatbot_view(request):
-    try:
-        return render(request, 'Chatbot/ChatNuti.html', {
-            'user': request.user
-        })
-    except Exception as e:
-        messages.error(request, f'챗봇 페이지를 불러오는 중 오류가 발생했습니다: {str(e)}')
-        return redirect('mypage')
-
-def import_kdris_data():
-    csv_path = os.path.join(settings.STATICFILES_DIRS[0], 'csv', 'kdris.csv')
-    try:
-        with open(csv_path, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                KDRIs.objects.update_or_create(
-                    category=row['분류'],
-                    age_range=row['연령'],
-                    defaults={
-                        'energy': float(row['에너지(kcal/일)']) if row['에너지(kcal/일)'] else 0,
-                        'carbohydrates': float(row['탄수화물(g/일)']) if row['탄수화물(g/일)'] else 0,
-                        'dietary_fiber': float(row['식이섬유(g/일)']) if row['식이섬유(g/일)'] else 0,
-                        'protein': float(row['단백질(g/일)']) if row['단백질(g/일)'] else 0,
-                        'vitamin_a': float(row['비타민 A(µg RAE/일)']) if row['비타민 A(µg RAE/일)'] else 0,
-                        'vitamin_d': float(row['비타민 D(µg/일)']) if row['비타민 D(µg/일)'] else 0,
-                        'vitamin_e': float(row['비타민 E(mg ɑ-TE/일)']) if row['비타민 E(mg ɑ-TE/일)'] else 0,
-                        'vitamin_k': float(row['비타민 K(µg/일)']) if row['비타민 K(µg/일)'] else 0,
-                        'vitamin_c': float(row['비타민 C(mg/일)']) if row['비타민 C(mg/일)'] else 0,
-                        'thiamin': float(row['티아민(mg/일)']) if row['티아민(mg/일)'] else 0,
-                        'riboflavin': float(row['리보플라빈(mg/일)']) if row['리보플라빈(mg/일)'] else 0,
-                        'niacin': float(row['니아신(mg NE/일)']) if row['니아신(mg NE/일)'] else 0,
-                        'vitamin_b6': float(row['비타민 B6(mg/일)']) if row['비타민 B6(mg/일)'] else 0,
-                        'folate': float(row['엽산(µg DFE/일)']) if row['엽산(µg DFE/일)'] else 0,
-                        'vitamin_b12': float(row['비타민B12(µg/일)']) if row['비타민B12(µg/일)'] else 0,
-                        'calcium': float(row['칼슘(mg/일)']) if row['칼슘(mg/일)'] else 0,
-                        'phosphorus': float(row['인(mg/일)']) if row['인(mg/일)'] else 0,
-                        'sodium': float(row['나트륨(mg/일)']) if row['나트륨(mg/일)'] else 0,
-                        'potassium': float(row['칼륨(mg/일)']) if row['칼륨(mg/일)'] else 0,
-                        'magnesium': float(row['마그네슘(mg/일)']) if row['마그네슘(mg/일)'] else 0,
-                        'iron': float(row['철(mg/일)']) if row['철(mg/일)'] else 0,
-                        'zinc': float(row['아연(mg/일)']) if row['아연(mg/일)'] else 0,
-                        'selenium': float(row['셀레늄(µg/일)']) if row['셀레늄(µg/일)'] else 0,
-                    }
-                )
-        return True
-    except Exception as e:
-        print(f"KDRIs 데이터 임포트 실패: {str(e)}")
-        return False
 
 @login_required
 def get_nutrient_history(request):
@@ -1243,14 +827,14 @@ def update_nutrient_intake(request):
         amount = data.get('amount', 0.0)
         unit = data.get('unit', '')
 
-        # Sprawdź, czy wszystkie wymagane pola są obecne
+        # 모든 필수 필드가 있는지 확인
         if not all([intake_id, nutrient_name]):
             return JsonResponse({
                 'status': 'error',
                 'message': '모든 필수 필드를 입력해주세요.'
             }, status=400)
 
-        # Pobierz obiekt nutrient
+        # nutrient 객체 가져오기
         try:
             nutrient = Nutrient.objects.get(name=nutrient_name)
         except Nutrient.DoesNotExist:
@@ -1259,7 +843,7 @@ def update_nutrient_intake(request):
                 'message': '해당 영양소를 찾을 수 없습니다.'
             }, status=404)
 
-        # Pobierz i zaktualizuj intake
+        # intake 가져와서 업데이트
         try:
             intake = UserNutrientIntake.objects.get(id=intake_id, user=request.user)
             intake.nutrient = nutrient
@@ -1298,12 +882,6 @@ def delete_nutrient_intake(request):
         intake = UserNutrientIntake.objects.get(id=intake_id, user=request.user)
         intake.delete()
 
-        # 영양분석 실행
-        try:
-            analyze_nutrients(request)
-        except Exception as e:
-            print(f"영양분석 실행 중 오류 발생: {str(e)}")
-
         return JsonResponse({
             'status': 'success',
             'message': '영양소 섭취 기록이 삭제되었습니다.'
@@ -1320,437 +898,22 @@ def delete_nutrient_intake(request):
         }, status=400)
 
 @login_required
-def get_product_nutrients(request, product_id):
+@require_POST
+def delete_all_nutrient_records(request):
+    """모든 영양소 섭취 기록 삭제"""
     try:
-        product = Products.objects.get(id=product_id)
-        # 여기서 제품의 영양소 정보를 가져오는 로직을 구현해야 합니다
-        # 예시 데이터:
-        nutrients = [
-            {
-                'name': '비타민 C',
-                'amount': 100,
-                'unit': 'mg'
-            },
-            {
-                'name': '비타민 D',
-                'amount': 10,
-                'unit': 'µg'
-            }
-        ]
+        # 현재 사용자의 모든 영양소 섭취 기록 삭제
+        deleted_count = UserNutrientIntake.objects.filter(user=request.user).delete()[0]
         
         return JsonResponse({
             'status': 'success',
-            'nutrients': nutrients
+            'message': f'{deleted_count}개의 영양소 섭취 기록이 삭제되었습니다.'
         })
-    except Products.DoesNotExist:
-        return JsonResponse({
-            'status': 'error',
-            'message': '제품을 찾을 수 없습니다.'
-        }, status=404)
     except Exception as e:
         return JsonResponse({
             'status': 'error',
             'message': str(e)
         }, status=500)
-
-def check_supplement_compatibility(user, ingredients):
-    """
-    Sprawdza przydatność suplementu na podstawie składników i profilu użytkownika
-    """
-    compatibility_result = {
-        'is_suitable': True,
-        'score': 0,
-        'warnings': [],
-        'benefits': [],
-        'recommendations': []
-    }
-    
-    try:
-        # Pobierz najnowszy profil użytkownika
-        latest_survey = SurveyResult.objects.filter(user=user).order_by('-created_at').first()
-        if not latest_survey:
-            compatibility_result['warnings'].append('사용자 프로필 정보가 없습니다. 설문을 먼저 완료해주세요.')
-            compatibility_result['is_suitable'] = False
-            return compatibility_result
-        
-        answers = latest_survey.answers
-        score = 0
-        max_score = 0
-        
-        # Analiza składników
-        for ingredient_name, ingredient_value in ingredients.items():
-            ingredient_lower = ingredient_name.lower()
-            
-            # Biotin - dla zdrowia włosów, skóry i paznokci
-            if 'biotin' in ingredient_lower or '비오틴' in ingredient_lower:
-                max_score += 8
-                score += 8
-                compatibility_result['benefits'].append('비오틴은 모발, 피부, 손톱 건강에 도움이 됩니다.')
-            
-            # Witamina D - dla osób spędzających dużo czasu w pomieszczeniach
-            elif 'vitamin d' in ingredient_lower or '비타민 d' in ingredient_lower:
-                max_score += 10
-                if answers.get('indoor_daytime') == '예':
-                    score += 10
-                    compatibility_result['benefits'].append('비타민 D는 실내 생활이 많은 사용자에게 적합합니다.')
-                else:
-                    compatibility_result['warnings'].append('비타민 D는 햇빛 노출이 충분한 경우 과다 섭취될 수 있습니다.')
-            
-            # Witamina B - dla osób z objawami zmęczenia
-            elif any(b_vitamin in ingredient_lower for b_vitamin in ['vitamin b', '비타민 b', 'thiamin', 'riboflavin', 'niacin']):
-                max_score += 8
-                if answers.get('fatigue') == '예' or answers.get('still_tired') == '예':
-                    score += 8
-                    compatibility_result['benefits'].append('비타민 B는 피로감이 있는 사용자에게 도움이 됩니다.')
-                else:
-                    score += 4
-                    compatibility_result['recommendations'].append('비타민 B는 에너지 대사에 도움이 되지만, 필요에 따라 섭취하세요.')
-            
-            # Witamina C - dla palaczy
-            elif 'vitamin c' in ingredient_lower or '비타민 c' in ingredient_lower:
-                max_score += 8
-                if answers.get('smoking') == '예':
-                    score += 8
-                    compatibility_result['benefits'].append('비타민 C는 흡연자에게 특히 유용합니다.')
-                else:
-                    score += 6
-                    compatibility_result['benefits'].append('비타민 C는 면역력 강화에 도움이 됩니다.')
-            
-            # Omega-3 - dla osób prowadzących siedzący tryb życia
-            elif any(omega in ingredient_lower for omega in ['omega-3', 'omega 3', 'dha', 'epa', '오메가']):
-                max_score += 10
-                if answers.get('sitting_work') == '예' and answers.get('exercise_frequency') in ['전혀 안함', '1-2회']:
-                    score += 10
-                    compatibility_result['benefits'].append('오메가-3는 장시간 앉아서 일하는 사용자에게 적합합니다.')
-                else:
-                    score += 6
-                    compatibility_result['benefits'].append('오메가-3는 전반적인 심장 건강에 도움이 됩니다.')
-            
-            # Magnez - dla osób z problemami ze snem
-            elif 'magnesium' in ingredient_lower or '마그네슘' in ingredient_lower:
-                max_score += 8
-                if answers.get('sleep_well') == '아니오' or (answers.get('sleep_hours') and float(answers.get('sleep_hours', 0)) < 7):
-                    score += 8
-                    compatibility_result['benefits'].append('마그네슘은 수면의 질을 개선하는 데 도움이 됩니다.')
-                else:
-                    score += 5
-                    compatibility_result['benefits'].append('마그네슘은 근육 이완과 신경 기능에 도움이 됩니다.')
-            
-            # Żelazo - dla kobiet
-            elif 'iron' in ingredient_lower or '철' in ingredient_lower:
-                max_score += 8
-                if answers.get('gender') == '여성':
-                    score += 8
-                    compatibility_result['benefits'].append('철분은 여성에게 특히 중요한 영양소입니다.')
-                else:
-                    score += 4
-                    compatibility_result['warnings'].append('남성의 경우 철분 과다 섭취에 주의하세요.')
-            
-            # Wapń - dla osób z problemami z kośćmi
-            elif 'calcium' in ingredient_lower or '칼슘' in ingredient_lower:
-                max_score += 6
-                if answers.get('indoor_daytime') == '예':  # Brak witaminy D może wpływać na wchłanianie wapnia
-                    score += 4
-                    compatibility_result['warnings'].append('칼슘은 비타민 D와 함께 섭취하는 것이 좋습니다.')
-                else:
-                    score += 6
-                    compatibility_result['benefits'].append('칼슘은 뼈 건강에 중요합니다.')
-            
-            # Inne składniki
-            else:
-                max_score += 3
-                score += 2
-                compatibility_result['benefits'].append(f'{ingredient_name}은 일반적으로 유용한 영양소입니다.')
-        
-        # Sprawdź interakcje i przeciwwskazania
-        if answers.get('drinking') == '예':
-            compatibility_result['warnings'].append('음주 시 일부 영양제와의 상호작용에 주의하세요.')
-        
-        if answers.get('smoking') == '예':
-            compatibility_result['warnings'].append('흡연은 일부 비타민의 흡수를 감소시킬 수 있습니다.')
-        
-        # Oblicz końcowy wynik
-        if max_score > 0:
-            compatibility_result['score'] = int((score / max_score) * 100)
-        
-        # Określ ogólną przydatność
-        if compatibility_result['score'] >= 70:
-            compatibility_result['is_suitable'] = True
-        elif compatibility_result['score'] >= 40:
-            compatibility_result['is_suitable'] = True
-            compatibility_result['recommendations'].append('이 영양제는 부분적으로 적합합니다. 개인적인 필요에 따라 섭취하세요.')
-        else:
-            compatibility_result['is_suitable'] = False
-            compatibility_result['warnings'].append('이 영양제는 현재 프로필에 적합하지 않을 수 있습니다.')
-        
-        return compatibility_result
-        
-    except Exception as e:
-        print(f"영양제 호환성 검사 오류: {str(e)}")
-        compatibility_result['is_suitable'] = False
-        compatibility_result['warnings'].append('호환성 검사 중 오류가 발생했습니다.')
-        return compatibility_result
-
-@login_required
-@require_POST
-def save_ocr_ingredients(request):
-    """
-    OCR로 rozpoznane składniki를 데이터베이스에 저장
-    """
-    try:
-        data = json.loads(request.body)
-        ingredients = data.get('ingredients', {})
-        date = data.get('date', timezone.now().date())
-        
-        saved_ingredients = []
-        
-        for ingredient_name, ingredient_value in ingredients.items():
-            # Skip if it's a message or debug info
-            if ingredient_name == 'Message' or ingredient_name == 'debug_info':
-                continue
-                
-            # Parse ingredient value to extract amount and unit
-            amount = 0
-            unit = 'mg'  # default unit
-            
-            if isinstance(ingredient_value, str):
-                # Try to extract amount and unit from string like "10000 mcg" or "100 mg"
-                import re
-                match = re.match(r'([\d,]+\.?\d*)\s*([a-zA-Z㎍mgREµ]+)', ingredient_value)
-                if match:
-                    amount = parse_number(match.group(1))
-                    unit = match.group(2)
-                else:
-                    # Try to extract just the number
-                    num_match = re.search(r'([\d,]+\.?\d*)', ingredient_value)
-                    if num_match:
-                        amount = parse_number(num_match.group(1))
-            elif isinstance(ingredient_value, (int, float)):
-                amount = float(ingredient_value)
-            
-            # Skip if amount is 0 or invalid
-            if amount <= 0:
-                print(f"유효하지 않은 양 건너뛰기: {ingredient_name} = {amount}")
-                continue
-            
-            # Load nutrient standards
-            json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
-            try:
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    nutrient_standards = json.load(f)
-            except Exception as e:
-                print(f"영양소 기준치 파일 로드 실패: {str(e)}")
-                nutrient_standards = {}
-            
-            # Create or get nutrient
-            nutrient, created = Nutrient.objects.get_or_create(
-                name=ingredient_name,
-                defaults={
-                    'unit': unit,
-                    'daily_recommended': nutrient_standards.get(ingredient_name, {}).get('recommended_amount', 100),
-                    'description': nutrient_standards.get(ingredient_name, {}).get('description', ''),
-                    'category': '기타'
-                }
-            )
-            
-            # 기존 영양소인 경우 권장량 업데이트
-            if not created:
-                nutrient.unit = unit
-                nutrient.daily_recommended = nutrient_standards.get(ingredient_name, {}).get('recommended_amount', 100)
-                nutrient.description = nutrient_standards.get(ingredient_name, {}).get('description', '')
-                nutrient.save()
-                print(f"기존 영양소 업데이트: {ingredient_name}, 권장량: {nutrient.daily_recommended}")
-            else:
-                print(f"새 영양소 생성: {ingredient_name}, 권장량: {nutrient.daily_recommended}")
-            
-            # Create nutrient intake record
-            intake = UserNutrientIntake.objects.create(
-                user=request.user,
-                nutrient=nutrient,
-                amount=amount,
-                date=date
-            )
-            
-            saved_ingredients.append({
-                'id': intake.id,
-                'nutrient_name': nutrient.name,
-                'amount': amount,
-                'unit': nutrient.unit
-            })
-        
-        # Run nutrient analysis
-        try:
-            analyze_nutrients(request)
-        except Exception as e:
-            print(f"영양분석 실행 중 오류 발생: {str(e)}")
-        
-        return JsonResponse({
-            'status': 'success',
-            'message': f'{len(saved_ingredients)}개의 영양소가 저장되었습니다.',
-            'saved_ingredients': saved_ingredients
-        })
-        
-    except Exception as e:
-        print(f"OCR 성분 저장 오류: {str(e)}")
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=400)
-
-@login_required
-def like_list(request):
-    User = get_user_model()
-    # user = User.objects.get(pk=1)
-    user = request.user
-    like_list = Like.objects.filter(user=user).select_related('product')
-    for like in like_list:
-        setattr(like.product, 'is_liked', True)
-    return render(request, 'Mypage/like.html', {'user': user, 'like_list': like_list})
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def like_delete(request):
-    product_id = request.POST.get('product_id')
-    User = get_user_model()
-    # user = User.objects.get(pk=1)
-    user = request.user
-    try:
-        product = Products.objects.get(pk=product_id)
-        like = Like.objects.get(user=user, product_id=product_id)
-        like.delete()
-        UserLog.objects.create(user=user, product=product, action='unlike')
-        return JsonResponse({'success': True})
-    except Like.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
-    except Exception as e:
-        print("LIKE_API ERROR:", e)
-        return JsonResponse({"error": str(e)}, status=500)
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def like_add(request):
-    product_id = request.POST.get('product_id')
-    User = get_user_model()
-    # user = User.objects.get(pk=1)
-    user = request.user
-    try:
-        product = Products.objects.get(pk=product_id)
-        Like.objects.get_or_create(user=user, product_id=product_id)
-        UserLog.objects.create(user=user, product=product, action='like')
-        return JsonResponse({'success': True})
-    except Exception as e:
-        print("LIKE_API ERROR:", e)
-        return JsonResponse({"error": str(e)}, status=500)
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def product_click(request):
-    product_id = request.POST.get('product_id')
-    User = get_user_model()
-    # user = User.objects.get(pk=1)
-    user = request.user
-    try:
-        product = Products.objects.get(pk=product_id)
-        # UserLog 저장 (click)
-        UserLog.objects.create(user=user, product=product, action='click')
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-@login_required
-def chatbot_view(request):
-    try:
-        return render(request, 'Chatbot/ChatNuti.html', {
-            'user': request.user
-        })
-    except Exception as e:
-        messages.error(request, f'챗봇 페이지를 불러오는 중 오류가 발생했습니다: {str(e)}')
-        return redirect('mypage')
-
-@csrf_exempt
-@api_view(["POST", "DELETE", "GET"])
-@permission_classes([IsAuthenticated])
-def like_api(request):
-    """
-    좋아요 API 엔드포인트
-    POST: 좋아요 추가
-    DELETE: 좋아요 제거
-    GET: 좋아요 상태 확인
-    """
-    # 로그인한 사용자 ID 사용
-    user_id = request.user.id
-    
-    if request.method == "GET":
-        # 쿼리 파라미터에서 product_id 가져오기
-        product_id = request.GET.get('product_id')
-        if not product_id:
-            return JsonResponse({"error": "상품 ID가 필요합니다."}, status=400)
-        
-        product = get_object_or_404(Products, id=product_id)
-        is_liked = Like.objects.filter(user_id=user_id, product=product).exists()
-        
-        return JsonResponse({
-            "is_liked": is_liked
-        })
-        
-    elif request.method in ["POST", "DELETE"]:
-        try:
-            data = json.loads(request.body)
-            product_id = data.get('product_id')
-            if not product_id:
-                return JsonResponse({"error": "상품 ID가 필요합니다."}, status=400)
-            
-            product = get_object_or_404(Products, id=product_id)
-            
-            if request.method == "POST":
-                # 좋아요 추가 (이미 있으면 무시)
-                like, created = Like.objects.get_or_create(
-                    user=request.user,
-                    product=product
-                )
-                return JsonResponse({
-                    "message": "좋아요가 추가되었습니다." if created else "이미 좋아요가 되어있습니다.",
-                    "is_liked": True
-                })
-                
-            elif request.method == "DELETE":
-                # 좋아요 제거
-                like = Like.objects.filter(user=request.user, product=product)
-                if like.exists():
-                    like.delete()
-                    return JsonResponse({
-                        "message": "좋아요가 제거되었습니다.",
-                        "is_liked": False
-                    })
-                else:
-                    return JsonResponse({
-                        "message": "좋아요가 되어있지 않습니다.",
-                        "is_liked": False
-                    })
-                    
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "잘못된 JSON 형식입니다."}, status=400)
-        except Exception as e:
-            print("LIKE_API ERROR:", e)
-            return JsonResponse({"error": str(e)}, status=500)
-    
-    return JsonResponse({"error": "지원하지 않는 메서드입니다."}, status=405)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def product_purchase(request):
-    product_id = request.POST.get('product_id')
-    User = get_user_model()
-    # user = User.objects.get(pk=1)
-    user = request.user
-    try:
-        product = Products.objects.get(pk=product_id)
-        # UserLog 저장 (click)
-        UserLog.objects.create(user=user, product=product, action='purchase')
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @login_required
 def get_nutrients_list(request):
@@ -1832,12 +995,6 @@ def load_liked_products_nutrients(request):
         print(f"총 추가된 영양성분: {added_count}개")
         print(f"찾을 수 없는 제품: {not_found_count}개")
         
-        # 영양분석 실행 - 제거하여 무한 루프 방지
-        # try:
-        #     analyze_nutrients(request)
-        # except Exception as e:
-        #     print(f"영양분석 실행 중 오류 발생: {str(e)}")
-        
         return JsonResponse({
             'status': 'success',
             'message': f'좋아요한 제품 {len(liked_products)}개 중 {added_count}개의 영양성분 정보가 추가되었습니다.',
@@ -1859,21 +1016,64 @@ def parse_nutrients_from_table_info(table_info):
     nutrients = {}
     
     try:
-        # JSON 형태로 저장된 경우
-        if table_info.startswith('{') or table_info.startswith('['):
-            data = json.loads(table_info)
-            if isinstance(data, dict):
-                for key, value in data.items():
-                    if isinstance(value, (int, float)) and value > 0:
-                        nutrients[key] = {'amount': value, 'unit': 'mg'}
-            elif isinstance(data, list):
-                for item in data:
-                    if isinstance(item, dict):
+        # Python 딕셔너리/리스트 형태로 저장된 경우 (ast.literal_eval 사용)
+        import ast
+        data = ast.literal_eval(table_info)
+        print(f"Python 데이터 파싱 결과: {data}")
+        
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if isinstance(value, (int, float)) and value > 0:
+                    nutrients[key] = {'amount': value, 'unit': 'mg'}
+        elif isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict):
+                    # 새로운 형태: {'id': 14, 'ingredient_name': '비타민 C', 'amount': 4000, 'unit': 'mg'}
+                    if 'ingredient_name' in item and 'amount' in item:
+                        nutrient_name = item['ingredient_name']
+                        amount = item['amount']
+                        unit = item.get('unit', 'mg')
+                        
+                        if amount > 0 and nutrient_name:
+                            nutrients[nutrient_name] = {'amount': amount, 'unit': unit}
+                            print(f"영양성분 파싱 성공: {nutrient_name} - {amount}{unit}")
+                    else:
+                        # 기존 형태: {'비타민C': 100}
                         for key, value in item.items():
                             if isinstance(value, (int, float)) and value > 0:
                                 nutrients[key] = {'amount': value, 'unit': 'mg'}
-    except:
-        pass
+    except Exception as e:
+        print(f"Python 데이터 파싱 오류: {str(e)}")
+        
+        # JSON 형태로 저장된 경우 (fallback)
+        try:
+            if table_info.startswith('{') or table_info.startswith('['):
+                data = json.loads(table_info)
+                print(f"JSON 파싱 결과: {data}")
+                
+                if isinstance(data, dict):
+                    for key, value in data.items():
+                        if isinstance(value, (int, float)) and value > 0:
+                            nutrients[key] = {'amount': value, 'unit': 'mg'}
+                elif isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict):
+                            # 새로운 형태: {'id': 14, 'ingredient_name': '비타민 C', 'amount': 4000, 'unit': 'mg'}
+                            if 'ingredient_name' in item and 'amount' in item:
+                                nutrient_name = item['ingredient_name']
+                                amount = item['amount']
+                                unit = item.get('unit', 'mg')
+                                
+                                if amount > 0 and nutrient_name:
+                                    nutrients[nutrient_name] = {'amount': amount, 'unit': unit}
+                                    print(f"영양성분 파싱 성공: {nutrient_name} - {amount}{unit}")
+                            else:
+                                # 기존 형태: {'비타민C': 100}
+                                for key, value in item.items():
+                                    if isinstance(value, (int, float)) and value > 0:
+                                        nutrients[key] = {'amount': value, 'unit': 'mg'}
+        except Exception as e2:
+            print(f"JSON 파싱 오류: {str(e2)}")
     
     # 문자열에서 영양성분 정보 추출 (예: "비타민C: 100mg", "칼슘: 500mg" 등)
     if not nutrients:
@@ -1894,4 +1094,409 @@ def parse_nutrients_from_table_info(table_info):
                 if amount > 0 and nutrient_name:
                     nutrients[nutrient_name] = {'amount': amount, 'unit': unit}
     
+    print(f"최종 파싱된 영양성분: {nutrients}")
     return nutrients
+
+@login_required
+def load_selected_products_nutrients(request):
+    """
+    선택한 제품들의 영양성분 정보를 Products 테이블에서 가져와서 UserNutrientIntake에 저장
+    """
+    try:
+        # POST 데이터에서 선택된 제품 ID들 가져오기
+        data = json.loads(request.body)
+        selected_product_ids = data.get('product_ids', [])
+        
+        if not selected_product_ids:
+            return JsonResponse({
+                'status': 'error',
+                'message': '선택된 제품이 없습니다.'
+            })
+        
+        # 선택된 제품들 가져오기
+        selected_products = Products.objects.filter(id__in=selected_product_ids)
+        
+        print(f"선택된 제품 수: {selected_products.count()}")
+        
+        added_count = 0
+        not_found_count = 0
+        
+        for product in selected_products:
+            product_title = product.title
+            print(f"\n처리 중인 제품: {product_title}")
+            
+            # 제품의 ingredients 정보 가져오기
+            ingredients = product.ingredients
+            print(f"ingredients 길이: {len(str(ingredients))}")
+            print(f"ingredients 내용: {str(ingredients)[:200]}...")
+            
+            if ingredients and isinstance(ingredients, str) and ingredients.strip():
+                # ingredients에서 영양성분 정보 파싱
+                nutrients = parse_nutrients_from_table_info(ingredients)
+                print(f"파싱된 영양성분: {nutrients}")
+                
+                # 각 영양성분을 UserNutrientIntake에 저장
+                for nutrient_name, amount_info in nutrients.items():
+                    # Nutrient 모델에서 해당 영양소 찾기 또는 생성
+                    nutrient, created = Nutrient.objects.get_or_create(
+                        name=nutrient_name,
+                        defaults={
+                            'description': f'{nutrient_name} 영양소',
+                            'daily_recommended': 100,  # 기본값
+                            'unit': 'mg',
+                            'category': '기타'
+                        }
+                    )
+                    
+                    # UserNutrientIntake에 저장
+                    UserNutrientIntake.objects.create(
+                        user=request.user,
+                        nutrient=nutrient,
+                        amount=amount_info.get('amount', 0),
+                        unit=amount_info.get('unit', 'mg')
+                    )
+                    
+                    added_count += 1
+                    print(f"영양성분 추가: {nutrient_name} - {amount_info}")
+            else:
+                not_found_count += 1
+                print(f"제품에 ingredients 정보가 없음: {product_title}")
+        
+        print(f"총 추가된 영양성분: {added_count}개")
+        print(f"찾을 수 없는 제품: {not_found_count}개")
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'선택한 제품 {len(selected_products)}개 중 {added_count}개의 영양성분 정보가 추가되었습니다.',
+            'added_count': added_count,
+            'not_found_count': not_found_count
+        })
+        
+    except Exception as e:
+        print(f"선택한 제품 영양성분 로드 오류: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'영양성분 정보 로드 중 오류가 발생했습니다: {str(e)}'
+        }, status=500)
+
+@login_required
+def like_list(request):
+    try:
+        # 사용자가 좋아요한 영양제 가져오기
+        like_list = Like.objects.filter(user=request.user).select_related('product')
+        
+        # 추천 영양제 가져오기
+        latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
+        if latest_survey:
+            recommended_supplements = get_recommended_supplements(latest_survey)
+        else:
+            recommended_supplements = []
+        
+        context = {
+            'user': request.user,
+            'like_list': like_list,
+            'recommended_supplements': recommended_supplements
+        }
+        return render(request, 'Mypage/like.html', context)
+    except Exception as e:
+        messages.error(request, f'좋아요 목록을 불러오는 중 오류가 발생했습니다: {str(e)}')
+        return redirect('mypage')
+
+@login_required
+@require_POST
+def like_add(request):
+    try:
+        product_id = request.POST.get('product_id')
+        product = Products.objects.get(pk=product_id)
+        Like.objects.get_or_create(user=request.user, product_id=product_id)
+        UserLog.objects.create(user=request.user, product=product, action='like')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+@require_POST
+def like_delete(request):
+    try:
+        product_id = request.POST.get('product_id')
+        product = Products.objects.get(pk=product_id)
+        like = Like.objects.get(user=request.user, product_id=product_id)
+        like.delete()
+        UserLog.objects.create(user=request.user, product=product, action='unlike')
+        return JsonResponse({'success': True})
+    except Like.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+def get_product_nutrients(request, product_id):
+    try:
+        product = Products.objects.get(id=product_id)
+        # 여기서 제품의 영양소 정보를 가져오는 로직을 구현해야 합니다
+        # 예시 데이터:
+        nutrients = [
+            {
+                'name': '비타민 C',
+                'amount': 100,
+                'unit': 'mg'
+            },
+            {
+                'name': '비타민 D',
+                'amount': 10,
+                'unit': 'µg'
+            }
+        ]
+        
+        return JsonResponse({
+            'status': 'success',
+            'nutrients': nutrients
+        })
+    except Products.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': '제품을 찾을 수 없습니다.'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+@login_required
+def product_click(request):
+    """Produkt kliknięcie - logowanie aktywności użytkownika"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            
+            # Log aktywności użytkownika
+            UserLog.objects.create(
+                user=request.user,
+                action='product_click',
+                details=f'Product ID: {product_id}'
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Aktywność została zarejestrowana'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Nieprawidłowe żądanie'
+    }, status=400)
+
+@login_required
+def chatbot_view(request):
+    """Widok czatbota"""
+    return render(request, 'Chatbot/ChatNuti.html')
+
+@login_required
+def ocr_extract(request):
+    """OCR ekstrakcja składników z obrazu"""
+    if request.method == 'POST':
+        try:
+            # Sprawdź czy plik został przesłany
+            if 'image' not in request.FILES:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': '이미지 파일이 업로드되지 않았습니다.'
+                }, status=400)
+            
+            image_file = request.FILES['image']
+            
+            # Sprawdź typ pliku
+            if not image_file.content_type.startswith('image/'):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': '올바른 이미지 파일을 업로드해주세요.'
+                }, status=400)
+            
+            # Otwórz obraz
+            image = Image.open(image_file)
+            
+            # OCR - ekstrakcja tekstu
+            try:
+                text = pytesseract.image_to_string(image, lang='kor+eng')
+                print(f"OCR 결과: {text}")
+            except Exception as ocr_error:
+                print(f"OCR 오류: {str(ocr_error)}")
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'OCR 처리 중 오류가 발생했습니다: {str(ocr_error)}'
+                }, status=500)
+            
+            # Tekst가 비어있는지 확인
+            if not text.strip():
+                return JsonResponse({
+                    'status': 'error',
+                    'message': '이미지에서 텍스트를 인식할 수 없습니다. 더 선명한 이미지를 업로드해주세요.'
+                }, status=400)
+            
+            # 영양소 정보 추출 (간단한 패턴 매칭)
+            nutrients = extract_nutrients_from_text(text)
+            
+            if nutrients:
+                return JsonResponse({
+                    'status': 'success',
+                    'ingredients': nutrients,
+                    'raw_text': text,
+                    'debug_info': {
+                        'extracted_count': len(nutrients),
+                        'raw_text': text[:500] + '...' if len(text) > 500 else text
+                    }
+                })
+            else:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': '영양소 정보를 찾을 수 없습니다.',
+                    'raw_text': text,
+                    'debug_info': {
+                        'raw_text': text[:500] + '...' if len(text) > 500 else text,
+                        'has_numbers': any(char.isdigit() for char in text),
+                        'has_units': any(unit in text.lower() for unit in ['mg', 'g', 'mcg', 'μg', 'iu', 'ml'])
+                    }
+                })
+                
+        except Exception as e:
+            print(f"OCR 처리 오류: {str(e)}")
+            return JsonResponse({
+                'status': 'error',
+                'message': f'이미지 처리 중 오류가 발생했습니다: {str(e)}'
+            }, status=500)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': '잘못된 요청입니다.'
+    }, status=400)
+
+def extract_nutrients_from_text(text):
+    """텍스트에서 영양소 정보 추출"""
+    nutrients = {}
+    
+    # 영양소 패턴 (한국어 + 영어)
+    nutrient_patterns = [
+        r'비타민\s*([A-Z])\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        r'Vitamin\s*([A-Z])\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+        r'([A-Za-z가-힣]+)\s*[:\-]?\s*([\d,\.]+)\s*(mg|g|mcg|μg|iu|ml)',
+    ]
+    
+    for pattern in nutrient_patterns:
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            if len(match.groups()) >= 3:
+                nutrient_name = match.group(1).strip()
+                amount_str = match.group(2).replace(',', '')
+                unit = match.group(3)
+                
+                try:
+                    amount = float(amount_str)
+                    nutrients[nutrient_name] = f"{amount} {unit}"
+                except ValueError:
+                    continue
+    
+    return nutrients
+
+@login_required
+def like_api(request):
+    """API do zarządzania polubieniami"""
+    if request.method == 'GET':
+        # Pobierz polubione produkty
+        likes = Like.objects.filter(user=request.user).select_related('product')
+        liked_products = [{
+            'id': like.product.id,
+            'name': like.product.name,
+            'brand': like.product.brand
+        } for like in likes]
+        
+        return JsonResponse({
+            'status': 'success',
+            'liked_products': liked_products
+        })
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Nieprawidłowe żądanie'
+    }, status=400)
+
+@login_required
+def product_purchase(request):
+    """Zakup produktu - logowanie aktywności"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            
+            # Log zakupu
+            UserLog.objects.create(
+                user=request.user,
+                action='product_purchase',
+                details=f'Product ID: {product_id}'
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Zakup został zarejestrowany'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Nieprawidłowe żądanie'
+    }, status=400)
+
+@login_required
+@require_POST
+def save_ocr_ingredients(request):
+    """Zapisywanie składników z OCR"""
+    try:
+        data = json.loads(request.body)
+        ingredients = data.get('ingredients', {})
+        
+        # 각 영양소를 UserNutrientIntake에 저장
+        added_count = 0
+        for nutrient_name, amount_info in ingredients.items():
+            # amount_info format: "100 mg"
+            try:
+                amount_str, unit = amount_info.split(' ', 1)
+                amount = float(amount_str)
+                
+                # Nutrient 모델에서 해당 영양소 찾기 또는 생성
+                nutrient, created = Nutrient.objects.get_or_create(
+                    name=nutrient_name,
+                    defaults={'description': f'OCR로 인식된 {nutrient_name}'}
+                )
+                
+                # UserNutrientIntake에 저장
+                UserNutrientIntake.objects.create(
+                    user=request.user,
+                    nutrient=nutrient,
+                    amount=amount,
+                    unit=unit
+                )
+                added_count += 1
+                
+            except (ValueError, AttributeError) as e:
+                print(f"영양소 파싱 오류 ({nutrient_name}): {str(e)}")
+                continue
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'{added_count}개의 영양소가 성공적으로 저장되었습니다.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
