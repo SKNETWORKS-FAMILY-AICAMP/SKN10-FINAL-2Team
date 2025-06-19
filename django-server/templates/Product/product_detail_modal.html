@@ -102,7 +102,16 @@ Usage:
                         <span class="material-icons mr-1 text-sm">science</span>
                         성분
                     </h3>
-                    <p id="detail-ingredients" class="text-yellow-900 bg-yellow-50 p-3 rounded-md border border-yellow-200"></p>
+                    <div id="detail-ingredients-wrapper">
+                        <div id="detail-ingredients" class="bg-yellow-50 p-3 rounded-md border border-yellow-200"></div>
+                        <div class="ingredients-fade pointer-events-none absolute left-0 right-0 bottom-0 h-8" style="display:none;"></div>
+                    </div>
+                    <div class="flex justify-center mt-2">
+                        <button id="toggle-ingredients-btn" type="button" class="text-xs px-2 py-1 rounded bg-yellow-200 text-yellow-800 border border-yellow-300 focus:outline-none flex items-center gap-1">
+                            <span id="toggle-ingredients-arrow">▼</span>
+                            <span id="toggle-ingredients-label" class="sr-only">펼치기</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="mb-6">

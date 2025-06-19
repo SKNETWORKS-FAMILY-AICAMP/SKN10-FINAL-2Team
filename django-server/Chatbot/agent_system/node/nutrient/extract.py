@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
 import json
 
-from ...state import AgentState, ExtractedInfo
+from ...state import AgentState
 from ..base import get_llm_json_response
 
 def extract_nutrient_info(state: AgentState) -> Dict[str, Any]:
@@ -16,12 +16,7 @@ def extract_nutrient_info(state: AgentState) -> Dict[str, Any]:
     """
     # 가장 최근 사용자 메시지 추출
     messages = state.get("messages", [])
-    if not messages:
-        return {"needs_human_input": True, "human_input_request": "영양소에 대해 더 자세히 알려주세요."}
-    
     latest_message = messages[-1]
-    if latest_message.type != "human":
-        return {"needs_human_input": True, "human_input_request": "영양소에 대해 더 자세히 알려주세요."}
     
     user_query = latest_message.content
     
@@ -30,7 +25,7 @@ def extract_nutrient_info(state: AgentState) -> Dict[str, Any]:
         "비타민 A", "베타카로틴", "비타민 D", "비타민 E", "비타민 K", "비타민 B1", "비타민 B2",
         "나이아신", "판토텐산", "비타민 B6", "엽산", "비타민 B12", "비오틴", "비타민 C", "칼슘", "마그네슘",
         "철", "아연", "구리", "셀레늄", "요오드", "망간", "몰리브덴", "칼륨", "크롬", "루테인", "인",
-        "메티오닌", "시스테인", "류신", "트립토판", "라이신", "트레오닌", "페닐알라닌", "티로신", "오메가3"
+        "메티오닌", "시스테인", "류신", "트립토판", "이소류신", "라이신", "트레오닌", "페닐알라닌", "티로신"
     ]
     
     # 시스템 프롬프트 정의
@@ -39,23 +34,9 @@ def extract_nutrient_info(state: AgentState) -> Dict[str, Any]:
 다음 영양소 목록 중에서 사용자가 언급한 영양소를 추출해주세요:
 {', '.join(nutrient_lst)}
 
-또한 사용자가 영양소에 대해 어떤 정보를 알고 싶어하는지 의도를 파악해주세요.
-가능한 의도 카테고리:
-- "효능": 영양소의 효능이나 이점
-- "상호작용": 다른 영양소나 약물과의 상호작용
-- "섭취방법": 올바른 섭취 방법이나 시간
-- "부작용": 과다 섭취 시 부작용이나 위험성
-- "식품원": 해당 영양소가 풍부한 식품
-- "결핍증상": 해당 영양소 부족 시 나타나는 증상
-- "일일권장량": 권장 섭취량
-- "기타": 위 카테고리에 해당하지 않는 경우
-
 JSON 형식으로 다음 정보를 반환해주세요:
 {{
-  "nutrients": ["영양소1", "영양소2", ...],
-  "intent": "효능" | "상호작용" | "섭취방법" | "부작용" | "식품원" | "결핍증상" | "일일권장량" | "기타",
-  "specific_question": "사용자의 구체적인 질문 요약",
-  "has_sufficient_info": true | false (추출된 정보가 충분한지 여부)
+  "nutrients": ["영양소1", "영양소2", ...]
 }}"""
 
     # LLM에 요청하여 영양소 정보 추출
@@ -65,32 +46,36 @@ JSON 형식으로 다음 정보를 반환해주세요:
     )
     
     nutrients = result.get("nutrients", [])
-    intent = result.get("intent", "기타")
-    has_sufficient_info = result.get("has_sufficient_info", False)
-    
-    # 추출된 정보가 충분하지 않은 경우 사용자에게 추가 정보 요청
-    if not nutrients or not has_sufficient_info:
-        request_message = "어떤 영양소에 대해 알고 싶으신가요? 더 자세히 알려주세요."
+
+    if not nutrients:
+        response = get_llm_json_response(
+            system_prompt=f"""당신은 영양제와 영양소에 관한 전문 지식을 갖춘 친절한 챗봇입니다.
+영양소, 영양제와 관련없는 질문은 대답하지 마세요.
+사용자에게 어떤 영양소에 대한 정보를 얻고싶은지 네 문장으로 물어보세요.
+
+사용자의 사전 설문조사 내용을 참고하여 어떤 영양소를 물어볼 수 있는지 영양소 예시에 있는 영양소 3가지만 추천해주세요.
+
+예를 들면, 사전 설문조사 내용에서 주로 실내에서 활동하신다고 응답하셨는데 비타민 D에 대한 정보를 알려드릴까요? 라고 말할 수 있습니다.
+
+사전 설문조사 내용은 다음과 같습니다:
+**사전 설문 조사**: {state['user_health_info']}
+
+영양소 예시는 다음과 같습니다:
+**영양소**: {', '.join(nutrient_lst)}
+""",
+            user_prompt=user_query,
+            response_format_json=False
+        )
+
+        print(f"정보 부족으로 진행할 수 없습니다: {response}")
+
         return {
-            "needs_human_input": True,
-            "human_input_request": request_message
+            "response": response,
+            "is_enough_nut_info": False
         }
-    
-    # 현재 추출된 정보 가져오기 또는 초기화
-    current_extracted_info = state.get("extracted_info", {})
-    
-    # 추출된 정보 업데이트
-    updated_info = current_extracted_info.copy() if current_extracted_info else {}
-    updated_info["nutrients"] = nutrients
-    
-    # 메타데이터에 의도 정보 저장
-    metadata = state.get("metadata", {})
-    metadata["nutrient_intent"] = intent
-    metadata["specific_question"] = result.get("specific_question", "")
     
     # 변경된 상태 필드만 반환
     return {
-        "extracted_info": updated_info,
-        "metadata": metadata,
-        "needs_human_input": False
+        "nutrients": nutrients,
+        "is_enough_nut_info": True
     } 

@@ -47,6 +47,9 @@ class AgentState(TypedDict):
     # 추출된 정보
     extracted_info: Annotated[Optional[Dict[str, Any]], merge_dict]
     
+    # 개인화 분석 정보
+    personalized_info: Annotated[Optional[Dict[str, Any]], overwrite_reducer]
+    
     # KAG 쿼리 및 결과
     kag_query: Annotated[Optional[str], overwrite_reducer]
     kag_results: Annotated[Optional[List[Any]], overwrite_reducer]
@@ -60,6 +63,15 @@ class AgentState(TypedDict):
     
     # 추천된 상품 ID 목록
     product_ids: Annotated[Optional[List[Dict[str, Any]]], overwrite_reducer]
+
+    # 영양소 검색을 위한 정보가 충분한지 여부
+    is_enough_nut_info: Annotated[bool, overwrite_reducer]
+
+    # 영양소 질문 시 어떤 영양소를 질문하는지
+    nutrients: Annotated[Optional[List[str]], overwrite_reducer]
+    
+    # 영양소 질문 시 해당 영양소에 대한 지식을 저장하는 state
+    nutrient_knowledge: Annotated[Optional[Dict[str, Any]], overwrite_reducer]
     
     # Human-in-the-loop 관련 필드
     needs_human_input: Annotated[bool, overwrite_reducer]

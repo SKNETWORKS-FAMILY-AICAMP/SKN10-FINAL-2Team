@@ -4,7 +4,7 @@ import json
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
 
-from ...state import AgentState, NutrientKnowledge
+from ...state import AgentState
 from ..base import get_llm_json_response
 
 # 환경변수 로드
@@ -26,17 +26,11 @@ def search_nutrient_knowledge(state: AgentState) -> Dict[str, Any]:
         변경된 상태 필드만 포함하는 딕셔너리
     """
     # 추출된 영양소 정보 가져오기
-    extracted_info = state.get("extracted_info", {})
-    nutrients = extracted_info.get("nutrients", [])
-    
-    if not nutrients:
-        return {
-            "needs_human_input": True,
-            "human_input_request": "어떤 영양소에 대해 알고 싶으신가요?"
-        }
+    nutrients = state.get("nutrients", [])
+    nutrient_knowledge = state.get("nutrient_knowledge", {})
     
     # 검색 결과 저장할 딕셔너리
-    knowledge_results = {
+    nutrient_knowledge = {
         "effects": [],      # 효능 정보
         "interactions": [], # 상호작용 정보
         "combinations": []  # 조합 정보
@@ -62,7 +56,7 @@ def search_nutrient_knowledge(state: AgentState) -> Dict[str, Any]:
                 nutrient_data = result.single()
                 
                 if nutrient_data:
-                    knowledge_results["effects"].append({
+                    nutrient_knowledge["effects"].append({
                         "nutrient": nutrient,
                         "efficacy": nutrient_data["efficacy"],
                         "side_effects": nutrient_data["side_effects"],
@@ -85,7 +79,7 @@ def search_nutrient_knowledge(state: AgentState) -> Dict[str, Any]:
                 results = session.run(interactions_query, nutrient_name=nutrient)
                 
                 for record in results:
-                    knowledge_results["interactions"].append({
+                    nutrient_knowledge["interactions"].append({
                         "nutrient": nutrient,
                         "interacting_nutrient": record["synergy_nutrient"],
                         "effect": record["synergy_effect"],
@@ -104,7 +98,7 @@ def search_nutrient_knowledge(state: AgentState) -> Dict[str, Any]:
                 results = session.run(combinations_query, nutrient_name=nutrient)
                 
                 for record in results:
-                    knowledge_results["combinations"].append({
+                    nutrient_knowledge["combinations"].append({
                         "nutrient": nutrient,
                         "related_nutrient": record["related_nutrient"],
                         "common_tag": record["tag"],
@@ -118,57 +112,54 @@ def search_nutrient_knowledge(state: AgentState) -> Dict[str, Any]:
         driver.close()
     
     # 변경된 상태 필드만 반환
-    return {"nutrient_knowledge": knowledge_results}
+    return {"nutrient_knowledge": nutrient_knowledge}
 
-def summarize_nutrient_info(state: AgentState) -> Dict[str, Any]:
-    """
-    검색된 영양소 정보를 종합하여 요약하는 노드
+# def summarize_nutrient_info(state: AgentState) -> Dict[str, Any]:
+#     """
+#     검색된 영양소 정보를 종합하여 요약하는 노드
     
-    Args:
-        state: 현재 에이전트 상태
+#     Args:
+#         state: 현재 에이전트 상태
         
-    Returns:
-        변경된 상태 필드만 포함하는 딕셔너리
-    """
-    knowledge = state.get("nutrient_knowledge", {})
-    metadata = state.get("metadata", {})
-    nutrient_intent = metadata.get("nutrient_intent", "효능")
-    specific_question = metadata.get("specific_question", "")
+#     Returns:
+#         변경된 상태 필드만 포함하는 딕셔너리
+#     """
+#     knowledge = state.get("nutrient_knowledge", {})
     
-    # 영양소 정보 요약을 위한 시스템 프롬프트
-    system_prompt = """당신은 영양소 정보를 종합하여 요약하는 전문가입니다.
-제공된 영양소 지식 데이터를 바탕으로 사용자의 의도에 맞게 정보를 요약해주세요.
+#     # 영양소 정보 요약을 위한 시스템 프롬프트
+#     system_prompt = """당신은 영양소 정보를 종합하여 요약하는 전문가입니다.
+# 제공된 영양소 지식 데이터를 바탕으로 사용자의 의도에 맞게 정보를 요약해주세요.
 
-다음 카테고리로 정보를 구성해주세요:
-1. primary_nutrients: 사용자 질문에 가장 관련 있는 주요 영양소
-2. synergistic_nutrients: 주요 영양소와 시너지 효과가 있는 영양소
-3. antagonistic_nutrients: 주요 영양소와 상충 효과가 있는 영양소
-4. recommended_forms: 권장되는 섭취 형태
-5. usage_guidelines: 섭취 가이드라인 (시간, 방법, 주의사항 등)
+# 다음 카테고리로 정보를 구성해주세요:
+# 1. primary_nutrients: 사용자 질문에 가장 관련 있는 주요 영양소
+# 2. synergistic_nutrients: 주요 영양소와 시너지 효과가 있는 영양소
+# 3. antagonistic_nutrients: 주요 영양소와 상충 효과가 있는 영양소
+# 4. recommended_forms: 권장되는 섭취 형태
+# 5. usage_guidelines: 섭취 가이드라인 (시간, 방법, 주의사항 등)
 
-JSON 형식으로 다음 정보를 반환해주세요:
-{
-  "primary_nutrients": ["영양소1", "영양소2", ...],
-  "synergistic_nutrients": ["영양소1", "영양소2", ...],
-  "antagonistic_nutrients": ["영양소1", "영양소2", ...],
-  "recommended_forms": ["형태1", "형태2", ...],
-  "usage_guidelines": ["가이드라인1", "가이드라인2", ...]
-}"""
+# JSON 형식으로 다음 정보를 반환해주세요:
+# {
+#   "primary_nutrients": ["영양소1", "영양소2", ...],
+#   "synergistic_nutrients": ["영양소1", "영양소2", ...],
+#   "antagonistic_nutrients": ["영양소1", "영양소2", ...],
+#   "recommended_forms": ["형태1", "형태2", ...],
+#   "usage_guidelines": ["가이드라인1", "가이드라인2", ...]
+# }"""
 
-    # 사용자 프롬프트 구성
-    user_prompt = f"""사용자 의도: {nutrient_intent}
-사용자 질문: {specific_question}
+#     # 사용자 프롬프트 구성
+#     user_prompt = f"""
+# 사용자 질문: {specific_question}
 
-영양소 지식 데이터:
-{json.dumps(knowledge, ensure_ascii=False, indent=2)}
+# 영양소 지식 데이터:
+# {json.dumps(knowledge, ensure_ascii=False, indent=2)}
 
-위 정보를 바탕으로 사용자 의도에 맞게 영양소 정보를 요약해주세요."""
+# 위 정보를 바탕으로 사용자 의도에 맞게 영양소 정보를 요약해주세요."""
 
-    # LLM에 요청하여 영양소 정보 요약
-    result = get_llm_json_response(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt
-    )
+#     # LLM에 요청하여 영양소 정보 요약
+#     result = get_llm_json_response(
+#         system_prompt=system_prompt,
+#         user_prompt=user_prompt
+#     )
     
-    # 변경된 상태 필드만 반환
-    return {"nutrient_summary": result} 
+#     # 변경된 상태 필드만 반환
+#     return {"nutrient_summary": result} 

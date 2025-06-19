@@ -14,18 +14,30 @@ def generate_nutrient_response(state: AgentState) -> Dict[str, Any]:
     Returns:
         변경된 상태 필드만 포함하는 딕셔너리
     """
+    # 가장 최근 사용자 메시지 추출
+    messages = state.get("messages", [])
+    if not messages:
+        return {}
+    
+    latest_message = messages[-1]
+    if latest_message.type != "human":
+        return {}
+    
+    user_query = latest_message.content
+
     # 필요한 정보 가져오기
     nutrient_knowledge = state.get("nutrient_knowledge", {})
-    nutrient_summary = state.get("nutrient_summary", {})
-    metadata = state.get("metadata", {})
-    
-    # 사용자 의도 및 질문 가져오기
-    nutrient_intent = metadata.get("nutrient_intent", "효능")
-    specific_question = metadata.get("specific_question", "")
     
     # 추출된 영양소 정보 가져오기
     extracted_info = state.get("extracted_info", {})
     nutrients = extracted_info.get("nutrients", [])
+
+    nutrient_lst = [
+        "비타민 A", "베타카로틴", "비타민 D", "비타민 E", "비타민 K", "비타민 B1", "비타민 B2",
+        "나이아신", "판토텐산", "비타민 B6", "엽산", "비타민 B12", "비오틴", "비타민 C", "칼슘", "마그네슘",
+        "철", "아연", "구리", "셀레늄", "요오드", "망간", "몰리브덴", "칼륨", "크롬", "루테인", "인",
+        "메티오닌", "시스테인", "류신", "트립토판", "이소류신", "라이신", "트레오닌", "페닐알라닌", "티로신"
+    ]
     
     # 응답 생성을 위한 시스템 프롬프트
     system_prompt = """당신은 영양소 전문가로서 사용자의 질문에 정확하고 유용한 정보를 제공하는 챗봇입니다.
@@ -46,15 +58,11 @@ def generate_nutrient_response(state: AgentState) -> Dict[str, Any]:
 4. 마무리 문장"""
 
     # 사용자 프롬프트 구성
-    user_prompt = f"""사용자 의도: {nutrient_intent}
-사용자 질문: {specific_question}
+    user_prompt = f"""사용자 질문: {user_query}
 관련 영양소: {', '.join(nutrients)}
 
 영양소 지식 데이터:
 {json.dumps(nutrient_knowledge, ensure_ascii=False, indent=2)}
-
-영양소 요약 정보:
-{json.dumps(nutrient_summary, ensure_ascii=False, indent=2)}
 
 위 정보를 바탕으로 사용자 질문에 대한 응답을 생성해주세요."""
 
@@ -68,11 +76,11 @@ def generate_nutrient_response(state: AgentState) -> Dict[str, Any]:
     followup_prompt = f"""사용자와의 대화를 바탕으로 자연스러운 후속 질문을 1개만 생성해주세요.
 후속 질문은 다음 중 하나를 목적으로 해야 합니다:
 1. 다른 관련 영양소에 대한 정보 제공
-2. 영양소 섭취 방법에 대한 추가 정보
-3. 영양제 추천으로의 자연스러운 전환
+2. 영양제 추천으로의 자연스러운 전환
 
-영양소 정보:
-{json.dumps(nutrient_summary, ensure_ascii=False, indent=2)}
+사용자가 선택할 수 있는 영양소를 아래 영양소 예시 목록에서 추천하세요:
+{', '.join(nutrient_lst)}
+
 
 챗봇 응답:
 {response}
@@ -86,6 +94,6 @@ def generate_nutrient_response(state: AgentState) -> Dict[str, Any]:
     
     # 변경된 상태 필드만 반환
     return {
-        "final_recommendation": response,
+        "response": response,
         "followup_question": followup_question
     } 

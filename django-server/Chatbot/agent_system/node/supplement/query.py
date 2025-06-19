@@ -28,6 +28,7 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
     """
     extracted_info = state.get("extracted_info", {})
     is_personalized = state.get("is_personalized", False)
+    personalized_info = state.get("personalized_info", {})
     user_id = state.get("user_id")
     all_results = []
 
@@ -95,6 +96,9 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
             new_results = [r for r in results if r["id"] not in existing_ids]
             print(f"중복 제거 후 추가된 결과 수: {len(new_results)}개")
             all_results.extend(new_results)
+
+        print("\n=== 일반 검색 완료 ===")
+        print(f"최종 검색 결과 수: {len(all_results)}개")
     else:
         print("\n=== 맞춤형 영양제 검색 시작 ===")
         
@@ -134,10 +138,17 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                         break
             
             if not age_range:
-                print("적절한 나이대를 찾을 수 없습니다.")
-                return {"kag_results": []}
+                age_range = "19~29"
             
             print(f"사용자 나이대: {age_range}")
+            
+            # 맞춤형 검색 정보를 저장할 딕셔너리
+            personalized_info = {
+                "user_age": age,
+                "user_gender": gender,
+                "age_range": age_range,
+                "nutrient_analysis": []
+            }
             
             # 영양소별 처리
             if extracted_info.get("nutrients"):
@@ -170,14 +181,26 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                     if recent_intake < daily_amount:
                         # 부족한 경우 해당 영양소를 포함한 영양제 검색
                         deficiency = daily_amount - recent_intake
-                        print(f"{nutrient} 부족량: {deficiency}")
+                        deficiency_percentage = (deficiency / daily_amount) * 100
+                        print(f"{nutrient} 부족량: {deficiency} ({deficiency_percentage:.1f}%)")
+                        
+                        # 영양소 분석 정보 저장
+                        personalized_info["nutrient_analysis"].append({
+                            "nutrient": nutrient,
+                            "current_intake": recent_intake,
+                            "daily_recommended": daily_amount,
+                            "deficiency": deficiency,
+                            "deficiency_percentage": round(deficiency_percentage, 1),
+                            "status": "deficient",
+                            "recommendation_type": "direct"
+                        })
                         
                         query = f"""
                         MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{nutrient}'}})
-                        WHERE c.amount >= {deficiency}
+                        WHERE c.amount <= {deficiency} * 1.1
                         RETURN s.id
                         ORDER BY c.amount ASC
-                        LIMIT 5
+                        LIMIT 20
                         """
                         
                         print(f"생성된 쿼리:\n{query}")
@@ -191,13 +214,28 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                         
                     else:
                         # 과다 섭취인 경우 관련 영양소 검색
-                        print(f"{nutrient} 과다 섭취 중. 관련 영양소 검색")
+                        excess_percentage = ((recent_intake - daily_amount) / daily_amount) * 100
+                        print(f"{nutrient} 과다 섭취 중 ({excess_percentage:.1f}% 초과). 관련 영양소 검색")
+                        
+                        # 영양소 분석 정보 저장
+                        personalized_info["nutrient_analysis"].append({
+                            "nutrient": nutrient,
+                            "current_intake": recent_intake,
+                            "daily_recommended": daily_amount,
+                            "excess": recent_intake - daily_amount,
+                            "excess_percentage": round(excess_percentage, 1),
+                            "status": "excess",
+                            "recommendation_type": "related"
+                        })
                         
                         # 1. 관련 영양소 찾기
                         related_nutrients_query = f"""
                         MATCH (n1:Nutrient {{name: '{nutrient}'}})-[:HAS_TAG]->(t:Tag)<-[:HAS_TAG]-(n2:Nutrient)
                         WHERE n1 <> n2
-                        RETURN n2.name as name
+                        WITH n2, count(t) as common_tags
+                        ORDER BY common_tags DESC
+                        LIMIT 2
+                        RETURN n2.name as name, common_tags
                         """
                         
                         print(f"관련 영양소 검색 쿼리:\n{related_nutrients_query}")
@@ -234,14 +272,27 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                             # 관련 영양소가 부족한 경우에만 영양제 추천
                             if related_intake < related_daily_amount:
                                 deficiency = related_daily_amount - related_intake
-                                print(f"{related_nutrient} 부족량: {deficiency}")
+                                deficiency_percentage = (deficiency / related_daily_amount) * 100
+                                print(f"{related_nutrient} 부족량: {deficiency} ({deficiency_percentage:.1f}%)")
+                                
+                                # 관련 영양소 분석 정보 저장
+                                personalized_info["nutrient_analysis"].append({
+                                    "nutrient": related_nutrient,
+                                    "current_intake": related_intake,
+                                    "daily_recommended": related_daily_amount,
+                                    "deficiency": deficiency,
+                                    "deficiency_percentage": round(deficiency_percentage, 1),
+                                    "status": "deficient",
+                                    "recommendation_type": "related",
+                                    "related_to": nutrient
+                                })
                                 
                                 query = f"""
                                 MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{related_nutrient}'}})
-                                WHERE c.amount >= {deficiency}
+                                WHERE c.amount <= {deficiency} * 1.1
                                 RETURN s.id
                                 ORDER BY c.amount ASC
-                                LIMIT 3
+                                LIMIT 20
                                 """
                                 
                                 print(f"생성된 쿼리:\n{query}")
@@ -255,8 +306,11 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                             else:
                                 print(f"{related_nutrient}도 과다 섭취 중입니다. 다른 영양소를 찾습니다.")
             
+            # 영양제 유형별 처리 만들어야 함.
+
             print("\n=== 맞춤형 검색 완료 ===")
             print(f"최종 검색 결과 수: {len(all_results)}개")
+            print(f"개인화 정보: {personalized_info}")
             
         except CustomUser.DoesNotExist:
             print("사용자를 찾을 수 없습니다.")
@@ -265,7 +319,7 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
             print(f"오류 발생: {str(e)}")
             return {"kag_results": []}
     
-    return {"kag_results": all_results[:20]}
+    return {"kag_results": all_results[:20], "personalized_info": personalized_info}
 
 def build_query(filtered_info: Dict[str, Any]) -> str:
     """주어진 정보로 Cypher 쿼리를 생성하는 내부 함수"""
@@ -347,15 +401,14 @@ def execute_query(query: str) -> List[Dict[str, Any]]:
     driver = GraphDatabase.driver(URI, auth=(USERNAME, PASSWORD))
     results = []
     
-    try:
-        with driver.session() as session:
-            query_results = session.run(query)
-            for record in query_results:
-                result_dict = {}
-                for key in record.keys():
-                    result_dict[key.replace("s.", "")] = record[key]
-                results.append(result_dict)
-    finally:
-        driver.close()
-    
+    with driver.session() as session:
+        query_results = session.run(query)
+        for record in query_results:
+            result_dict = {}
+            for key in record.keys():
+                result_dict[key.replace("s.", "")] = record[key]
+            results.append(result_dict)
+
+    driver.close()
+
     return results

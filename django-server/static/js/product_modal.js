@@ -192,17 +192,17 @@ function showProductDetail(productId, event) {
             return response.json();
         })
         .then(product => {
+            console.log('fetch로 받아온 product:', product);
             // 좋아요 상태가 캐시에 있으면 API 응답보다 캐시 우선
             if (typeof likedProductsCache[productId] !== 'undefined') {
                 product.is_liked = likedProductsCache[productId];
             }
-            
             // 상품 정보 캐싱
             productDetailsCache[productId] = product;
             displayProductDetail(product);
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error in showProductDetail fetch:', error);
             alert('상품 정보를 불러오는 중 오류가 발생했습니다.');
         });
 }
@@ -212,6 +212,9 @@ function showProductDetail(productId, event) {
  * @param {Object} product - 상품 정보 객체
  */
 function displayProductDetail(product) {
+    console.log('displayProductDetail 호출됨', product);
+    const ingredientsElem = document.getElementById('detail-ingredients');
+    console.log('ingredientsElem:', ingredientsElem);
     const modal = document.getElementById('product-detail-modal');
     const modalContent = modal.querySelector('.modal-content');
     
@@ -319,10 +322,95 @@ function displayProductDetail(product) {
         }
     }
     
-    // 제품 상세 정보
-    const ingredientsElem = document.getElementById('detail-ingredients');
-    if (ingredientsElem) {
-        ingredientsElem.textContent = product.ingredients || '성분 정보 없음';
+    // 애니메이션을 위한 클래스 추가
+    ingredientsElem.style.transition = 'max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s';
+    ingredientsElem.style.overflow = 'hidden';
+
+    // 성분 일부/전체 표시 함수
+    function renderIngredientsView(showAll) {
+        if (!Array.isArray(product.ingredients)) {
+            ingredientsElem.textContent = product.ingredients || '성분 정보 없음';
+            return;
+        }
+        if (product.ingredients.length === 0) {
+            ingredientsElem.innerHTML = '<span class="text-gray-400">성분 정보 없음</span>';
+            return;
+        }
+        let html = '';
+        // percent 기준 내림차순 정렬
+        const sorted = [...product.ingredients].sort((a, b) => {
+            const pa = (a.percent !== undefined && a.percent !== null) ? a.percent : -Infinity;
+            const pb = (b.percent !== undefined && b.percent !== null) ? b.percent : -Infinity;
+            return pb - pa;
+        });
+        const list = showAll ? sorted : sorted.slice(0, 3);
+        list.forEach(ing => {
+            const name = ing.ingredient_name || '-';
+            const amount = ing.amount !== undefined ? ing.amount : '-';
+            const unit = ing.unit || '';
+            const daily = ing.daily_rec !== undefined && ing.daily_rec !== null ? ing.daily_rec : null;
+            const percent = ing.percent !== undefined && ing.percent !== null ? ing.percent : null;
+            html += `<div class=\"mb-3\">
+                <div class=\"flex justify-between items-center mb-1\">
+                    <span class=\"font-semibold text-yellow-900\">${name}</span>
+                    <span class=\"text-sm text-gray-600\">${amount}${unit}${daily ? ` / ${daily}${unit}` : ''}</span>
+                </div>
+                <div class=\"w-full bg-yellow-100 rounded-full h-4 relative\">
+                    <div class=\"bg-yellow-400 h-4 rounded-full\" style=\"width: ${percent !== null ? Math.min(percent, 100) : 0}%; transition: width 0.5s;\"></div>
+                    <span class=\"absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-bold text-yellow-900\">${percent !== null ? percent + '%' : '-'}</span>
+                </div>
+            </div>`;
+        });
+        if (!showAll && sorted.length > 3) {
+            html += `<div class='text-xs text-gray-500 text-center'>+${sorted.length - 3}개 더 보기</div>`;
+        }
+        ingredientsElem.innerHTML = html;
+    }
+
+    // 성분 접고 펼치기 토글 버튼 이벤트 설정
+    const ingredientsWrapper = document.getElementById('detail-ingredients-wrapper');
+    const toggleBtn = document.getElementById('toggle-ingredients-btn');
+    const arrowSpan = document.getElementById('toggle-ingredients-arrow');
+    let showAllIngredients = false;
+    // fade 오버레이 div
+    const fadeDiv = ingredientsWrapper.querySelector('.ingredients-fade');
+    // detail-ingredients-wrapper에 position:relative 적용
+    ingredientsWrapper.style.position = 'relative';
+
+    if (toggleBtn && ingredientsWrapper) {
+        showAllIngredients = false;
+        renderIngredientsView(showAllIngredients);
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        arrowSpan.textContent = '▼';
+        // 애니메이션: 접힘 상태로 시작
+        ingredientsElem.style.maxHeight = '280px'; // 3.5개 row 기준으로 늘림
+        ingredientsElem.style.opacity = '1';
+        if (fadeDiv) fadeDiv.style.display = '';
+        toggleBtn.onclick = function(e) {
+            e.stopPropagation();
+            showAllIngredients = !showAllIngredients;
+            renderIngredientsView(showAllIngredients);
+            if (showAllIngredients) {
+                toggleBtn.setAttribute('aria-expanded', 'true');
+                arrowSpan.textContent = '▲';
+                ingredientsElem.style.maxHeight = ingredientsElem.scrollHeight + 'px';
+                ingredientsElem.style.opacity = '1';
+                setTimeout(() => {
+                    ingredientsElem.style.maxHeight = 'none';
+                }, 400);
+                if (fadeDiv) fadeDiv.style.display = 'none';
+            } else {
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                arrowSpan.textContent = '▼';
+                ingredientsElem.style.maxHeight = ingredientsElem.scrollHeight + 'px';
+                void ingredientsElem.offsetWidth;
+                ingredientsElem.style.maxHeight = '280px';
+                ingredientsElem.style.opacity = '1';
+                if (fadeDiv) fadeDiv.style.display = '';
+            }
+        };
+    } else {
+        renderIngredientsView(false);
     }
     
     const directionsElem = document.getElementById('detail-directions');

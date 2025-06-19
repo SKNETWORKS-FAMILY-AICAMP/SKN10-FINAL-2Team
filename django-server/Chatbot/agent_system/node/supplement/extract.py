@@ -4,8 +4,6 @@ import json
 from ...state import AgentState
 from ..base import get_llm_json_response
 
-from langgraph.errors import NodeInterrupt
-
 # def extract_health_info(state: AgentState) -> Dict[str, Any]:
 #     """
 #     사용자 입력에서 건강 정보를 추출하여 기존 설문조사 데이터를 업데이트하는 함수
