@@ -17,6 +17,7 @@ urlpatterns = [
     path('delete-nutrient-intake/', views.delete_nutrient_intake, name='delete_nutrient_intake'),
     path('delete-all-nutrient-records/', views.delete_all_nutrient_records, name='delete_all_nutrient_records'),
     path('get-nutrients-list/', views.get_nutrients_list, name='get_nutrients_list'),
+    path('get-available-nutrients/', views.get_available_nutrients, name='get_available_nutrients'),
     path('get-favorite-products/', views.get_favorite_products, name='get_favorite_products'),
     path('load-liked-products-nutrients/', views.load_liked_products_nutrients, name='load_liked_products_nutrients'),
     path('load-selected-products-nutrients/', views.load_selected_products_nutrients, name='load_selected_products_nutrients'),

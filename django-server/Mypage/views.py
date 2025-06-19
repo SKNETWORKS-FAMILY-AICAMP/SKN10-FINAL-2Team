@@ -1,7 +1,7 @@
 import os
 import json
 import pandas as pd
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -23,6 +23,7 @@ import csv
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 import ast
+from Chatbot.models import NutritionDailyRec
 
 @login_required
 def mypage_view(request):
@@ -537,65 +538,26 @@ def add_manual_nutrient_intake(request):
     try:
         data = json.loads(request.body)
         nutrient_name = data.get('nutrient_name')
-        unit = data.get('unit')
-        amount = data.get('amount', 0.0)
-
-        # 영양소 기준치 데이터 로드
-        json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
-        try:
-            with open(json_path, 'r', encoding='utf-8') as f:
-                nutrient_standards = json.load(f)
-        except Exception as e:
-            print(f"영양소 기준치 파일 로드 실패: {str(e)}")
-            nutrient_standards = {}
-
-        # 영양소가 존재하는지 확인하고, 없으면 생성 (ID 충돌 완전 방지)
-        nutrient = None
+        amount = float(data.get('amount', 0))
+        unit = data.get('unit', 'mg')
         
-        # 먼저 기존 영양소 찾기
-        try:
-            nutrient = Nutrient.objects.get(name=nutrient_name)
-        # 기존 영양소인 경우 권장량 업데이트
-            nutrient.unit = unit
-            nutrient.daily_recommended = nutrient_standards.get(nutrient_name, {}).get('recommended_amount', 100)
-            nutrient.description = nutrient_standards.get(nutrient_name, {}).get('description', '')
-            nutrient.save()
-            print(f"기존 영양소 업데이트: {nutrient_name}, 권장량: {nutrient.daily_recommended}")
-        except Nutrient.DoesNotExist:
-            # 새 영양소 생성 (ID 충돌 방지를 위해 시퀀스 재설정 후 생성)
-            try:
-                # 시퀀스 재설정 (테이블명 대소문자 구분)
-                from django.db import connection
-                with connection.cursor() as cursor:
-                    cursor.execute("SELECT setval(pg_get_serial_sequence('\"Mypage_nutrient\"', 'id'), COALESCE((SELECT MAX(id) FROM \"Mypage_nutrient\"), 1));")
-                
-                # 새 영양소 생성
-                nutrient = Nutrient.objects.create(
-                    name=nutrient_name,
-                    unit=unit,
-                    daily_recommended=nutrient_standards.get(nutrient_name, {}).get('recommended_amount', 100),
-                    description=nutrient_standards.get(nutrient_name, {}).get('description', ''),
-                    category='기타'  # 기본 카테고리
-                )
-                print(f"새 영양소 생성: {nutrient_name}, 권장량: {nutrient.daily_recommended}")
-            except Exception as create_error:
-                print(f"영양소 생성 중 오류: {str(create_error)}")
-                # 생성 실패 시 기존 영양소를 다시 찾아보기
-                try:
-                    nutrient = Nutrient.objects.get(name=nutrient_name)
-                except Nutrient.DoesNotExist:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': f'영양소 "{nutrient_name}" 생성에 실패했습니다. 오류: {str(create_error)}'
-                    }, status=400)
-
-        if not nutrient:
+        if not nutrient_name:
             return JsonResponse({
                 'status': 'error',
-                'message': f'영양소 "{nutrient_name}"를 찾을 수 없거나 생성할 수 없습니다.'
+                'message': '영양소 이름이 필요합니다.'
+            }, status=400)
+        
+        # 기존 영양소만 사용 - 새로 생성하지 않음
+        try:
+            nutrient = Nutrient.objects.get(name=nutrient_name)
+            print(f"기존 영양소 사용: {nutrient_name}")
+        except Nutrient.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'영양소 "{nutrient_name}"는 관리되지 않는 영양소입니다. 관리자에게 문의하세요.'
             }, status=400)
 
-        # 영양소 섭취 기록 생성 (amount, unit만)
+        # 영양소 섭취 기록 생성
         intake = UserNutrientIntake.objects.create(
             user=request.user,
             nutrient=nutrient,
@@ -606,8 +568,7 @@ def add_manual_nutrient_intake(request):
         # 영양분석 실행
         try:
             analyze_nutrients(request)
-        except Exception as e:
-            print(f"영양분석 실행 중 오류 발생: {str(e)}")
+        except Exception as e:            print(f"영양분석 실행 중 오류 발생: {str(e)}")
             # 분석 실패해도 기록은 저장됨
 
         return JsonResponse({
@@ -659,27 +620,44 @@ def analyze_nutrients(request):
                 }
             })
 
+        # 사용자 정보 가져오기 (성별, 연령)
+        user = request.user
+        gender = getattr(user, 'gender', '남자')  # 기본값 설정
+        age = getattr(user, 'age', 30)  # 기본값 설정
+        
+        # 연령대 계산
+        if age < 20:
+            age_range = "10대"
+        elif age < 30:
+            age_range = "20대"
+        elif age < 40:
+            age_range = "30대"
+        elif age < 50:
+            age_range = "40대"
+        elif age < 60:
+            age_range = "50대"
+        else:
+            age_range = "60대 이상"
+
         # 영양소별 평균 섭취량 계산
         nutrient_averages = {}
         for intake in intakes:
             nutrient_name = intake.nutrient.name
             if nutrient_name not in nutrient_averages:
-                # 권장량 확인 및 로드
-                recommended = intake.nutrient.daily_recommended
-                if not recommended or recommended <= 0:
-                    # 기준치 파일에서 권장량 로드
-                    json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
-                    try:
-                        with open(json_path, 'r', encoding='utf-8') as f:
-                            nutrient_standards = json.load(f)
-                        recommended = nutrient_standards.get(nutrient_name, {}).get('recommended_amount', 100)
-                        # 영양소 권장량 업데이트
-                        intake.nutrient.daily_recommended = recommended
-                        intake.nutrient.save()
-                        print(f"영양소 권장량 업데이트: {nutrient_name} = {recommended}")
-                    except Exception as e:
-                        print(f"기준치 파일 로드 실패: {str(e)}")
-                        recommended = 100
+                # NutritionDailyRec에서 권장량 가져오기
+                daily_rec = NutritionDailyRec.objects.filter(
+                    sex=gender,
+                    age_range=age_range,
+                    nutrient=nutrient_name
+                ).first()
+                
+                if daily_rec:
+                    recommended = daily_rec.daily
+                    print(f"DB에서 권장량 가져옴: {nutrient_name} = {recommended}")
+                else:
+                    # DB에 없는 경우 기본값 사용
+                    recommended = 100
+                    print(f"DB에 권장량 없음, 기본값 사용: {nutrient_name} = {recommended}")
                 
                 nutrient_averages[nutrient_name] = {
                     'total': 0,
@@ -1023,16 +1001,12 @@ def load_liked_products_nutrients(request):
                         amount_str, unit = amount_info.split(' ', 1)
                         amount = float(amount_str)
                         
-                        # Nutrient 모델에서 해당 영양소 찾기 또는 생성
-                        nutrient, created = Nutrient.objects.get_or_create(
-                            name=nutrient_name,
-                            defaults={
-                                'description': f'{nutrient_name} 영양소',
-                                'daily_recommended': 100,  # 기본값
-                                'unit': 'mg',
-                                'category': '기타'
-                            }
-                        )
+                        # 기존 영양소만 사용 - 새로 생성하지 않음
+                        try:
+                            nutrient = Nutrient.objects.get(name=nutrient_name)
+                        except Nutrient.DoesNotExist:
+                            print(f"관리되지 않는 영양소 건너뛰기: {nutrient_name}")
+                            continue
                         
                         # UserNutrientIntake에 저장
                         UserNutrientIntake.objects.create(
@@ -1046,6 +1020,7 @@ def load_liked_products_nutrients(request):
                         print(f"영양성분 추가: {nutrient_name} - {amount}{unit}")
                     except (ValueError, AttributeError) as e:
                         print(f"영양소 파싱 오류 ({nutrient_name}): {str(e)}")
+                        continue
             else:
                 not_found_count += 1
                 print(f"제품에 ingredients 정보가 없음: {product_title}")
@@ -1162,7 +1137,7 @@ def parse_nutrients_from_text(text):
                 nutrients[nutrient_name] = f"{amount} {unit}"
             except ValueError:
                 continue
-                
+    
     # 4. 추가적인 OCR 텍스트 정리 및 패턴 매칭
     # 줄바꿈이나 특수문자 제거 후 다시 시도
     cleaned_text = re.sub(r'[^\w\s\d,\.:()-]', ' ', text)
@@ -1238,16 +1213,12 @@ def load_selected_products_nutrients(request):
                         amount_str, unit = amount_info.split(' ', 1)
                         amount = float(amount_str)
                         
-                        # Nutrient 모델에서 해당 영양소 찾기 또는 생성
-                        nutrient, created = Nutrient.objects.get_or_create(
-                            name=nutrient_name,
-                            defaults={
-                                'description': f'{nutrient_name} 영양소',
-                                'daily_recommended': 100,  # 기본값
-                                'unit': 'mg',
-                                'category': '기타'
-                            }
-                        )
+                        # 기존 영양소만 사용 - 새로 생성하지 않음
+                        try:
+                            nutrient = Nutrient.objects.get(name=nutrient_name)
+                        except Nutrient.DoesNotExist:
+                            print(f"관리되지 않는 영양소 건너뛰기: {nutrient_name}")
+                            continue
                         
                         # UserNutrientIntake에 저장
                         UserNutrientIntake.objects.create(
@@ -1675,11 +1646,12 @@ def save_ocr_ingredients(request):
                 amount_str, unit = amount_info.split(' ', 1)
                 amount = float(amount_str)
                 
-                # Nutrient 모델에서 해당 영양소 찾기 또는 생성
-                nutrient, created = Nutrient.objects.get_or_create(
-                    name=nutrient_name,
-                    defaults={'description': f'OCR로 인식된 {nutrient_name}'}
-                )
+                # 기존 영양소만 사용 - 새로 생성하지 않음
+                try:
+                    nutrient = Nutrient.objects.get(name=nutrient_name)
+                except Nutrient.DoesNotExist:
+                    print(f"관리되지 않는 영양소 건너뛰기: {nutrient_name}")
+                    continue
                 
                 # UserNutrientIntake에 저장
                 UserNutrientIntake.objects.create(
@@ -1697,6 +1669,29 @@ def save_ocr_ingredients(request):
         return JsonResponse({
             'status': 'success',
             'message': f'{added_count}개의 영양소가 성공적으로 저장되었습니다.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+@login_required
+def get_available_nutrients(request):
+    """사용자가 사용할 수 있는 영양소 목록을 반환"""
+    try:
+        nutrients = Nutrient.objects.all().order_by('name')
+        nutrient_list = [{
+            'id': nutrient.id,
+            'name': nutrient.name,
+            'unit': nutrient.unit or 'mg',
+            'description': nutrient.description or '',
+            'daily_recommended': nutrient.daily_recommended or 0
+        } for nutrient in nutrients]
+        
+        return JsonResponse({
+            'status': 'success',
+            'nutrients': nutrient_list
         })
     except Exception as e:
         return JsonResponse({
