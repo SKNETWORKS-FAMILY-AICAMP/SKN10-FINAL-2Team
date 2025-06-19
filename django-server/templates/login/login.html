@@ -12,7 +12,7 @@
     <div class="login-container">
         <div class="login-left">
             <div class="logo-placeholder">
-                로고
+                <img src="{% static 'image/login_logo.png' %}" alt="로고">
             </div>
         </div>
         <div class="login-right">
@@ -29,11 +29,13 @@
                     <a href="#" id="signupLink">회원가입</a>
                     <a href="#" id="findCredentialsLink">이메일/비밀번호 찾기</a>
                 </div>
+                <div class="button-wrapper">
                 <button type="submit" class="btn btn-login">로그인</button>
                 <a href="{% provider_login_url 'google' %}" class="btn btn-google" style="display: inline-flex; align-items: center; text-decoration: none;">
                     <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" width="20" height="20" style="margin-right: 8px;">
                     Google 계정 로그인
                 </a>
+                </div>
             </form>
         </div>
     </div>
