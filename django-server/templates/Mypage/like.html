@@ -33,9 +33,7 @@
                 {% include 'Product/product_card.html' with product=like.product %}
         {% endfor %}
         {% else %}
-            <div class="empty-image">
-            </div>
-            <div class="h3" style="margin:10px; padding:10px;">좋아요 누른 영양제가 없어요.</div>
+            <div class="h3" style="margin:10px; padding:10px; margin-top: 200px;">좋아요 누른 영양제가 없어요.</div>
         {% endif %}
     </div>
     {% include 'Product/product_detail_modal.html' %}
