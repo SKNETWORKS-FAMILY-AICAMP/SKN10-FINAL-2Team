@@ -290,4 +290,16 @@
 
 .like-button .material-icons {
     font-size: 18px;
+}
+
+/* 성분 fade-out 오버레이 */
+.ingredients-fade {
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2rem;
+    background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, #fff 100%);
+    z-index: 2;
 } 
