@@ -985,7 +985,7 @@ function updateNutrientAnalysis() {
                 
                 let html = '';
                 for (const [nutrientName, nutrientData] of Object.entries(nutrients)) {
-                    const avgIntake = nutrientData.total / nutrientData.count;
+                    const avgIntake = nutrientData.total
                     const recommended = nutrientData.recommended;
                     const percentage = recommended > 0 ? (avgIntake / recommended) * 100 : 0;
                     
