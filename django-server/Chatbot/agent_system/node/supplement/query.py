@@ -149,7 +149,91 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                 "age_range": age_range,
                 "nutrient_analysis": []
             }
-            
+
+            # purpose_tag별 처리
+            if extracted_info.get("purpose_tag"):
+                # 우선순위 영양소 리스트
+                priority_nutrients = extracted_info.get("nutrients", [])
+                for tag in extracted_info["purpose_tag"]:
+                    print(f"\n=== {tag} 목적 태그 처리 중 ===")
+                    # 1. 해당 태그와 연결된 영양소 찾기
+                    nutrient_query = f"""
+                    MATCH (t:Tag {{name: '{tag}'}})<-[:HAS_TAG]-(n:Nutrient)
+                    RETURN n.name as name
+                    """
+                    print(f"목적 태그에 해당하는 영양소 검색 쿼리:\n{nutrient_query}")
+                    nutrients = execute_query(nutrient_query)
+                    print(f"해당 태그와 연결된 영양소 수: {len(nutrients)}개")
+
+                    # 우선순위 영양소 먼저, 그 다음 나머지
+                    nutrient_names = [n["name"] for n in nutrients]
+                    ordered_nutrients = []
+                    if priority_nutrients:
+                        # 우선순위 영양소만 먼저
+                        ordered_nutrients += [n for n in priority_nutrients if n in nutrient_names]
+                        # 나머지 영양소
+                        ordered_nutrients += [n for n in nutrient_names if n not in priority_nutrients]
+                    else:
+                        ordered_nutrients = nutrient_names
+
+                    for nutrient in ordered_nutrients:
+                        print(f"\n=== {nutrient} (목적: {tag}) 영양소 처리 중 ===")
+                        # 1. 사용자의 영양소 섭취량 확인
+                        recent_intake = UserNutrientIntake.objects.filter(
+                            user_id=user_id,
+                            nutrient__name=nutrient,
+                        ).aggregate(total=Sum('amount'))['total'] or 0
+                        print(f"{nutrient} 섭취량: {recent_intake}")
+                        # 2. 1일 권장 섭취량 확인
+                        daily_rec = NutritionDailyRec.objects.filter(
+                            sex=gender,
+                            age_range=age_range,
+                            nutrient=nutrient
+                        ).first()
+                        if not daily_rec:
+                            print(f"{nutrient}의 1일 권장 섭취량 정보가 없습니다.")
+                            continue
+                        daily_amount = daily_rec.daily
+                        print(f"{nutrient} 1일 권장 섭취량: {daily_amount}")
+                        # 3. 섭취량과 권장량 비교
+                        if recent_intake < daily_amount:
+                            deficiency = daily_amount - recent_intake
+                            deficiency_percentage = (deficiency / daily_amount) * 100
+                            print(f"{nutrient} 부족량: {deficiency} ({deficiency_percentage:.1f}%)")
+                            personalized_info["nutrient_analysis"].append({
+                                "nutrient": nutrient,
+                                "current_intake": recent_intake,
+                                "daily_recommended": daily_amount,
+                                "deficiency": deficiency,
+                                "deficiency_percentage": round(deficiency_percentage, 1),
+                                "status": "deficient",
+                                "recommendation_type": "direct"
+                            })
+                            query = f"""
+                            MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{nutrient}'}})
+                            WHERE c.amount <= {deficiency} * 1.1
+                            RETURN s.id
+                            ORDER BY c.amount ASC
+                            LIMIT 20
+                            """
+                            print(f"생성된 쿼리:\n{query}")
+                            results = execute_query(query)
+                            print(f"검색 결과 수: {len(results)}개")
+                            # 중복 제거하면서 추가
+                            existing_ids = {r["id"] for r in all_results}
+                            new_results = [r for r in results if r["id"] not in existing_ids]
+                            all_results.extend(new_results)
+                            # 20개가 모이면 중단
+                            if len(all_results) >= 20:
+                                print("20개 결과가 모여 검색을 중단합니다.")
+                                break
+                        else:
+                            print(f"{nutrient}는 부족하지 않습니다. 같은 목적의 다른 영양소를 찾습니다.")
+                        if len(all_results) >= 20:
+                            break
+                    if len(all_results) >= 20:
+                        break
+
             # 영양소별 처리
             if extracted_info.get("nutrients"):
                 for nutrient in extracted_info["nutrients"]:
@@ -306,8 +390,144 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                             else:
                                 print(f"{related_nutrient}도 과다 섭취 중입니다. 다른 영양소를 찾습니다.")
             
-            # 영양제 유형별 처리 만들어야 함.
-
+            # 영양제 유형별 처리.
+            # supplement_types별 처리
+                for supplement_type in extracted_info["supplement_types"]:
+                    if supplement_type == "멀티비타민":
+                        print("멀티비타민 예외 처리 로직 실행: 여러 영양소 종합 분석 및 1일 권장량 이하 추천")
+                        multi_query = f"""
+                        MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient)
+                        WHERE '{supplement_type}' IN s.supplement_types OR s.name CONTAINS '{supplement_type}'
+                        RETURN s.id as supplement_id, collect({{name: n.name, amount: c.amount}}) as nutrients
+                        LIMIT 100
+                        """
+                        print(f"멀티비타민 후보 검색 쿼리:\n{multi_query}")
+                        multi_results = execute_query(multi_query)
+                        print(f"멀티비타민 후보 수: {len(multi_results)}개")
+                        for supplement in multi_results:
+                            supplement_id = supplement["supplement_id"]
+                            nutrients = supplement["nutrients"]
+                            over_daily = False
+                            nutrient_analysis = []
+                            for nut in nutrients:
+                                nut_name = nut["name"]
+                                nut_amount = nut["amount"]
+                                recent_intake = UserNutrientIntake.objects.filter(
+                                    user_id=user_id,
+                                    nutrient__name=nut_name,
+                                ).aggregate(total=Sum('amount'))['total'] or 0
+                                daily_rec = NutritionDailyRec.objects.filter(
+                                    sex=gender,
+                                    age_range=age_range,
+                                    nutrient=nut_name
+                                ).first()
+                                if not daily_rec:
+                                    continue
+                                daily_amount = daily_rec.daily
+                                # personalized_info에 분석 정보 추가
+                                analysis = {
+                                    "nutrient": nut_name,
+                                    "current_intake": recent_intake,
+                                    "daily_recommended": daily_amount,
+                                    "multi_amount": nut_amount,
+                                    "total_if_taken": recent_intake + nut_amount,
+                                    "supplement_type": "멀티비타민"
+                                }
+                                if recent_intake != 0 and (recent_intake + nut_amount > daily_amount):
+                                    over_daily = True
+                                    analysis["status"] = "excess"
+                                    analysis["excess"] = (recent_intake + nut_amount) - daily_amount
+                                    analysis["excess_percentage"] = round(((recent_intake + nut_amount) - daily_amount) / daily_amount * 100, 1)
+                                elif recent_intake + nut_amount < daily_amount:
+                                    analysis["status"] = "deficient"
+                                    analysis["deficiency"] = daily_amount - (recent_intake + nut_amount)
+                                    analysis["deficiency_percentage"] = round((daily_amount - (recent_intake + nut_amount)) / daily_amount * 100, 1)
+                                else:
+                                    analysis["status"] = "adequate"
+                                nutrient_analysis.append(analysis)
+                                if over_daily:
+                                    break
+                            if not over_daily:
+                                if supplement_id not in [r["id"] for r in all_results]:
+                                    all_results.append({"id": supplement_id})
+                                    print(f"추천 멀티비타민: {supplement_id}")
+                                # personalized_info에 멀티비타민 분석 정보 추가
+                                if "nutrient_analysis" in personalized_info:
+                                    personalized_info["nutrient_analysis"].extend(nutrient_analysis)
+                                else:
+                                    personalized_info["nutrient_analysis"] = nutrient_analysis
+                                if len(all_results) >= 20:
+                                    print("20개 결과가 모여 검색을 중단합니다.")
+                                    break
+                        continue
+                    print(f"\n=== {supplement_type} 영양제 유형 처리 중 ===")
+                    # 1. 해당 카테고리와 연결된 Supplement, 그리고 해당 supplement_type 이름과 같은 Nutrient 찾기
+                    nutrient_query = f"""
+                    MATCH (c:Category {{name: '{supplement_type}'}})<-[:BELONGS_TO]-(s:Supplement)-[:CONTAINS]->(n:Nutrient {{name: '{supplement_type}'}})
+                    RETURN n.name as name
+                    """
+                    print(f"영양제 유형에 해당하는 영양소 검색 쿼리:\n{nutrient_query}")
+                    nutrients = execute_query(nutrient_query)
+                    print(f"해당 유형과 연결된 영양소 수: {len(nutrients)}개")
+                    for nutrient_obj in nutrients:
+                        nutrient = nutrient_obj["name"]
+                        print(f"\n=== {nutrient} (유형: {supplement_type}) 영양소 처리 중 ===")
+                        # 1. 사용자의 영양소 섭취량 확인
+                        recent_intake = UserNutrientIntake.objects.filter(
+                            user_id=user_id,
+                            nutrient__name=nutrient,
+                        ).aggregate(total=Sum('amount'))['total'] or 0
+                        print(f"{nutrient} 섭취량: {recent_intake}")
+                        # 2. 1일 권장 섭취량 확인
+                        daily_rec = NutritionDailyRec.objects.filter(
+                            sex=gender,
+                            age_range=age_range,
+                            nutrient=nutrient
+                        ).first()
+                        if not daily_rec:
+                            print(f"{nutrient}의 1일 권장 섭취량 정보가 없습니다.")
+                            continue
+                        daily_amount = daily_rec.daily
+                        print(f"{nutrient} 1일 권장 섭취량: {daily_amount}")
+                        # 3. 섭취량과 권장량 비교
+                        if recent_intake < daily_amount:
+                            deficiency = daily_amount - recent_intake
+                            deficiency_percentage = (deficiency / daily_amount) * 100
+                            print(f"{nutrient} 부족량: {deficiency} ({deficiency_percentage:.1f}%)")
+                            personalized_info["nutrient_analysis"].append({
+                                "nutrient": nutrient,
+                                "current_intake": recent_intake,
+                                "daily_recommended": daily_amount,
+                                "deficiency": deficiency,
+                                "deficiency_percentage": round(deficiency_percentage, 1),
+                                "status": "deficient",
+                                "recommendation_type": "supplement_type",
+                                "supplement_type": supplement_type
+                            })
+                            query = f"""
+                            MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{nutrient}'}})
+                            WHERE c.amount <= {deficiency} * 1.1
+                            RETURN s.id
+                            ORDER BY c.amount ASC
+                            LIMIT 20
+                            """
+                            print(f"생성된 쿼리:\n{query}")
+                            results = execute_query(query)
+                            print(f"검색 결과 수: {len(results)}개")
+                            # 중복 제거하면서 추가
+                            existing_ids = {r["id"] for r in all_results}
+                            new_results = [r for r in results if r["id"] not in existing_ids]
+                            all_results.extend(new_results)
+                            if len(all_results) >= 20:
+                                print("20개 결과가 모여 검색을 중단합니다.")
+                                break
+                        else:
+                            print(f"{nutrient}는 부족하지 않습니다. 같은 유형의 다른 영양소를 찾습니다.")
+                        if len(all_results) >= 20:
+                            break
+                    if len(all_results) >= 20:
+                        break
+                    
             print("\n=== 맞춤형 검색 완료 ===")
             print(f"최종 검색 결과 수: {len(all_results)}개")
             print(f"개인화 정보: {personalized_info}")
