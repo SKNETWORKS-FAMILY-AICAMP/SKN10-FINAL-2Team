@@ -181,7 +181,7 @@ def analysis_view(request):
             recommended_supplements = []
         
         # 영양소 기준치 데이터 로드
-        json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+        json_path = os.path.join(settings.STATIC_ROOT, 'json', 'Mypage', 'nutrient_standards.json')
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 nutrient_standards = json.load(f)
@@ -541,7 +541,7 @@ def add_manual_nutrient_intake(request):
         amount = data.get('amount', 0.0)
 
         # 영양소 기준치 데이터 로드
-        json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+        json_path = os.path.join(settings.STATIC_ROOT, 'json', 'Mypage', 'nutrient_standards.json')
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 nutrient_standards = json.load(f)
@@ -668,7 +668,7 @@ def analyze_nutrients(request):
                 recommended = intake.nutrient.daily_recommended
                 if not recommended or recommended <= 0:
                     # 기준치 파일에서 권장량 로드
-                    json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+                    json_path = os.path.join(settings.STATIC_ROOT, 'json', 'Mypage', 'nutrient_standards.json')
                     try:
                         with open(json_path, 'r', encoding='utf-8') as f:
                             nutrient_standards = json.load(f)
