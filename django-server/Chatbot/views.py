@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from langchain_core.messages import HumanMessage
 
-@permission_classes([IsAuthenticated])
+
 class ChatWithNutiAPIView(APIView):
     def get(self, request, *args, **kwargs):
         # GET 요청 시 HTML 템플릿 렌더링

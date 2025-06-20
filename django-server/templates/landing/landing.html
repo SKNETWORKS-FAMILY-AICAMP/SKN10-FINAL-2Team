@@ -289,33 +289,7 @@
       mypageLink.addEventListener('click', async function (event) {
         event.preventDefault();
         const userIsAuthenticated = await checkUserAuthentication();
-        if (userIsAuthenticated) {
-            const accessToken = localStorage.getItem('accessToken'); // 또는 쿠키 등에서 가져오기
-
-            fetch('/mypage/', {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-              }
-            })
-            .then(response => {
-              if (response.ok) {
-                // 인증 성공 시 리디렉션
-                window.location.href = '/mypage/';
-              } else {
-                // 인증 실패 시 로그인 페이지로 리디렉션
-                window.location.href = '/login/';
-              }
-            })
-            .catch(error => {
-              console.error('Error during authentication:', error);
-              window.location.href = '/login/';
-            });
-
-        } else {
-          window.location.href = '/login/';
-        }
+        window.location.href = userIsAuthenticated ? '/mypage/' : '/login/';
       });
     }
 
@@ -327,33 +301,7 @@
       chatbotLink.addEventListener('click', async function (event) {
         event.preventDefault();
         const userIsAuthenticated = await checkUserAuthentication();
-        if (userIsAuthenticated) {
-          const accessToken = localStorage.getItem('accessToken'); // 또는 쿠키 등에서 가져오기
-
-          fetch('/Chatbot/ChatWithNuti/', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json'
-            }
-          })
-          .then(response => {
-            if (response.ok) {
-              // 인증 성공 시 리디렉션
-              window.location.href = '/Chatbot/ChatWithNuti';
-            } else {
-              // 인증 실패 시 로그인 페이지로 리디렉션
-              window.location.href = '/login/';
-            }
-          })
-          .catch(error => {
-            console.error('Error during authentication:', error);
-            window.location.href = '/login/';
-          });
-
-        } else {
-          window.location.href = '/login/';
-        }
+        window.location.href = userIsAuthenticated ? '/Chatbot/ChatWithNuti/' : '/login/';
       });
     }
 
