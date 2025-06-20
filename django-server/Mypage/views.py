@@ -1373,8 +1373,8 @@ def product_click(request):
     """Produkt kliknięcie - logowanie aktywności użytkownika"""
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            product_id = data.get('product_id')
+            
+            product_id = request.data.get('product_id')
             
             # Log aktywności użytkownika
             UserLog.objects.create(
@@ -1636,8 +1636,8 @@ def like_api(request):
         
     elif request.method in ["POST", "DELETE"]:
         try:
-            data = json.loads(request.body)
-            product_id = data.get('product_id')
+            
+            product_id = request.data.get('product_id')
             if not product_id:
                 return JsonResponse({"error": "상품 ID가 필요합니다."}, status=400)
             
@@ -1682,8 +1682,8 @@ def product_purchase(request):
     """Zakup produktu - logowanie aktywności"""
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            product_id = data.get('product_id')
+            
+            product_id = request.data.get('product_id')
             
             # Log zakupu
             UserLog.objects.create(
