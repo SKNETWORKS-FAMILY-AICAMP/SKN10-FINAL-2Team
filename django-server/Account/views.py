@@ -17,7 +17,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
 # Create your views here.
-def login(request):
+def loginview(request):
     return render(request, 'login/login.html')
 
 User = get_user_model()
