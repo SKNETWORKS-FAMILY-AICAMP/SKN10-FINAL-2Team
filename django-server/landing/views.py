@@ -13,24 +13,24 @@ from django.db.models import F, FloatField, ExpressionWrapper, Q
 def landing(request):
     return render(request, 'landing/landing.html')
 
-def get_product_details(request):
-    ids = request.GET.get('ids', '')
-    id_list = [int(i) for i in ids.split(',') if i.isdigit()]
-    print("🔍 요청 받은 ID들:", id_list)
+# def get_product_details(request):
+#     ids = request.GET.get('ids', '')
+#     id_list = [int(i) for i in ids.split(',') if i.isdigit()]
+#     print("🔍 요청 받은 ID들:", id_list)
 
-    products = Products.objects.filter(id__in=id_list)
-    print("✅ 실제 조회된 상품 수:", products.count())
+#     products = Products.objects.filter(id__in=id_list)
+#     print("✅ 실제 조회된 상품 수:", products.count())
 
-    data = [{
-        'id': p.id,
-        'title': p.title,
-        'url': p.url,
-        'image_link': p.image_link,
-        'average_rating': p.average_rating,
-        'price_value': p.price_value,
-    } for p in products]
+#     data = [{
+#         'id': p.id,
+#         'title': p.title,
+#         'url': p.url,
+#         'image_link': p.image_link,
+#         'average_rating': p.average_rating,
+#         'price_value': p.price_value,
+#     } for p in products]
 
-    return JsonResponse({'products': data})
+#     return JsonResponse({'products': data})
 
 
 def get_weighted_scores(request):
