@@ -217,6 +217,20 @@
 
         /* 상품 캐러셀 스타일 - product_styles.css로 이동됨 */
         /* 모달 애니메이션 스타일 - product_styles.css로 이동됨 */
+        /* 말풍선(chat bubble)이 chat-container를 넘지 않도록 강제 */
+        .bot-message,
+        .user-message {
+            max-width: 100%;
+            width: auto;
+            box-sizing: border-box;
+        }
+        /* 기존 max-w-xl은 필요시 삭제 또는 주석처리 */
+        /* 챗봇 말풍선이 상위 flex div(.flex.flex-col.items-start.space-y-4.mb-6)의 너비를 넘지 않도록 강제 */
+        .flex.flex-col.items-start.space-y-4.mb-6 {
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body class="bg-yellow-50">
@@ -266,10 +280,9 @@
                     <!-- Disclaimer -->
                     <div class="text-xs text-yellow-700/60 px-1 my-2 text-center">
                         영양이는 성분 기반 맞춤 영양제 추천 AI입니다. 의료적 자문은 약사와, 진단은 의사에게 문의해주세요.
+                    </div>
+                </div>
             </div>
-        </div>
-
-        </div>
         </main>
     </div>
 
@@ -800,7 +813,7 @@
                 messageDiv.className = 'flex flex-col items-start space-y-4 mb-6';
                 
                 const innerDiv = document.createElement('div');
-                innerDiv.className = 'bg-white text-gray-700 p-4 rounded-lg shadow max-w-xl message-animation bot-message';
+                innerDiv.className = 'relative bg-white text-gray-700 p-4 rounded-lg shadow w-full md:w-4/5 message-animation bot-message';
                 
                 // 챗봇 메시지 파싱
                 const markdownContent = marked.parse(message);

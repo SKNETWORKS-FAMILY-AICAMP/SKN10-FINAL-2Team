@@ -10,6 +10,7 @@
 }
 
 .carousel-inner {
+    width: 100%;
     display: flex;
     transition: transform 0.3s ease;
     gap: 1rem;
@@ -20,6 +21,7 @@
 .product-card {
     flex: 0 0 calc(33.333% - 1rem);
     min-width: 220px;
+    max-width: 220px;
     background-color: white;
     border-radius: 0.5rem;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -197,7 +199,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background-color: #f9f9f9;
+    background-color: #FFFFFF;
     border-radius: 0.5rem;
 }
 
@@ -251,7 +253,7 @@
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
     .product-card {
         flex: 0 0 100%;
     }
