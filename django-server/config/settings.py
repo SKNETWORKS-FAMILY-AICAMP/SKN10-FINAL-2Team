@@ -163,8 +163,9 @@ PASSWORD_RESET_TIMEOUT = 3600
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication', # Add JWT authentication
-        'rest_framework.authentication.SessionAuthentication', # Keep if you use Django's sessions too
+         # Keep if you use Django's sessions too
         'rest_framework.authentication.BasicAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
