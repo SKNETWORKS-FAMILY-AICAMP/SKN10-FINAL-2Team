@@ -1370,33 +1370,17 @@ def get_product_nutrients(request, product_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def product_click(request):
-    """Produkt kliknięcie - logowanie aktywności użytkownika"""
-    if request.method == 'POST':
-        try:
-            
-            product_id = request.data.get('product_id')
-            
-            # Log aktywności użytkownika
-            UserLog.objects.create(
-                user=request.user,
-                action='product_click',
-                details=f'Product ID: {product_id}'
-            )
-
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Aktywność została zarejestrowana'
-            })
-        except Exception as e:
-            return JsonResponse({
-                'status': 'error',
-                'message': str(e)
-            }, status=500)
-    
-    return JsonResponse({
-        'status': 'error',
-        'message': 'Nieprawidłowe żądanie'
-    }, status=400)
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        # UserLog 저장 (click)
+        UserLog.objects.create(user=user, product=product, action='click')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @login_required
 def chatbot_view(request):
@@ -1679,33 +1663,17 @@ def like_api(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def product_purchase(request):
-    """Zakup produktu - logowanie aktywności"""
-    if request.method == 'POST':
-        try:
-            
-            product_id = request.data.get('product_id')
-            
-            # Log zakupu
-            UserLog.objects.create(
-                user=request.user,
-                action='product_purchase',
-                details=f'Product ID: {product_id}'
-            )
-            
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Zakup został zarejestrowany'
-            })
-        except Exception as e:
-            return JsonResponse({
-                'status': 'error',
-                'message': str(e)
-            }, status=500)
-    
-    return JsonResponse({
-        'status': 'error',
-        'message': 'Nieprawidłowe żądanie'
-    }, status=400)
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        # UserLog 저장 (click)
+        UserLog.objects.create(user=user, product=product, action='purchase')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @login_required
 @require_POST
