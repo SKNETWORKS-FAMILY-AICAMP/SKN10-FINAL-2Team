@@ -16,6 +16,7 @@ from langchain_core.messages import HumanMessage
 
 
 class ChatWithNutiAPIView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
         # GET 요청 시 HTML 템플릿 렌더링
         return render(request, 'Chatbot/ChatNuti.html')

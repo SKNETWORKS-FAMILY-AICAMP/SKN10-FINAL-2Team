@@ -301,7 +301,20 @@
       chatbotLink.addEventListener('click', async function (event) {
         event.preventDefault();
         const userIsAuthenticated = await checkUserAuthentication();
-        window.location.href = userIsAuthenticated ? '/Chatbot/ChatWithNuti/' : '/login/';
+        const accessToken = localStorage.getItem('accessToken');
+        if (!accessToken) {
+        console.error("Access Token이 없어 챗봇 페이지 로드 불가. 로그인 페이지로 리다이렉트합니다.");
+        redirectToLogin(); // 로그인 페이지로 리다이렉트
+        return;
+        }
+        const response = await fetch('/Chatbot/ChatWithNuti/', {
+            method: 'GET', // HTML 콘텐츠를 가져오므로 GET
+            headers: {
+                'Authorization': `Bearer ${accessToken}`, // Access Token 포함
+                'X-Requested-With': 'XMLHttpRequest', // AJAX 요청임을 서버에 알림 (선택 사항이지만 유용)
+                'X-CSRFToken': getCookie('csrftoken') // Django의 CSRF 보호를 위해 필요할 수 있음
+            }
+        });
       });
     }
 

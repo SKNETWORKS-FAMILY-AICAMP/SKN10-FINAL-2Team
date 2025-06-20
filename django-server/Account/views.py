@@ -86,7 +86,7 @@ class LoginAPIView(generics.GenericAPIView):
                 {"detail": "이메일 인증이 필요합니다. 이메일을 확인해주세요."},
                 status=status.HTTP_403_FORBIDDEN # Forbidden status
             )
-        login(request, user)
+        
         # If authentication successful and user is verified, generate JWT tokens
         refresh = RefreshToken.for_user(user)
 
