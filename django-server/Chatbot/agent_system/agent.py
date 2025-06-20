@@ -252,6 +252,9 @@ class SupplementRecommendationAgent:
 
         # 이전대화에서 사용된 state 초기화
         workflow.update_state(config, {"personalized_info": {}})
+
+        if user_health_info:
+            workflow.update_state(config, {"user_health_info": user_health_info})
         
         if existing_state.next and len(existing_state.next) > 0:
             print("체크포인트에서 재시작 중...")
@@ -269,9 +272,6 @@ class SupplementRecommendationAgent:
             print("새로운 대화 시작")
             # 새로운 대화 시작
             initial_state = {"messages": [HumanMessage(content=message)]}
-            
-            if user_health_info:
-                initial_state["user_health_info"] = user_health_info
             
             try:
                 for event in workflow.stream(initial_state, config=config, stream_mode="values"):
