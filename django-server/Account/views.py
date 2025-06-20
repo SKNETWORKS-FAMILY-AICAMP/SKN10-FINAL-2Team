@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import SignupSerializer, FindEmailSerializer, SetNewPasswordWithTokenSerializer, PasswordResetRequestSerializer
+from .serializers import SignupSerializer, FindEmailSerializer, SetNewPasswordWithTokenSerializer, PasswordResetRequestSerializer,LoginSerializer
 from django.contrib.auth import get_user_model, authenticate, login
 from allauth.account.utils import send_email_confirmation
 from rest_framework.permissions import AllowAny
@@ -59,7 +59,7 @@ class LoginAPIView(generics.GenericAPIView):
     
     # You might want a separate serializer for login (e.g., just email and password)
     # For simplicity, we can use a basic serializer or manually validate
-    serializer_class = SignupSerializer # Or create a dedicated LoginSerializer if needed
+    serializer_class = LoginSerializer # Or create a dedicated LoginSerializer if needed
 
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
@@ -86,7 +86,7 @@ class LoginAPIView(generics.GenericAPIView):
                 {"detail": "이메일 인증이 필요합니다. 이메일을 확인해주세요."},
                 status=status.HTTP_403_FORBIDDEN # Forbidden status
             )
-        
+        login(request, user)
         # If authentication successful and user is verified, generate JWT tokens
         refresh = RefreshToken.for_user(user)
 
