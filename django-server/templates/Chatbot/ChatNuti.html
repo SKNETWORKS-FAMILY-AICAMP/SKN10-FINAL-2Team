@@ -248,7 +248,7 @@
                     <div class="flex flex-col items-start space-y-4 mb-6">
                         <div class="bg-white p-4 rounded-lg shadow max-w-xl message-animation bot-message">
                             <div class="markdown-content">
-                                <p class="text-gray-700">안녕하세요! 저는 Nuti 영양제 추천 챗봇입니다. 건강 상태나 원하는 영양제에 대해 물어보세요.</p>
+                                <p class="text-gray-700">안녕하세요! 저는 영양제 추천 챗봇 '영양이'입니다. 건강 상태나 원하는 영양제에 대해 물어보세요.</p>
                             </div>
                         </div>
                     </div>
@@ -525,7 +525,7 @@
                     <div class="flex flex-col items-start space-y-4 mb-6">
                         <div class="bg-white p-4 rounded-lg shadow max-w-xl message-animation bot-message">
                             <div class="markdown-content">
-                                <p class="text-gray-700">안녕하세요! 저는 Nuti 영양제 추천 챗봇입니다. 건강 상태나 원하는 영양제에 대해 물어보세요.</p>
+                                <p class="text-gray-700">안녕하세요! 저는 영양제 추천 챗봇 '영양이'입니다. 건강 상태나 원하는 영양제에 대해 물어보세요.</p>
                             </div>
                         </div>
                     </div>
@@ -551,6 +551,7 @@
                                 const res = await fetch(`/Product/details/?ids=${message.product_ids.join(',')}`);
                                 if (!res.ok) throw new Error('상품 정보를 가져오는데 실패했습니다.');
                                 const productData = await res.json();
+                                console.log("상품 정보를 가져왔어요!", productData)
                                 return { ...message, products: productData.products || [] };
                             } catch (e) {
                                 return { ...message, products: [] };
