@@ -52,7 +52,7 @@ def generate_nutrient_response(state: AgentState) -> Dict[str, Any]:
 6. 응답은 친절하고 전문적인 톤으로 작성하세요.
 
 응답 순서(마크다운으로 출력하세요):
-영양이가 [영양소 이름]에 대해 알려드릴게요!
+[영양소 이름]에 대해 자세히 알려드릴게요!
 
 [영양소에 대한 개요]
 

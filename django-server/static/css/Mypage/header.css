@@ -24,7 +24,7 @@ nav {
 
 /* Logo styles */
 .Logo {
-    margin-left: 230px;
+    left: 20%;
     display: flex;
     align-items: center;
     height: 80px; /* nav 높이와 맞춤 */
@@ -51,9 +51,11 @@ nav {
     display: flex;
     align-items: center;
     top: 20px;
+    cursor: pointer;
 }
 .nav-label.chatbot {
-    left: 940px;
+    left: 40%;
+    transform: translateX(-50%);
     font-weight: 700;
     color: #DDC66F;
     cursor: pointer;
@@ -64,16 +66,17 @@ nav {
 }
 
 .nav-label.mypage {
-    left: 1055px;
+    left: 60%;
+    transform: translateX(-50%);
     font-weight: 700;
     color: #DDC66F;
 }
 
 /* Login/Logout section */
 .login-item {
-    position: absolute;
-    right: 450px;
+    right: 10%;
     top: 22px;
+    cursor: pointer;
 }
 
 .login-item a {
