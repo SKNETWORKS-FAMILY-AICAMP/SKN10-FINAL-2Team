@@ -217,11 +217,40 @@
 
         /* 상품 캐러셀 스타일 - product_styles.css로 이동됨 */
         /* 모달 애니메이션 스타일 - product_styles.css로 이동됨 */
+        /* 말풍선(chat bubble)이 chat-container를 넘지 않도록 강제 */
+        .bot-message,
+        .user-message {
+            max-width: 100%;
+            width: auto;
+            box-sizing: border-box;
+        }
+        /* 기존 max-w-xl은 필요시 삭제 또는 주석처리 */
+        /* 챗봇 말풍선이 상위 flex div(.flex.flex-col.items-start.space-y-4.mb-6)의 너비를 넘지 않도록 강제 */
+        .flex.flex-col.items-start.space-y-4.mb-6 {
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* 마이페이지 프로필 버튼 hover 시 SVG 색상 변경 */
+        .group:hover svg {
+            fill: #C4A94C !important;
+        }
     </style>
 </head>
 <body class="bg-yellow-50">
     <div class="relative h-screen overflow-hidden">
         <aside class="sidebar fixed h-full w-72 min-w-[18rem] bg-yellow-100 p-6 z-40">
+            <div class="flex items-center justify-between mb-8">
+                <a href="/" class="block">
+                    <img src="{% static 'image/Logo.png' %}" alt="로고" class="h-10 w-auto hover:opacity-120 transition" />
+                </a>
+                <a href="/mypage/" class="ml-4 flex items-center justify-center w-10 h-10 rounded-full bg-yellow-200 text-yellow-900 shadow hover:bg-yellow-300 transition group" title="마이페이지">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" class="w-9 h-9 transition-colors duration-200" fill="#DDC66F">
+                        <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm246-164q-59 0-99.5-40.5T340-580q0-59 40.5-99.5T480-720q59 0 99.5 40.5T620-580q0 59-40.5 99.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q53 0 100-15.5t86-44.5q-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160Zm0-360q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm0-60Zm0 360Z"/>
+                    </svg>
+                </a>
+            </div>
             <button class="sidebar-toggle absolute top-4 -right-12 w-9 h-9 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-yellow-100 transition-colors">
                 <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <mask id="mask0_84_423" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
@@ -266,10 +295,9 @@
                     <!-- Disclaimer -->
                     <div class="text-xs text-yellow-700/60 px-1 my-2 text-center">
                         영양이는 성분 기반 맞춤 영양제 추천 AI입니다. 의료적 자문은 약사와, 진단은 의사에게 문의해주세요.
+                    </div>
+                </div>
             </div>
-        </div>
-
-        </div>
         </main>
     </div>
 
@@ -800,7 +828,7 @@
                 messageDiv.className = 'flex flex-col items-start space-y-4 mb-6';
                 
                 const innerDiv = document.createElement('div');
-                innerDiv.className = 'bg-white text-gray-700 p-4 rounded-lg shadow max-w-xl message-animation bot-message';
+                innerDiv.className = 'relative bg-white text-gray-700 p-4 rounded-lg shadow w-full md:w-4/5 message-animation bot-message';
                 
                 // 챗봇 메시지 파싱
                 const markdownContent = marked.parse(message);

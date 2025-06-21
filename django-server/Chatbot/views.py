@@ -26,7 +26,6 @@ class ChatWithNutiAPIView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             # 채팅방 관리
-            #user_id = request.data.get('user_id', 1)  # 임시로 user_id 1 사용
             chat_room_id = request.data.get('chat_room_id')
             user_query = request.data.get('user_query')
 
@@ -53,7 +52,9 @@ class ChatWithNutiAPIView(APIView):
                 message=user_query
             )
             
-            user_health_info = SurveyResponse.objects.get(user_id=user.id).responses
+            # 가장 최신 SurveyResponse를 가져오도록 변경
+            latest_survey = SurveyResponse.objects.filter(user_id=user.id).order_by('-created_at').first()
+            user_health_info = latest_survey.responses if latest_survey else {}
             user_health_info["user_name"] = user.name
             user_health_info["user_age"] = None
             if user.birth_date:

@@ -14,37 +14,39 @@
 </head>
 <body>
   <header>
-    <nav class="w-full h-20 shadow-md bg-white text-xl px-4 md:px-20 flex items-center relative z-20">
+    <nav class="w-full h-20 shadow-md bg-white text-xl flex items-center relative z-20">
       {% load static %}
-      <!-- 왼쪽: 로고 -->
-      <div class="flex-1 flex items-center">
-        <a class="flex items-center" href="/">
-          <img src="{% static 'image/Logo.png' %}" alt="Logo" class="h-12" />
-        </a>
-      </div>
-      <!-- 가운데: 챗봇/마이페이지 -->
-      <div class="flex-1 flex items-center justify-center">
-        <ul class="flex items-center space-x-8 font-bold text-yellow-600">
-          <li>
-            <a id="chatbot-link" class="cursor-pointer hover:text-yellow-400 transition-colors duration-150">챗봇</a>
-          </li>
-          <li class="relative">
-            <button type="button" class="flex items-center gap-1 cursor-pointer hover:text-yellow-400 transition-colors duration-150" onclick="toggleDropdown()">
-              마이페이지
-              <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-            <div id="mypageDropdown" class="dropdown-menu absolute left-0 top-full w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-2 mt-2 hidden z-30">
-              <a href="{% url 'mypage:mypage' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">내 정보</a>
-              <a href="{% url 'mypage:survey' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">설문 조사</a>
-              <a href="{% url 'mypage:like_list' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">좋아요</a>
-              <a href="{% url 'mypage:analysis' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">영양 분석</a>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <!-- 오른쪽: 로그인/로그아웃 버튼 -->
-      <div class="flex-1 flex items-center justify-end">
-        <a id="auth-button" class="text-yellow-600 font-semibold text-lg cursor-pointer hover:text-yellow-400 transition-colors duration-150"></a>
+      <div class="nav-inner mx-auto w-full max-w-[1420px] flex items-center justify-between px-4">
+        <!-- 왼쪽: 로고 -->
+        <div class="nav-logo flex items-center min-w-[120px] justify-start">
+          <a class="flex items-center" href="/">
+            <img src="{% static 'image/Logo.png' %}" alt="Logo" class="h-12" />
+          </a>
+        </div>
+        <!-- 가운데: 챗봇/마이페이지 -->
+        <div class="nav-center flex-1 flex items-center justify-center min-w-0">
+          <ul class="flex items-center space-x-8 font-bold text-yellow-600 nav-menu">
+            <li>
+              <a id="chatbot-link" class="cursor-pointer hover:text-yellow-400 transition-colors duration-150">챗봇</a>
+            </li>
+            <li class="relative">
+              <button type="button" class="flex items-center gap-1 cursor-pointer hover:text-yellow-400 transition-colors duration-150" onclick="toggleDropdown()">
+                마이페이지
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+              <div id="mypageDropdown" class="dropdown-menu absolute left-0 top-full w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-2 mt-2 hidden z-30">
+                <a href="{% url 'mypage:mypage' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">내 정보</a>
+                <a href="{% url 'mypage:survey' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">설문 조사</a>
+                <a href="{% url 'mypage:like_list' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">좋아요</a>
+                <a href="{% url 'mypage:analysis' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">영양 분석</a>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <!-- 오른쪽: 로그인/로그아웃 버튼 -->
+        <div class="nav-auth flex items-center justify-end min-w-[120px]">
+          <a id="auth-button" class="text-yellow-600 font-semibold text-lg cursor-pointer hover:text-yellow-400 transition-colors duration-150"></a>
+        </div>
       </div>
     </nav>
   </header>
@@ -95,13 +97,13 @@
     </div>
 
     <!-- 이전 상품 리스트 (숨김 처리) -->
-    <div class="prolist hidden" id="prolist">
+    <!-- <div class="prolist hidden" id="prolist">
       {% for product in products|slice:":5" %}
       <a href="{{ product.url }}" target="_blank">
       <img src="{{ product.image_link|default:'https://via.placeholder.com/150' }}" alt="{{ product.title }}" >
       </a>
       {% endfor %}
-    </div>
+    </div> -->
   </div>
 
   <!-- 상품 상세 모달 포함 -->
@@ -204,7 +206,7 @@
         // 검색 결과를 3x3 그리드로 표시
         searchResultsContainer.innerHTML = `
           <h2 class="text-2xl font-bold mb-6">검색 결과: "${searchQuery}"</h2>
-          <div class="grid grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             ${data.products.slice(0, 9).map(product => `
               <div class="product-card" data-product-id="${product.id}">
                 <div class="product-image">

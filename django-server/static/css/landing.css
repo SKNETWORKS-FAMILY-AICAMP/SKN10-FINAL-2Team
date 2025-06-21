@@ -136,7 +136,8 @@ header nav ul li  {
 }
 
 .bottom {
-    width: 1420px;
+    width: 100%;
+    max-width: 1420px;
     height: 600px;
     border-radius: 24px;
     box-sizing: border-box;
@@ -358,6 +359,18 @@ footer .copy {
     .recoti ul {
         margin-top: 10px;
     }
+    
+    .bottom {
+        max-width: 100vw;
+        height: 45vw;
+        min-height: 220px;
+        border-radius: 16px;
+        margin-left: 0;
+        margin-right: 0;
+    }
+    .swiper {
+        border-radius: 16px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -373,6 +386,16 @@ footer .copy {
         padding-left: 15px;
         padding-right: 15px;
         font-size: 18px;
+    }
+    
+    .bottom {
+        height: 38vw;
+        min-height: 120px;
+        border-radius: 10px;
+        margin-top: 24px;
+    }
+    .swiper {
+        border-radius: 10px;
     }
 }
 
@@ -415,4 +438,256 @@ footer .copy {
     font-weight: 700;
     color: #DDC66F;
     cursor: pointer;
+}
+
+/* === NAVIGATION LAYOUT === */
+.nav-inner {
+  width: 100%;
+  max-width: 1420px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 80px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.nav-logo {
+  flex: 0 0 auto;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.nav-center {
+  flex: 1 1 0%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 8rem;
+  font-size: 1.25rem;
+}
+
+.nav-auth {
+  flex: 0 0 auto;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+@media (min-width: 1920px) {
+  .nav-inner {
+    max-width: 1420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .nav-menu {
+    gap: 8rem;
+  }
+}
+
+@media (max-width: 1420px) {
+  .nav-inner {
+    max-width: 100vw;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .nav-logo {
+    justify-content: flex-start;
+  }
+  .nav-center {
+    justify-content: center;
+  }
+  .nav-auth {
+    justify-content: flex-end;
+  }
+  .nav-menu {
+    gap: 6rem;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .nav-inner {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .nav-menu {
+    gap: 4rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-inner {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .nav-menu {
+    gap: 4rem;
+    font-size: 0.95rem;
+  }
+  .nav-logo img {
+    height: 2.2rem;
+  }
+  .nav-auth a {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .nav-menu a,
+  .nav-menu button {
+    min-width: 64px;
+    max-width: 120px;
+    white-space: nowrap;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .nav-menu button {
+    min-width: 90px;
+  }
+}
+
+/* Remove old nav spacing rules that conflict */
+header nav .Logo,
+header nav ul li,
+header nav ul {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Center the mypageDropdown below the 마이페이지 button */
+.nav-menu .dropdown-menu {
+  left: 50% !important;
+  transform: translateX(-50%);
+  min-width: 10rem;
+  width: max-content;
+}
+
+/* Responsive styles for .top (검색 안내 + 검색폼) */
+.top {
+  margin-top: 96px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.mt {
+  font-size: 48px;
+}
+.content .top form {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: bottom;
+  position: relative;
+}
+.content .top form input {
+  width: 820px;
+  height: 80px;
+  border: 3px solid #000;
+  border-radius: 70px;
+  box-sizing: border-box;
+  padding-left: 100px;
+  padding-right: 20px;
+  font-size: 24px;
+}
+
+@media (max-width: 1024px) {
+  .top {
+    flex-direction: column;
+    align-items: center;
+    margin-top: 48px;
+  }
+  .mt {
+    font-size: 32px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .content .top form input {
+    width: 90vw;
+    min-width: 220px;
+    max-width: 500px;
+    height: 56px;
+    font-size: 18px;
+    padding-left: 48px;
+    padding-right: 12px;
+  }
+  .content .top form span img {
+    width: 24px;
+    height: 24px;
+  }
+}
+@media (max-width: 767px) {
+  .top {
+    margin-top: 24px;
+    gap: 8px;
+  }
+  .mt {
+    font-size: 20px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .content .top form input {
+    width: 90vw;
+    min-width: 120px;
+    max-width: 320px;
+    height: 38px;
+    font-size: 14px;
+    padding-left: 36px;
+    padding-right: 8px;
+  }
+  .content .top form span img {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 1460px) and (min-width: 1024px) {
+  .top {
+    flex-direction: column;
+    align-items: center;
+  }
+  .mt {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .content .top form {
+    align-items: center;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .recoti #tab-menu li {
+    font-size: 16px;
+  }
+  footer {
+    flex-direction: column;
+    height: auto;
+    padding: 16px 0;
+    font-size: 14px;
+    text-align: center;
+  }
+  footer .mail, footer .copy {
+    margin: 0;
+    display: block;
+    width: 100%;
+    padding: 2px 0;
+  }
+  footer .copy {
+    margin-left: 0;
+    margin-top: 4px;
+  }
 }
