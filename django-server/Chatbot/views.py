@@ -25,7 +25,6 @@ class ChatWithNutiAPIView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             # 채팅방 관리
-            #user_id = request.data.get('user_id', 1)  # 임시로 user_id 1 사용
             chat_room_id = request.data.get('chat_room_id')
             user_query = request.data.get('user_query')
 
