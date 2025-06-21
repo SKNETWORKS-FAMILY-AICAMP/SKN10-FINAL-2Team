@@ -673,4 +673,21 @@ header nav ul {
   .recoti #tab-menu li {
     font-size: 16px;
   }
+  footer {
+    flex-direction: column;
+    height: auto;
+    padding: 16px 0;
+    font-size: 14px;
+    text-align: center;
+  }
+  footer .mail, footer .copy {
+    margin: 0;
+    display: block;
+    width: 100%;
+    padding: 2px 0;
+  }
+  footer .copy {
+    margin-left: 0;
+    margin-top: 4px;
+  }
 }
