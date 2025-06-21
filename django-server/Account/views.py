@@ -140,9 +140,9 @@ class PasswordResetRequestAPIView(generics.GenericAPIView):
         
         # 현재 사이트 도메인 가져오기
         current_site = get_current_site(request)
-        domain = "127.0.0.1:8000"
+        domain = "trendofpill.com"
         reset_url = "/login/"
-        protocol = 'http'
+        protocol = 'https'
 
         context = {
             'email': user.email,
