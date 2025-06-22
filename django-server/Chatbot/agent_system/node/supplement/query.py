@@ -122,10 +122,23 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
             # 사용자 나이 계산
             today = date.today()
             if user.birth_date is not None:
-                today = date.today()
                 age = today.year - user.birth_date.year - ((today.month, today.day) < (user.birth_date.month, user.birth_date.day))
             else:
-                age = 20
+                # user_health_info["age"]가 있다면 적절히 변환, 없으면 기본값
+                if user_health_info and user_health_info.get("age"):
+                    age_str = user_health_info["age"]
+                    if age_str == "19-29세":
+                        age = 20
+                    elif age_str == "30-49세":
+                        age = 40
+                    elif age_str == "50-64세":
+                        age = 50
+                    elif age_str == "65세 이상":
+                        age = 70
+                    else:
+                        age = 25  # 기본값
+                else:
+                    age = 25  # 기본값
             print(f"사용자 나이: {age}")
             
             # 나이대 계산 (예: 6~8, 9~11 등)
