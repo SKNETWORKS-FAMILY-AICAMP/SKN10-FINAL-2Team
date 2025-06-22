@@ -190,8 +190,6 @@ footer {
     color: #666;
     font-size: 0.9rem;
     border-top: 1px solid #E6E6E6;
-    position: relative;
-    z-index: 1;
 }
 
 /* Responsive design */
