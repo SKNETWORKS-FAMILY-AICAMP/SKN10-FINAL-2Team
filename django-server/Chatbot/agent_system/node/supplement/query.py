@@ -211,7 +211,6 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                             })
                             query = f"""
                             MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{nutrient}'}})
-                            WHERE c.amount <= {deficiency} * 1.1
                             RETURN s.id
                             ORDER BY c.amount ASC
                             LIMIT 20
@@ -281,7 +280,6 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                         
                         query = f"""
                         MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{nutrient}'}})
-                        WHERE c.amount <= {deficiency} * 1.1
                         RETURN s.id
                         ORDER BY c.amount ASC
                         LIMIT 20
@@ -373,7 +371,6 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                                 
                                 query = f"""
                                 MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{related_nutrient}'}})
-                                WHERE c.amount <= {deficiency} * 1.1
                                 RETURN s.id
                                 ORDER BY c.amount ASC
                                 LIMIT 20
@@ -438,7 +435,6 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                         
                         query = f"""
                         MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{nutrient}'}})
-                        WHERE c.amount <= {deficiency} * 1.1
                         RETURN s.id
                         ORDER BY c.amount ASC
                         LIMIT 20
@@ -530,7 +526,6 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                                 
                                 query = f"""
                                 MATCH (s:Supplement)-[c:CONTAINS]->(n:Nutrient {{name: '{related_nutrient}'}})
-                                WHERE c.amount <= {deficiency} * 1.1
                                 RETURN s.id
                                 ORDER BY c.amount ASC
                                 LIMIT 20
