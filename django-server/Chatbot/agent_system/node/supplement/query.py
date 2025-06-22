@@ -30,6 +30,7 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
     is_personalized = state.get("is_personalized", False)
     personalized_info = state.get("personalized_info", {})
     user_id = state.get("user_id")
+    user_health_info = state.get("user_health_info")
     all_results = []
 
     if not is_personalized:
@@ -138,7 +139,17 @@ def execute_kag_query(state: AgentState) -> Dict[str, Any]:
                         break
             
             if not age_range:
-                age_range = "19~29"
+                if user_health_info["age"]:
+                    if user_health_info["age"] == "19-29세":
+                        age_range = "19~29"
+                    elif user_health_info["age"] == "30-49세":
+                        age_range = "30~49"
+                    elif user_health_info["age"] == "50-64세":
+                        age_range = "50~64"
+                    elif user_health_info["age"] == "65세 이상":
+                        age_range = "65~74"
+                else:
+                    age_range = "19~29"
             
             print(f"사용자 나이대: {age_range}")
             
