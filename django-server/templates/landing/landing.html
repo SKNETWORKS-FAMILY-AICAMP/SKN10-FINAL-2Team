@@ -35,10 +35,10 @@
                 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
               </button>
               <div id="mypageDropdown" class="dropdown-menu absolute left-0 top-full w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-2 mt-2 hidden z-30">
-                <a href="{% url 'mypage:mypage' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">내 정보</a>
-                <a href="{% url 'mypage:survey' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">설문 조사</a>
-                <a href="{% url 'mypage:like_list' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">좋아요</a>
-                <a href="{% url 'mypage:analysis' %}" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">영양 분석</a>
+                <a id="mypage-link" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">내 정보</a>
+                <a id="survey-link" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">설문 조사</a>
+                <a id="like-link" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">좋아요</a>
+                <a id="analysis-link" class="block px-4 py-2 text-gray-700 hover:bg-yellow-100 transition">영양 분석</a>
               </div>
             </li>
           </ul>
@@ -339,6 +339,37 @@
         window.location.href = userIsAuthenticated ? '/mypage/' : '/login/';
       });
     }
+    async function setupSurveyLink() {
+      const suveyLink = document.getElementById('survey-link');
+      if (!suveyLink) return;
+
+      suveyLink.addEventListener('click', async function (event) {
+        event.preventDefault();
+        const userIsAuthenticated = await checkUserAuthentication();
+        window.location.href = userIsAuthenticated ? '/mypage/survey/' : '/login/';
+      });
+    }
+
+    async function setupLikeLink() {
+      const likeLink = document.getElementById('like-link');
+      if (!likeLink) return;
+
+      likeLink.addEventListener('click', async function (event) {
+        event.preventDefault();
+        const userIsAuthenticated = await checkUserAuthentication();
+        window.location.href = userIsAuthenticated ? '/mypage/like/' : '/login/';
+      });
+    }
+    async function setupAnalysisLink() {
+      const analysisLink = document.getElementById('analysis-link');
+      if (!analysisLink) return;
+
+      analysisLink.addEventListener('click', async function (event) {
+        event.preventDefault();
+        const userIsAuthenticated = await checkUserAuthentication();
+        window.location.href = userIsAuthenticated ? '/mypage/analysis/' : '/login/';
+      });
+    }
 
     // ✅ 챗봇 링크 처리
     async function setupChatbotLink() {
@@ -367,6 +398,9 @@
       await updateAuthButton();
       await setupChatbotLink();
       await setupMypageLink();
+      await setupAnalysisLink();
+      await setupLikeLink();
+      await setupSurveyLink();
 
       // 초기 상품 정렬 (기본: 판매량순)
       loadSortedProducts('sales');
