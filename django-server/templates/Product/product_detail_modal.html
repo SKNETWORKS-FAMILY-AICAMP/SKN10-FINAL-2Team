@@ -97,11 +97,16 @@ Usage:
             
             <!-- 2행: 상품 상세 정보 (전체 너비) -->
             <div class="border-t border-yellow-200 pt-4">
-                <div class="mb-6">
-                    <h3 class="font-bold mb-3 text-yellow-800 flex items-center">
-                        <span class="material-icons mr-1 text-sm">science</span>
-                        성분
-                    </h3>
+                <div class="mb-6 ">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold mb-3 text-yellow-800 flex items-center">
+                            <span class="material-icons mr-1 text-sm">science</span>
+                            성분
+                        </h3>
+                        <h3 class="text-sm font-regular text-gray-400 mb-3">
+                            성분기준 일일권장량 대비
+                        </h3>
+                    </div>
                     <div id="detail-ingredients-wrapper">
                         <div id="detail-ingredients" class="bg-yellow-50 p-3 rounded-md border border-yellow-200"></div>
                         <div class="ingredients-fade pointer-events-none absolute left-0 right-0 bottom-0 h-8" style="display:none;"></div>
