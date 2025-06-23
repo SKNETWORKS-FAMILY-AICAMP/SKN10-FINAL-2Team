@@ -1313,7 +1313,6 @@ def like_add(request):
         product_id = request.POST.get('product_id')
         product = Products.objects.get(pk=product_id)
         Like.objects.get_or_create(user=request.user, product_id=product_id)
-        UserLog.objects.create(user=request.user, product=product, action='like')
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
@@ -1326,7 +1325,6 @@ def like_delete(request):
         product = Products.objects.get(pk=product_id)
         like = Like.objects.get(user=request.user, product_id=product_id)
         like.delete()
-        UserLog.objects.create(user=request.user, product=product, action='unlike')
         return JsonResponse({'success': True})
     except Like.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
