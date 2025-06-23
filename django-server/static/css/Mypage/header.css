@@ -1,97 +1,89 @@
 /* Header styles */
 header {
+    position: fixed;
     width: 100%;
-    margin: 0 auto;
-    padding: 0;
-    box-sizing: border-box;
+    height: 80px;
+    background: #FFFFFF;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+    top: 0;
+    left: 0;
 }
 
-header nav {
-    width : 100%;
+nav {
+    max-width: none; 
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 80px;
-    box-shadow: 0 0px 8px rgba(0, 0, 0, 0.12);
-    box-sizing: border-box;
-    font-size: 24px;
-    background-color: #fff;
+    position: relative;
+    z-index: 1001;
 }
-
 
 /* Logo styles */
 .Logo {
-    margin-left: 250px;
+    left: 20%;
+    display: flex;
+    align-items: center;
+    height: 80px; /* nav 높이와 맞춤 */
 }
 
 .Logo img {
     height: 50px;
+    display: block;
 }
 
-header nav .topm {
-    display: flex;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
 /* Navigation menu */
-
-header nav ul li {
-    margin: 0;
-    padding: 0 36px; 
+.nav-menu {
     display: flex;
+    gap: 60px;
     align-items: center;
-  }
-  
-  header nav ul li {
-    padding: 0 72px;
-    margin: 0;
-    display: flex;
-    text-align: center;
-    color: #DDC66F;
-    font-weight: 700;
-    justify-content: center;
-    height: 80px;
-    font-size: 20px;
-  }
+    position: relative;
+    z-index: 1002;
+}
 
-/*header nav .topm .nav-label {
-    font-size: 20px;
+.nav-label {
+    position: absolute;
+    font-family: 'Pretendard';
+    font-size: 24px;
     display: flex;
     align-items: center;
     top: 20px;
     cursor: pointer;
-    padding: 0 72px; 
 }
-header nav .topm .nav-label.chatbot {
+.nav-label.chatbot {
+    left: 40%;
+    transform: translateX(-50%);
     font-weight: 700;
     color: #DDC66F;
     cursor: pointer;
-    padding: 0 36px; 
 }
-header nav .topm .nav-label:hover {
+.nav-label:hover {
     color: #EADCA6;
     background-color: rgba(234, 220, 166, 0.1);
 }
 
-header nav .topm .nav-label.mypage {
-    font-size: 20px;
+.nav-label.mypage {
+    left: 60%;
+    transform: translateX(-50%);
     font-weight: 700;
     color: #DDC66F;
 }
 
 /* Login/Logout section */
 .login-item {
+    right: 10%;
+    top: 22px;
     cursor: pointer;
 }
 
 .login-item a {
+    font-family: 'Pretendard';
     font-size: 20px;
     color: #DDC66F;
     text-decoration: none;
-    margin-right: 250px;
-    font-weight: 700;
 }
 
 
@@ -192,19 +184,12 @@ main {
 
 /* Footer */
 footer {
-    width: 100%;
-    height: 54px;
-    display: flex;
     background-color: #FFFFFF;
+    padding: 1rem;
+    text-align: center;
     color: #666;
-    font-size: 18px;
+    font-size: 0.9rem;
     border-top: 1px solid #E6E6E6;
-    align-items: center;
-    justify-content: center;
-}
-
-footer .copy{
-    padding-left: 200px;
 }
 
 /* Responsive design */

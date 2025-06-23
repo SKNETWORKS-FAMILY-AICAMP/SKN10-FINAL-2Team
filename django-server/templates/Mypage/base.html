@@ -15,17 +15,18 @@
             <a class="Logo" href="/">
             <img src="{% static 'image/Logo.png' %}" alt="Logo">
             </a>
-            <ul class="topm">
-                <li class="nav-label chatbot" id="chatbot">챗봇</div>
-                <li class="nav-label mypage" onclick="toggleDropdown()">
-                    마이페이지
-                    <div class="dropdown-menu" id="mypageDropdown">
-                        <a href="{% url 'mypage:mypage' %}" class="dropdown-item">내 정보</a>
-                        <a href="{% url 'mypage:survey' %}" class="dropdown-item">설문 조사</a>
-                        <a href="{% url 'mypage:like_list' %}" class="dropdown-item">좋아요</a>
-                        <a href="{% url 'mypage:analysis' %}" class="dropdown-item">영양 분석</a>
-                    </div>
-            </ul>
+            
+            <div class="nav-label chatbot" id="chatbot">챗봇</div>
+            <div class="nav-label mypage" onclick="toggleDropdown()">
+                마이페이지
+                <div class="dropdown-menu" id="mypageDropdown">
+                    <a href="{% url 'mypage:mypage' %}" class="dropdown-item">내 정보</a>
+                    <a href="{% url 'mypage:survey' %}" class="dropdown-item">설문 조사</a>
+                    <a href="{% url 'mypage:like_list' %}" class="dropdown-item">좋아요</a>
+                    <a href="{% url 'mypage:analysis' %}" class="dropdown-item">영양 분석</a>
+                </div>
+            </div>
+            
             <div class="login-item">
                      <a id="logout-btn">로그아웃</a>
             </div>
@@ -37,8 +38,7 @@
     </main>
 
     <footer>
-        <span>대표 메일 : sknfinalteam2@gmail.com</span>
-        <span class="copy">©Copyright. 2025 team lecun Co., Ltd.</span>
+        <p>&copy; 2024 영양제 추천 서비스. All rights reserved.</p>
     </footer>
     <script src="{% static 'js/auth.js' %}"></script>
     <script>
