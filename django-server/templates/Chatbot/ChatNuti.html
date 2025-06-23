@@ -269,6 +269,11 @@
         html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover, *::-webkit-scrollbar-thumb:hover {
             background: #DCA628;
         }
+
+        #send-button:disabled .material-icons {
+            color: #bdbdbd !important;
+            fill: #bdbdbd !important;
+        }
     </style>
 </head>
 <body class="bg-yellow-50">
@@ -636,8 +641,13 @@
 
             // Modified sendMessage function
             async function sendMessage() {
+                if (sendButton.disabled) return; // 중복 방지
                 const message = userInput.value.trim();
                 if (message === '') return;
+
+                // 보내기 버튼만 비활성화, 입력란은 활성화
+                sendButton.disabled = true;
+                userInput.disabled = false;
 
                 addMessage(message, true);
                 userInput.value = '';
@@ -652,7 +662,6 @@
                 };
                 const isAuthenticated = await checkUserAuthentication();
                 if (!isAuthenticated) {
-                    // 이미 checkUserAuthentication에서 로그아웃 처리되었을 것임
                     window.location.href = '/login/';
                     return; 
                 }
@@ -669,6 +678,10 @@
                 .then(response => response.json())
                 .then(data => {
                     hideLoading();
+                    // 보내기 버튼 활성화, 입력란은 항상 활성화
+                    sendButton.disabled = false;
+                    userInput.disabled = false;
+                    userInput.focus();
                     
                     if (data.final_recommendation) {
                         addMessage(data.final_recommendation, false, data.product_ids);
@@ -684,6 +697,9 @@
                 })
                 .catch(error => {
                     hideLoading();
+                    sendButton.disabled = false;
+                    userInput.disabled = false;
+                    userInput.focus();
                     console.error('Error:', error);
                     addMessage('**서버와 통신 중 오류가 발생했습니다.**', false);
                 });
@@ -706,6 +722,7 @@
 
             sendButton.addEventListener('click', sendMessage);
             userInput.addEventListener('keypress', function(e) {
+                if (sendButton.disabled) return;
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
