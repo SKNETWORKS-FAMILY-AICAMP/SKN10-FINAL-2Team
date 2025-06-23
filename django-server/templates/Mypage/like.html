@@ -30,7 +30,7 @@
     <div class="like-list-container">
         {% if like_list %}
             {% for like in like_list %}
-                {% include 'Product/product_card.html' with product=like.product is_liked = True %}
+                {% include 'Product/product_card.html' with product=like.product is_liked=True %}
         {% endfor %}
         {% else %}
             <div class="h3" style="margin:10px; padding:10px; margin-top: 200px;">좋아요 누른 영양제가 없어요.</div>
