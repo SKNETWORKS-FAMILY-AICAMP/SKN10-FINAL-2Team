@@ -54,13 +54,14 @@ class ChatWithNutiAPIView(APIView):
             # 가장 최신 SurveyResponse를 가져오도록 변경
             latest_survey = SurveyResponse.objects.filter(user_id=user.id).order_by('-created_at').first()
             user_health_info = latest_survey.responses if latest_survey else {}
+            print("가져온 설문 조사 정보:", user_health_info)
             user_health_info["user_name"] = user.name
             user_health_info["user_age"] = None
             if user.birth_date:
                 today = date.today()
                 age = today.year - user.birth_date.year - ((today.month, today.day) < (user.birth_date.month, user.birth_date.day))
                 user_health_info["user_age"] = age
-
+            print("수정한 설문 조사 정보:", user_health_info)
             # 랭그래프 에이전트를 사용하여 응답 생성
             # process_message 메서드를 사용하여 간소화
             result = SupplementRecommendationAgent.process_message(

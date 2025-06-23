@@ -10,13 +10,13 @@
   <link rel="stylesheet" href="{% static 'css/product_styles.css' %}">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-  <title>NutriNavi</title>
+  <title>Trend of pill</title>
 </head>
 <body>
   <header>
     <nav class="w-full h-20 shadow-md bg-white text-xl flex items-center relative z-20">
       {% load static %}
-      <div class="nav-inner mx-auto w-full max-w-[1420px] flex items-center justify-between px-4">
+      <div class="nav-inner mx-auto w-full max-w-[1420px] flex items-center justify-between">
         <!-- 왼쪽: 로고 -->
         <div class="nav-logo flex items-center min-w-[120px] justify-start">
           <a class="flex items-center" href="/">
@@ -87,9 +87,9 @@
     <div class="recoti">
       <span>항목별 인기 영양제</span>
       <ul id="tab-menu">
-        <li class="tab active" data-type="cheap">가성비순</li>
-        <li class="tab" data-type="popular">인기순</li>
-        <li class="tab" data-type="sales">판매량순</li>
+        <li class="tab active" data-type="cheap" style="padding: 0 16px;">가성비순</li>
+        <li class="tab" data-type="popular" style="padding: 0 16px">인기순</li>
+        <li class="tab" data-type="sales" style="padding: 0 16px">판매량순</li>
       </ul>
     </div>
     <div id="products-container" class="mb-6">
