@@ -1,89 +1,97 @@
 /* Header styles */
 header {
-    position: fixed;
     width: 100%;
-    height: 80px;
-    background: #FFFFFF;
-    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.12);
-    z-index: 1000;
-    top: 0;
-    left: 0;
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-nav {
-    max-width: none; 
-    height: 100%;
-    margin: 0 auto;
-    padding: 0 20px;
+header nav {
+    width : 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: relative;
-    z-index: 1001;
+    height: 80px;
+    box-shadow: 0 0px 8px rgba(0, 0, 0, 0.12);
+    box-sizing: border-box;
+    font-size: 24px;
+    background-color: #fff;
 }
+
 
 /* Logo styles */
 .Logo {
-    left: 20%;
-    display: flex;
-    align-items: center;
-    height: 80px; /* nav 높이와 맞춤 */
+    margin-left: 250px;
 }
 
 .Logo img {
     height: 50px;
-    display: block;
 }
+
+header nav .topm {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
 
 /* Navigation menu */
-.nav-menu {
-    display: flex;
-    gap: 60px;
-    align-items: center;
-    position: relative;
-    z-index: 1002;
-}
 
-.nav-label {
-    position: absolute;
-    font-family: 'Pretendard';
-    font-size: 24px;
+header nav ul li {
+    margin: 0;
+    padding: 0 36px; 
+    display: flex;
+    align-items: center;
+  }
+  
+  header nav ul li {
+    padding: 0 72px;
+    margin: 0;
+    display: flex;
+    text-align: center;
+    color: #DDC66F;
+    font-weight: 700;
+    justify-content: center;
+    height: 80px;
+    font-size: 20px;
+  }
+
+/*header nav .topm .nav-label {
+    font-size: 20px;
     display: flex;
     align-items: center;
     top: 20px;
     cursor: pointer;
+    padding: 0 72px; 
 }
-.nav-label.chatbot {
-    left: 40%;
-    transform: translateX(-50%);
+header nav .topm .nav-label.chatbot {
     font-weight: 700;
     color: #DDC66F;
     cursor: pointer;
+    padding: 0 36px; 
 }
-.nav-label:hover {
+header nav .topm .nav-label:hover {
     color: #EADCA6;
     background-color: rgba(234, 220, 166, 0.1);
 }
 
-.nav-label.mypage {
-    left: 60%;
-    transform: translateX(-50%);
+header nav .topm .nav-label.mypage {
+    font-size: 20px;
     font-weight: 700;
     color: #DDC66F;
 }
 
 /* Login/Logout section */
 .login-item {
-    right: 10%;
-    top: 22px;
     cursor: pointer;
 }
 
 .login-item a {
-    font-family: 'Pretendard';
     font-size: 20px;
     color: #DDC66F;
     text-decoration: none;
+    margin-right: 250px;
+    font-weight: 700;
 }
 
 
