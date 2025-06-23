@@ -145,6 +145,31 @@ def is_enough_supplement_info(state: AgentState) -> Dict[str, Any]:
     purpose_tags = result.get("purpose_tag", [])
     supplement_types = result.get("supplement_types", [])
 
+    # LLM 결과값이 실제 리스트에 존재하는 값인지 검증
+    valid_nutrients = [n for n in nutrients if n in nutrient_lst]
+    valid_purpose_tags = [p for p in purpose_tags if p in purpose_tag_lst]
+    valid_supplement_types = [t for t in supplement_types if t in type_lst]
+
+    # 만약 유효하지 않은 값이 있다면 로그로 출력
+    invalid_nutrients = [n for n in nutrients if n not in nutrient_lst]
+    invalid_purpose_tags = [p for p in purpose_tags if p not in purpose_tag_lst]
+    invalid_supplement_types = [t for t in supplement_types if t not in type_lst]
+
+    if invalid_nutrients or invalid_purpose_tags or invalid_supplement_types:
+        print(f"유효하지 않은 영양소: {invalid_nutrients}")
+        print(f"유효하지 않은 목적 태그: {invalid_purpose_tags}")
+        print(f"유효하지 않은 영양제 종류: {invalid_supplement_types}")
+
+    # 이후 valid 값만 사용
+    nutrients = valid_nutrients
+    purpose_tags = valid_purpose_tags
+    supplement_types = valid_supplement_types
+
+    # result 딕셔너리에 업데이트
+    result["nutrients"] = nutrients
+    result["purpose_tag"] = purpose_tags
+    result["supplement_types"] = supplement_types
+
     if not(nutrients or purpose_tags or supplement_types):
         response = get_llm_json_response(
             system_prompt=f"""당신은 영양제와 영양소에 관한 전문 지식을 갖춘 친절한 챗봇 '영양이'입니다.
