@@ -46,9 +46,9 @@ def get_weighted_scores(request):
     return JsonResponse({'results': results})
 
 def get_popular_products(request):
-    products = Products.objects.order_by('-average_rating')[:10]
+    products = Products.objects.order_by('-popularity_score')[:10]
 
-    results = [{'id': p.id, 'average_rating': p.average_rating} for p in products]
+    results = [{'id': p.id, 'popularity_score': p.popularity_score} for p in products]
     return JsonResponse({'results': results})
 
 def get_best_selling_products(request):
