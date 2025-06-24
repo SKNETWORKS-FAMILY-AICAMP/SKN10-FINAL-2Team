@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient_daily, UserNutrientIntake, NutrientAnalysis
+from .models import SurveyResponse, SurveyResult, Supplement, UserHealthReport, Nutrient, UserNutrientIntake, NutrientAnalysis, KDRIs
 
 @admin.register(SurveyResponse)
 class SurveyResponseAdmin(admin.ModelAdmin):
@@ -25,7 +25,7 @@ class UserHealthReportAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'recommendations')
     list_filter = ('created_at', 'health_score')
 
-@admin.register(Nutrient_daily)
+@admin.register(Nutrient)
 class NutrientAdmin(admin.ModelAdmin):
     list_display = ('name', 'unit', 'daily_recommended')
     search_fields = ('name', 'description')
@@ -33,12 +33,17 @@ class NutrientAdmin(admin.ModelAdmin):
 
 @admin.register(UserNutrientIntake)
 class UserNutrientIntakeAdmin(admin.ModelAdmin):
-    list_display = ('user', 'nutrient', 'amount', 'date')
-    search_fields = ('user__username', 'nutrient__name')
-    list_filter = ('date', 'nutrient')
+    list_display = ('user', 'nutrient', 'amount', 'unit', 'created_at')
+    list_filter = ('nutrient',)
 
 @admin.register(NutrientAnalysis)
 class NutrientAnalysisAdmin(admin.ModelAdmin):
     list_display = ('user', 'date', 'created_at')
     search_fields = ('user__username', 'analysis_result')
-    list_filter = ('date', 'created_at') 
+    list_filter = ('date', 'created_at')
+
+@admin.register(KDRIs)
+class KDRIsAdmin(admin.ModelAdmin):
+    list_display = ('category', 'age_range', 'energy', 'protein', 'vitamin_c', 'calcium', 'iron')
+    list_filter = ('category', 'age_range')
+    search_fields = ('category', 'age_range') 

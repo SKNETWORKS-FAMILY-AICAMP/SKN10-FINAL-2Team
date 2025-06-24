@@ -4,7 +4,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: #7f7f7f; /* 이미지의 배경 오버레이 색상과 유사하게 */
+    background-color: #fff; /* 이미지의 배경 오버레이 색상과 유사하게 */
     margin: 0;
     color: #333;
 }
@@ -13,44 +13,32 @@ body {
     display: flex;
     background-color: #fff;
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    /* box-shadow: 수평 수직 흐림 퍼짐 색상; */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* 기존보다 y-offset, blur, alpha 값을 키움 */
     overflow: hidden;
-    width: 800px;
+    width: 1280px;
+    height: 800px;
     max-width: 90%;
-    position: relative; /* 모달이 위에 올 때를 위해 */
-    z-index: 1; /* 모달보다 아래에 있도록 */
+    position: relative;
+    z-index: 1;
 }
 
 .login-left {
-    background-color: #e1d8b9; /* 이미지와 유사하게 조정 */
-    padding: 40px;
+    background-color: #eadca6; /* 이미지와 유사하게 조정 */
+    padding: 40px 80px;
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 40%;
-}
-
-.logo-placeholder {
-    width: 150px;
-    height: 150px;
-    background-color: #7f89bA; /* 이미지와 유사하게 조정 */
-    border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    color: #fff;
-    font-weight: bold;
+    width: 50%;
 }
 
 .login-right {
-    padding: 40px;
-    width: 60%;
+    padding: 60px 80px;
+    width: 50%;
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
-
 .form-group {
     margin-bottom: 20px;
 }
@@ -58,24 +46,37 @@ body {
 .form-group label {
     display: block;
     margin-bottom: 5px;
-    font-size: 14px;
+    font-size: 18px;
+    font-weight: 600;
     color: #555;
 }
-
+.form-group input[type="email"] {
+    width: 100%;
+    height: 45px; /* 높이 증가 */
+    font-size: 20px;
+}
+.form-group input[type="password"] {
+    width: 100%;
+    height: 45px;  /* 동일한 높이 */
+    font-size: 20px;
+}
 .form-group input[type="email"],
 .form-group input[type="password"] {
     width: calc(100% - 22px);
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 16px;
+    border: 2px solid #DDC66F; 
+    border-radius: 6px;
+    outline: none;
 }
 
 .form-links {
+    margin-top: 5px;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 25px;
-    font-size: 13px;
+    justify-content: center; /* 왼쪽/오른쪽 정렬 → 중앙 정렬 */
+    gap: 30px; /* 두 항목 간 간격 (기존보다 좁게) */
 }
 .form-links a {
     color: #555;
@@ -99,18 +100,28 @@ body {
 }
 
 .btn-login {
-    background-color: #e1d8b9; /* 로그인 버튼 색상 */
-    color: #505050;
+    background-color: #eadca6;
+    color: #fff;
     font-weight: bold;
+    height: 48px;
+    font-size: 16px;
+    width: 60%;   /* 기존 100%였다면 줄임 */
+    align-self: center;  /* 가운데 정렬 */
+    margin-top: 20px;
+    margin-bottom: 60px;
 }
 .btn-login:hover {
     background-color: #d3cabb;
 }
-
+.button-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;  /* 버튼을 수평 가운데 정렬 */
+}
 .btn-google {
     /* inherit from .btn */
     display: block;
-    width: 100%;
+    width: 70%;
     padding: 12px;
     border: none;
     border-radius: 5px;

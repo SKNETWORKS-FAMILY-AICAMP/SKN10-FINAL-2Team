@@ -6,11 +6,9 @@
 <link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/survey_result.css' %}">
 <style>
 .survey-result-container {
-    position: absolute;
     width: 468px;
-    height: 840px;
-    left: calc(50% - 468px/2);
-    top: 180px;
+    min-height: 840px;
+    margin: 40px auto 0 auto;
     background: #FFFFFF;
     box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
     border-radius: 6px;
@@ -206,7 +204,7 @@
                 <li>수면 후 피로: {{ survey_result.answers.still_tired }}</li>
                 <li>수면 시간: {{ survey_result.answers.sleep_hours }}시간</li>
                 <li>운동 빈도: {{ survey_result.answers.exercise_frequency }}</li>
-                <li>물 섭취량: {{ survey_result.answers.water_intake }}L</li>
+                <li>물 섭취량: {{ survey_result.answers.water_intake }}잔</li>
             </ul>
         </div>
 

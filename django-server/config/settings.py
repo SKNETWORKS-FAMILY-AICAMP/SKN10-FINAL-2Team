@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'Account',
     'Chatbot',
     'Mypage',
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'rest_framework',
     'rest_framework_simplejwt',
+    'landing',
 ]
 
 MIDDLEWARE = [
@@ -134,33 +136,6 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 )
-import os
-SOCIALACCOUNT_ADAPTER ='Account.adapters.CustomSocialAccountAdapter'
-ACCOUNT_ADAPTER = 'Account.adapters.CustomAccountAdapter'
-LOGIN_REDIRECT_URL = '/login/success/' # 로그인 성공 후 리다이렉트될 URL
-ACCOUNT_LOGOUT_REDIRECT_URL = '/' # 로그아웃 후 리다이렉트될 URL
-SOCIALACCOUNT_LOGIN_ON_GET = True
-ACCOUNT_EMAIL_VERIFICATION = 'none' # 'none'으로 설정하면 이메일 인증 불필요
-ACCOUNT_USERNAME_REQUIRED = False   # 사용자 이름 필드 필수로 만들지 않음 (이메일로 로그인하기 위함)
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'APP': {
-            'client_id': os.environ.get("GOOGLE_CLIENT_ID"), # 아래 5단계에서 얻을 ID
-            'secret': os.environ.get("GOOGLE_CLIENT_SECRET"), # 아래 5단계에서 얻을 Secret
-            'key': ''
-        },
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'offline', # Refresh Token을 받기 위해 필요
-        }
-    }
-
-}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -185,16 +160,6 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER") # 발신 이메일 주소
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD") # 발신 이메일 비밀번호 (또는 앱 비밀번호)
 DEFAULT_FROM_EMAIL = os.environ.get("EMAIL_HOST_USER") # 기본 발신자 이메일
 PASSWORD_RESET_TIMEOUT = 3600
-# allauth 이메일 인증 설정
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory' # 'mandatory'로 설정하여 이메일 인증을 필수로 만듭니다.
-ACCOUNT_EMAIL_REQUIRED = True            # 이메일 필드 필수
-ACCOUNT_AUTHENTICATION_METHOD = 'email'  # 이메일로 로그인
-ACCOUNT_USERNAME_REQUIRED = False        # 사용자 이름 필드 필수로 만들지 않음 (선택 사항)
-
-# 이메일 확인 후 리다이렉트될 URL (선택 사항)
-ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3 # 이메일 인증 링크 유효 기간 (기본값)
-ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
-
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -243,4 +208,36 @@ SIMPLE_JWT = {
 
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
+
+# Django-allauth 설정
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
+# Dodatkowe ustawienia allauth
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # 'none'으로 설정하면 이메일 인증 불필요
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3  # 이메일 인증 링크 유효 기간
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+
+SOCIALACCOUNT_ADAPTER ='Account.adapters.CustomSocialAccountAdapter'
+ACCOUNT_ADAPTER = 'Account.adapters.CustomAccountAdapter'
+LOGIN_REDIRECT_URL = '/login/success/' # 로그인 성공 후 리다이렉트될 URL
+ACCOUNT_LOGOUT_REDIRECT_URL = '/' # 로그아웃 후 리다이렉트될 URL
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.environ.get("GOOGLE_CLIENT_ID"), # 아래 5단계에서 얻을 ID
+            'secret': os.environ.get("GOOGLE_CLIENT_SECRET"), # 아래 5단계에서 얻을 Secret
+            'key': ''
+        },
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'offline', # Refresh Token을 받기 위해 필요
+        }
+    }
+
 }

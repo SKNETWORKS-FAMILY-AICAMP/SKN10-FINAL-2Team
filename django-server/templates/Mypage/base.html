@@ -12,29 +12,23 @@
 <body>
     <header>
         <nav>
-            <div class="logo">
-                <span class="logo-t">T</span>
-                <span class="logo-p">P</span>
-                <div class="logo-rectangle"></div>
-                <div class="logo-rectangle-2"></div>
-            </div>
-            <div class="nav-label chatbot">챗봇</div>
+            <a class="Logo" href="/">
+            <img src="{% static 'image/Logo.png' %}" alt="Logo">
+            </a>
+            
+            <div class="nav-label chatbot" id="chatbot">챗봇</div>
             <div class="nav-label mypage" onclick="toggleDropdown()">
                 마이페이지
                 <div class="dropdown-menu" id="mypageDropdown">
                     <a href="{% url 'mypage:mypage' %}" class="dropdown-item">내 정보</a>
                     <a href="{% url 'mypage:survey' %}" class="dropdown-item">설문 조사</a>
-                    <a href="{% url 'mypage:favorite' %}" class="dropdown-item">좋아요</a>
+                    <a href="{% url 'mypage:like_list' %}" class="dropdown-item">좋아요</a>
                     <a href="{% url 'mypage:analysis' %}" class="dropdown-item">영양 분석</a>
                 </div>
             </div>
-            <div class="nav-label products">영양제</div>
+            
             <div class="login-item">
-                {% if user.is_authenticated %}
-                    <a >로그아웃</a>
-                {% else %}
-                    <a >로그인</a>
-                {% endif %}
+                     <a id="logout-btn">로그아웃</a>
             </div>
         </nav>
     </header>
@@ -44,10 +38,17 @@
     </main>
 
     <footer>
-        <p>&copy; 2024 영양제 추천 서비스. All rights reserved.</p>
+        <p>&copy; 2025 영양제 추천 서비스. All rights reserved.</p>
     </footer>
-
+    <script src="{% static 'js/auth.js' %}"></script>
     <script>
+        document.getElementById('chatbot').addEventListener('click', function () {
+            window.location.href = "{% url 'mypage:chatbot' %}";
+        });
+        document.getElementById("logout-btn").addEventListener("click", function () {
+            logoutUser();  // auth.js의 함수 호출
+            window.location.href = "/login/";  // 로그아웃 후 로그인 페이지로 리디렉션
+        });
         function toggleDropdown() {
             const dropdown = document.getElementById('mypageDropdown');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
@@ -61,8 +62,21 @@
                 dropdown.style.display = 'none';
             }
         });
-    </script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const currentPath = window.location.pathname;
+
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                if (item.getAttribute('href') === currentPath) {
+                    item.classList.add('selected');
+
+                    // 드롭다운 버튼 텍스트도 선택된 것으로 바꾸고 싶다면:
+                    const toggle = item.closest('.dropdown').querySelector('.dropdown-toggle');
+                    if (toggle) toggle.textContent = item.textContent;
+                }
+            });
+        });
+            </script>
 
     {% block extra_js %}{% endblock %}
 </body>
-</html> 
+</html>

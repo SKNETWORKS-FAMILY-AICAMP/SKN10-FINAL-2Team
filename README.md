@@ -50,12 +50,12 @@
 
 #### 데이터 수집 및 전처리
 
-![](https://img.shields.io/badge/python-3776AB?style=for-the-badge&logo=python&logoColor=white) ![](https://img.shields.io/badge/selenium-43B02A?style=for-the-badge&logo=selenium&logoColor=white) ![](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
+![](https://img.shields.io/badge/python-3776AB?style=for-the-badge&logo=python&logoColor=white) ![](https://img.shields.io/badge/selenium-43B02A?style=for-the-badge&logo=selenium&logoColor=white) ![](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white) ![](https://img.shields.io/badge/numpy-013243?style=for-the-badge&logo=numpy&logoColor=white)
 
 
 #### 데이터베이스
 
-![](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![](https://img.shields.io/badge/neo4j-4581C3?style=for-the-badge&logo=neo4j&logoColor=white)
+![](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![](https://img.shields.io/badge/neo4j-4581C3?style=for-the-badge&logo=neo4j&logoColor=white) ![](https://custom-icon-badges.demolab.com/badge/AWS_RDS-FF9900?style=for-the-badge&logo=aws&logoColor=white)
 
 #### LLM
 
@@ -64,12 +64,12 @@
 
 #### 인프라
 
-![](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![](https://img.shields.io/badge/Amazon_AWS-FF9900?style=for-the-badge&logo=aws&logoColor=white)
+![](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![](https://custom-icon-badges.demolab.com/badge/AWS_CICD-FF9900?style=for-the-badge&logo=aws&logoColor=white)
 
-#### 버전 관리
+#### 버전 관리 및 협업
 
 ![](https://img.shields.io/badge/git-F05032?style=for-the-badge&logo=git&logoColor=white)
- ![](https://img.shields.io/badge/github-181717?style=for-the-badge&logo=github&logoColor=white)
+ ![](https://img.shields.io/badge/github-181717?style=for-the-badge&logo=github&logoColor=white) ![](https://img.shields.io/badge/discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)
 
 ### 프로젝트 구조
 
@@ -156,7 +156,32 @@ SKN10-FINAL-2TEAM/
 
 ## 시스템 아키텍처
 
-⇒ 추후 추가 예정
+```mermaid
+flowchart TD
+    A0["사용자 계정 관리
+"]
+    A1["영양제 챗봇 시스템
+"]
+    A2["상품 데이터베이스 및 조회
+"]
+    A3["마이페이지 개인화 기능
+"]
+    A4["API 통신 및 데이터 직렬화
+"]
+    A5["인기 점수 계산 로직
+"]
+    A0 -- "인증 요청 처리" --> A4
+    A4 -- "인증 토큰 전달" --> A0
+    A1 -- "챗봇 응답 제공" --> A4
+    A4 -- "챗봇 요청 수신" --> A1
+    A1 -- "추천 상품 정보 조회" --> A2
+    A3 -- "사용자 데이터 기반" --> A0
+    A3 -- "관심 상품 관리" --> A2
+    A2 -- "상품 데이터 제공" --> A5
+    A5 -- "인기 점수 갱신" --> A2
+    A3 -- "개인 데이터 전송" --> A4
+    A1 -- "건강 설문 활용" --> A3
+```
 
 <br/>
 

@@ -19,7 +19,7 @@ function toggleLike(event, productId) {
         event.stopPropagation();
         event.preventDefault();
     }
-    
+    const accessToken = localStorage.getItem('accessToken');
     // productId가 문자열로 전달된 경우 숫자로 변환
     productId = parseInt(productId);
     
@@ -63,6 +63,7 @@ function toggleLike(event, productId) {
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCsrfToken(),  // CSRF 토큰 필요
+            'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
             product_id: productId
@@ -166,12 +167,29 @@ function showProductDetail(productId, event) {
     if (event) {
         event.stopPropagation();
     }
-    
+    // 클릭 로그 추가.
     console.log("showProductDetail 호출됨:", productId);
     
     // productId가 문자열로 전달된 경우 숫자로 변환
     productId = parseInt(productId);
-    
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+        checkUserAuthentication();
+        const accessToken = localStorage.getItem('accessToken');
+        fetch('/mypage/product/click/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': `Bearer ${accessToken}`,
+                'X-CSRFToken': getCsrfToken(),
+            },
+            body: `product_id=${encodeURIComponent(productId)}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log('✅ 클릭 로그 저장 완료:', data);
+        });
+    }
     // 캐시된 상품 정보가 있으면 좋아요 상태를 업데이트하고 표시
     if (productDetailsCache[productId]) {
         // 좋아요 상태를 캐시에서 업데이트
@@ -191,17 +209,17 @@ function showProductDetail(productId, event) {
             return response.json();
         })
         .then(product => {
+            console.log('fetch로 받아온 product:', product);
             // 좋아요 상태가 캐시에 있으면 API 응답보다 캐시 우선
             if (typeof likedProductsCache[productId] !== 'undefined') {
                 product.is_liked = likedProductsCache[productId];
             }
-            
             // 상품 정보 캐싱
             productDetailsCache[productId] = product;
             displayProductDetail(product);
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error in showProductDetail fetch:', error);
             alert('상품 정보를 불러오는 중 오류가 발생했습니다.');
         });
 }
@@ -211,6 +229,9 @@ function showProductDetail(productId, event) {
  * @param {Object} product - 상품 정보 객체
  */
 function displayProductDetail(product) {
+    console.log('displayProductDetail 호출됨', product);
+    const ingredientsElem = document.getElementById('detail-ingredients');
+    console.log('ingredientsElem:', ingredientsElem);
     const modal = document.getElementById('product-detail-modal');
     const modalContent = modal.querySelector('.modal-content');
     
@@ -318,10 +339,95 @@ function displayProductDetail(product) {
         }
     }
     
-    // 제품 상세 정보
-    const ingredientsElem = document.getElementById('detail-ingredients');
-    if (ingredientsElem) {
-        ingredientsElem.textContent = product.ingredients || '성분 정보 없음';
+    // 애니메이션을 위한 클래스 추가
+    ingredientsElem.style.transition = 'max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s';
+    ingredientsElem.style.overflow = 'hidden';
+
+    // 성분 일부/전체 표시 함수
+    function renderIngredientsView(showAll) {
+        if (!Array.isArray(product.ingredients)) {
+            ingredientsElem.textContent = product.ingredients || '성분 정보 없음';
+            return;
+        }
+        if (product.ingredients.length === 0) {
+            ingredientsElem.innerHTML = '<span class="text-gray-400">성분 정보 없음</span>';
+            return;
+        }
+        let html = '';
+        // percent 기준 내림차순 정렬
+        const sorted = [...product.ingredients].sort((a, b) => {
+            const pa = (a.percent !== undefined && a.percent !== null) ? a.percent : -Infinity;
+            const pb = (b.percent !== undefined && b.percent !== null) ? b.percent : -Infinity;
+            return pb - pa;
+        });
+        const list = showAll ? sorted : sorted.slice(0, 3);
+        list.forEach(ing => {
+            const name = ing.ingredient_name || '-';
+            const amount = ing.amount !== undefined ? ing.amount : '-';
+            const unit = ing.unit || '';
+            const daily = ing.daily_rec !== undefined && ing.daily_rec !== null ? ing.daily_rec : null;
+            const percent = ing.percent !== undefined && ing.percent !== null ? ing.percent : null;
+            html += `<div class=\"mb-3\">
+                <div class=\"flex justify-between items-center mb-1\">
+                    <span class=\"font-semibold text-yellow-900\">${name}</span>
+                    <span class=\"text-sm text-gray-600\">${amount}${unit}${daily ? ` / ${daily}${unit}` : ''}</span>
+                </div>
+                <div class=\"w-full bg-yellow-100 rounded-full h-4 relative\">
+                    <div class=\"bg-yellow-400 h-4 rounded-full\" style=\"width: ${percent !== null ? Math.min(percent, 100) : 0}%; transition: width 0.5s;\"></div>
+                    <span class=\"absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-bold text-yellow-900\">${percent !== null ? percent + '%' : '-'}</span>
+                </div>
+            </div>`;
+        });
+        if (!showAll && sorted.length > 3) {
+            html += `<div class='text-xs text-gray-500 text-center'>+${sorted.length - 3}개 더 보기</div>`;
+        }
+        ingredientsElem.innerHTML = html;
+    }
+
+    // 성분 접고 펼치기 토글 버튼 이벤트 설정
+    const ingredientsWrapper = document.getElementById('detail-ingredients-wrapper');
+    const toggleBtn = document.getElementById('toggle-ingredients-btn');
+    const arrowSpan = document.getElementById('toggle-ingredients-arrow');
+    let showAllIngredients = false;
+    // fade 오버레이 div
+    const fadeDiv = ingredientsWrapper.querySelector('.ingredients-fade');
+    // detail-ingredients-wrapper에 position:relative 적용
+    ingredientsWrapper.style.position = 'relative';
+
+    if (toggleBtn && ingredientsWrapper) {
+        showAllIngredients = false;
+        renderIngredientsView(showAllIngredients);
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        arrowSpan.textContent = '▼';
+        // 애니메이션: 접힘 상태로 시작
+        ingredientsElem.style.maxHeight = '280px'; // 3.5개 row 기준으로 늘림
+        ingredientsElem.style.opacity = '1';
+        if (fadeDiv) fadeDiv.style.display = '';
+        toggleBtn.onclick = function(e) {
+            e.stopPropagation();
+            showAllIngredients = !showAllIngredients;
+            renderIngredientsView(showAllIngredients);
+            if (showAllIngredients) {
+                toggleBtn.setAttribute('aria-expanded', 'true');
+                arrowSpan.textContent = '▲';
+                ingredientsElem.style.maxHeight = ingredientsElem.scrollHeight + 'px';
+                ingredientsElem.style.opacity = '1';
+                setTimeout(() => {
+                    ingredientsElem.style.maxHeight = 'none';
+                }, 400);
+                if (fadeDiv) fadeDiv.style.display = 'none';
+            } else {
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                arrowSpan.textContent = '▼';
+                ingredientsElem.style.maxHeight = ingredientsElem.scrollHeight + 'px';
+                void ingredientsElem.offsetWidth;
+                ingredientsElem.style.maxHeight = '280px';
+                ingredientsElem.style.opacity = '1';
+                if (fadeDiv) fadeDiv.style.display = '';
+            }
+        };
+    } else {
+        renderIngredientsView(false);
     }
     
     const directionsElem = document.getElementById('detail-directions');
@@ -389,10 +495,34 @@ function displayProductDetail(product) {
     if (urlElem) {
         if (product.url) {
             urlElem.href = product.url;
+            // 구매 로그 추가 해야 됨
             urlElem.classList.remove('hidden');
         } else {
             urlElem.classList.add('hidden');
         }
+    }
+    if (urlElem) {
+        urlElem.onclick = function (e) {
+            const accessToken = localStorage.getItem('accessToken');
+            const productId = product.id;
+            if(accessToken){
+                checkUserAuthentication();
+                fetch('/mypage/product/purchase/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': `Bearer ${accessToken}`,
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: `product_id=${encodeURIComponent(productId)}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log('🛒 구매 로그 저장 완료:', data);
+                });
+            }
+        }; 
+        
     }
     
     // 모달 표시 (애니메이션 적용)
@@ -473,34 +603,13 @@ function attachProductCardListeners() {
             e.stopPropagation(); // 이벤트 버블링 방지
             showProductDetail(productId, e);
         });
+        
+
     });
 }
 
 // 캐러셀 이동 함수
-function moveCarousel(direction) {
-    const carouselInner = document.querySelector('.carousel-inner');
-    if (!carouselInner) return;
-    
-    const productCards = carouselInner.querySelectorAll('.product-card');
-    if (productCards.length === 0) return;
-    
-    const cardWidth = productCards[0].offsetWidth + 16; // 카드 너비 + 마진
-    const visibleCards = Math.floor(carouselInner.offsetWidth / cardWidth);
-    
-    // 현재 위치 업데이트
-    let currentCarouselPosition = parseInt(carouselInner.getAttribute('data-position') || '0');
-    currentCarouselPosition += direction;
-    
-    // 범위 제한
-    if (currentCarouselPosition < 0) currentCarouselPosition = 0;
-    if (currentCarouselPosition > productCards.length - visibleCards) {
-        currentCarouselPosition = productCards.length - visibleCards;
-    }
-    
-    // 위치 저장 및 적용
-    carouselInner.setAttribute('data-position', currentCarouselPosition);
-    carouselInner.style.transform = `translateX(-${currentCarouselPosition * cardWidth}px)`;
-}
+ // function moveCarousel(direction) { ... }
 
 // 상품 카드 캐러셀 생성 함수
 function createProductCarousel(products, containerElement) {
@@ -574,10 +683,10 @@ function createProductCarousel(products, containerElement) {
     // 캐러셀 닫기 및 컨트롤 버튼 추가
     carouselHTML += `
             </div>
-            <button class="carousel-control prev" onclick="moveCarousel(-1)">
+            <button class="carousel-control prev">
                 <span class="material-icons">chevron_left</span>
             </button>
-            <button class="carousel-control next" onclick="moveCarousel(1)">
+            <button class="carousel-control next">
                 <span class="material-icons">chevron_right</span>
             </button>
         </div>
@@ -599,6 +708,30 @@ function createProductCarousel(products, containerElement) {
             }
         });
     });
+    
+    // 캐러셀 이동 함수 (이제 이 함수는 createProductCarousel 내부에만 존재)
+    function moveCarousel(direction) {
+        const carouselInner = carouselContainer.querySelector('.carousel-inner');
+        if (!carouselInner) return;
+        const productCards = carouselInner.querySelectorAll('.product-card');
+        if (productCards.length === 0) return;
+        const cardWidth = productCards[0].offsetWidth + 16; // 카드 너비 + 마진
+        const visibleCards = Math.floor(carouselInner.offsetWidth / cardWidth);
+        let currentCarouselPosition = parseInt(carouselInner.getAttribute('data-position') || '0');
+        currentCarouselPosition += direction;
+        if (currentCarouselPosition < 0) currentCarouselPosition = 0;
+        if (currentCarouselPosition > productCards.length - visibleCards) {
+            currentCarouselPosition = productCards.length - visibleCards;
+        }
+        carouselInner.setAttribute('data-position', currentCarouselPosition);
+        carouselInner.style.transform = `translateX(-${currentCarouselPosition * cardWidth}px)`;
+    }
+    
+    // 각 버튼에 이벤트 리스너 바인딩 (window.moveCarousel 사용 X)
+    const prevBtn = carouselContainer.querySelector('.carousel-control.prev');
+    const nextBtn = carouselContainer.querySelector('.carousel-control.next');
+    if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); moveCarousel(-1); });
+    if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); moveCarousel(1); });
     
     return carouselContainer;
 }

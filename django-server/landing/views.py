@@ -3,36 +3,89 @@ import os
 import json
 from django.http import JsonResponse
 from django.conf import settings
-
-def landing(request):
-    json_path = os.path.join(settings.BASE_DIR, 'static', 'data', 'json', 'processed_data.json')
-    with open(json_path, 'r', encoding='utf-8') as f:
-        products = json.load(f)
-    return render(request, 'landing/landing.html', {'products': products})
-
-def get_top_products(request):
-    # views.py 파일 기준으로 같은 폴더에 있다고 가정
-    json_path = os.path.join(settings.BASE_DIR, 'static', 'data', 'json', 'processed_data.json')
-    
-    try:
-        with open(json_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return JsonResponse(data, safe=False)
-    except FileNotFoundError:
-        return JsonResponse({'error': '파일이 없습니다.'}, status=404)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'JSON 형식 오류'}, status=500)
-
-# 가중 평균을 이용한 가성비 영양제 추천.
-from django.http import JsonResponse
 from sklearn.preprocessing import MinMaxScaler
 import re
 import numpy as np
 import pandas as pd
+from Product.models import Products
+from django.db.models import F, FloatField, ExpressionWrapper, Q
 
-def extract_price(value):
-    if isinstance(value, str):
-        match = re.search(r'\$?([0-9.]+)', value)
-        if match:
-            return float(match.group(1))
-    return None
+def landing(request):
+    return render(request, 'landing/landing.html')
+
+# def get_product_details(request):
+#     ids = request.GET.get('ids', '')
+#     id_list = [int(i) for i in ids.split(',') if i.isdigit()]
+#     print("🔍 요청 받은 ID들:", id_list)
+
+#     products = Products.objects.filter(id__in=id_list)
+#     print("✅ 실제 조회된 상품 수:", products.count())
+
+#     data = [{
+#         'id': p.id,
+#         'title': p.title,
+#         'url': p.url,
+#         'image_link': p.image_link,
+#         'average_rating': p.average_rating,
+#         'price_value': p.price_value,
+#     } for p in products]
+
+#     return JsonResponse({'products': data})
+
+
+def get_weighted_scores(request):
+    products = Products.objects.annotate(
+    score=ExpressionWrapper(
+        F('average_rating') / F('price_value'),
+        output_field=FloatField()
+    )
+).order_by('-score'  # 예시 계산 방식
+    ).order_by('-score')[:10]
+
+    results = [{'id': p.id, 'score': p.score} for p in products]
+    return JsonResponse({'results': results})
+
+def get_popular_products(request):
+    products = Products.objects.order_by('-popularity_score')[:10]
+
+    results = [{'id': p.id, 'popularity_score': p.popularity_score} for p in products]
+    return JsonResponse({'results': results})
+
+def get_best_selling_products(request):
+    products = Products.objects.order_by('sales_ranks')[:10]
+
+    results = [{'id': p.id, 'sales_ranks': p.sales_ranks} for p in products]
+    return JsonResponse({'results': results})
+
+def search_products(request):
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse({'products': []})
+    
+    # 제목, 브랜드, 성분 등에서 검색
+    products = Products.objects.filter(
+        Q(title__icontains=query) |
+        Q(brand__icontains=query) |
+        Q(ingredients__icontains=query)
+    )[:20]  # 최대 20개 결과만 반환
+    
+    # 상품 데이터 직렬화
+    product_list = []
+    for product in products:
+        product_list.append({
+            'id': product.id,
+            'title': product.title,
+            'brand': product.brand,
+            'image_link': product.image_link,
+            'price_value': product.price_value,
+            'total_price': product.total_price,
+            'average_rating': product.average_rating,
+            'total_reviews': product.total_reviews,
+            'vegan': product.vegan,
+            'supplement_type': product.supplement_type,
+            # 필요한 다른 필드들도 추가
+        })
+    
+    return JsonResponse({'products': product_list})
+
+

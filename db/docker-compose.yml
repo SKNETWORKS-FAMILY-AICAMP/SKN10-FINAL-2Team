@@ -4,13 +4,17 @@ services:
   db:
     image: pgvector/pgvector:pg17
     restart: always
-    volumes:
-      - ./database:/var/lib/postgresql/data
-    environment:
-      POSTGRES_PASSWORD: "root1234"
-      POSTGRES_DB: "topDB"
-      POSTGRES_USER: "topAdmin"
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-user.sql:/docker-entrypoint-initdb.d/init-user.sql  # ✅ 여기에 주목
+    environment:
+      POSTGRES_USER: topAdmin
+      POSTGRES_PASSWORD: root1234
+      POSTGRES_DB: topDB
 
+volumes:
+  pgdata:
+  
 # docker-compose up -d

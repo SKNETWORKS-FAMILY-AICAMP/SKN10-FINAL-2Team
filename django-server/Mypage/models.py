@@ -16,31 +16,27 @@ class Supplement(models.Model):
     def __str__(self):
         return self.name
 
-class Nutrient_daily(models.Model):
+class Nutrient(models.Model):
     name = models.CharField(max_length=100)
-    description = models.TextField()
-    daily_recommended = models.FloatField()
-    unit = models.CharField(max_length=20)
-    category = models.CharField(max_length=50)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    description = models.TextField(null=True, blank=True)
+    daily_recommended = models.FloatField(null=True, blank=True)
+    unit = models.CharField(max_length=20, null=True, blank=True)
+    category = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return self.name
 
 class UserNutrientIntake(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    nutrient = models.ForeignKey(Nutrient_daily, on_delete=models.CASCADE)
-    amount = models.FloatField()
-    date = models.DateField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-date']
+    nutrient = models.ForeignKey(Nutrient, on_delete=models.CASCADE)
+    amount = models.FloatField(default=0.0)  # 입력수량
+    unit = models.CharField(max_length=20, default='')  # 단위 (mg, 정 등)
+    created_at = models.DateTimeField(auto_now_add=True)  # 등록일
 
     def __str__(self):
-        return f"{self.user.username}'s {self.nutrient.name} intake on {self.date}"
+        return f"{self.user.username}'s nutrient intake - {self.nutrient.name}"
 
 class NutrientAnalysis(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -63,6 +59,8 @@ class SurveyResponse(models.Model):
     responses = models.JSONField(default=dict)
     answers = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
+    age_range = models.CharField(max_length=20, null=True, blank=True)  # 연령대
+    gender = models.CharField(max_length=10, null=True, blank=True)  # 성별
     height = models.FloatField(null=True, blank=True)
     weight = models.FloatField(null=True, blank=True)
     sitting_work = models.CharField(max_length=10, null=True, blank=True)
@@ -106,9 +104,6 @@ class UserHealthReport(models.Model):
     def __str__(self):
         return f"{self.user.username}'s health report - {self.created_at}" 
 
-from django.db import models
-from django.conf import settings
-from Product.models import Products
 
 class Like(models.Model):
     id = models.AutoField(primary_key=True)
@@ -225,7 +220,7 @@ class OCRResult(models.Model):
 
     def __str__(self):
         return f"OCRResult for {self.user.email} at {self.created_at.strftime('%Y-%m-%d %H:%M')}"
-from Product.models import Products    
+
 class UserLog(models.Model):
     ACTION_CHOICES = [
         ('click', 'Click'),
@@ -278,4 +273,60 @@ class Favorite(models.Model):
 
     def __str__(self):
         return f"{self.user.email}의 {self.product.title} 즐겨찾기"
+    
+class KDRIs(models.Model):
+    category = models.CharField(max_length=50, null=True, blank=True)  # 분류 (유아, 남자, 여자, 임신부, 수유부)
+    age_range = models.CharField(max_length=50, null=True, blank=True)  # 연령
+    energy = models.FloatField(null=True, blank=True)  # 에너지(kcal/일)
+    carbohydrates = models.FloatField(null=True, blank=True)  # 탄수화물(g/일)
+    dietary_fiber = models.FloatField(null=True, blank=True)  # 식이섬유(g/일)
+    linoleic_acid = models.FloatField(default=0.0, null=True, blank=True)  # 리놀레산(g/일)
+    alpha_linolenic_acid = models.FloatField(default=0.0, null=True, blank=True)  # 알파-리놀렌산(g/일)
+    epa_dha = models.FloatField(default=0.0, null=True, blank=True)  # EPA+DHA(mg/일)
+    protein = models.FloatField(null=True, blank=True)  # 단백질(g/일)
+    methionine_cysteine = models.FloatField(default=0.0, null=True, blank=True)  # 메티오닌+시스테인(g/일)
+    leucine = models.FloatField(default=0.0, null=True, blank=True)  # 류신(g/일)
+    isoleucine = models.FloatField(default=0.0, null=True, blank=True)  # 이소류신(g/일)
+    valine = models.FloatField(default=0.0, null=True, blank=True)  # 발린(g/일)
+    lysine = models.FloatField(default=0.0, null=True, blank=True)  # 라이신(g/일)
+    phenylalanine_tyrosine = models.FloatField(default=0.0, null=True, blank=True)  # 페닐알라닌+티로신(g/일)
+    threonine = models.FloatField(default=0.0, null=True, blank=True)  # 트레오닌(g/일)
+    tryptophan = models.FloatField(default=0.0, null=True, blank=True)  # 트립토판(g/일)
+    histidine = models.FloatField(default=0.0, null=True, blank=True)  # 히스티딘(g/일)
+    water = models.FloatField(default=0.0, null=True, blank=True)  # 수분(mL/일)
+    vitamin_a = models.FloatField(null=True, blank=True)  # 비타민 A(µg RAE/일)
+    vitamin_d = models.FloatField(null=True, blank=True)  # 비타민 D(µg/일)
+    vitamin_e = models.FloatField(null=True, blank=True)  # 비타민 E(mg ɑ-TE/일)
+    vitamin_k = models.FloatField(null=True, blank=True)  # 비타민 K(µg/일)
+    vitamin_c = models.FloatField(null=True, blank=True)  # 비타민 C(mg/일)
+    thiamin = models.FloatField(null=True, blank=True)  # 티아민(mg/일)
+    riboflavin = models.FloatField(null=True, blank=True)  # 리보플라빈(mg/일)
+    niacin = models.FloatField(null=True, blank=True)  # 니아신(mg NE/일)
+    vitamin_b6 = models.FloatField(null=True, blank=True)  # 비타민 B6(mg/일)
+    folate = models.FloatField(null=True, blank=True)  # 엽산(µg DFE/일)
+    vitamin_b12 = models.FloatField(null=True, blank=True)  # 비타민B12(µg/일)
+    pantothenic_acid = models.FloatField(default=0.0, null=True, blank=True)  # 판토텐산(mg/일)
+    biotin = models.FloatField(default=0.0, null=True, blank=True)  # 비오틴(µg/일)
+    calcium = models.FloatField(null=True, blank=True)  # 칼슘(mg/일)
+    phosphorus = models.FloatField(null=True, blank=True)  # 인(mg/일)
+    sodium = models.FloatField(null=True, blank=True)  # 나트륨(mg/일)
+    chloride = models.FloatField(default=0.0, null=True, blank=True)  # 염소(mg/일)
+    potassium = models.FloatField(null=True, blank=True)  # 칼륨(mg/일)
+    magnesium = models.FloatField(null=True, blank=True)  # 마그네슘(mg/일)
+    iron = models.FloatField(null=True, blank=True)  # 철(mg/일)
+    zinc = models.FloatField(null=True, blank=True)  # 아연(mg/일)
+    copper = models.FloatField(default=0.0, null=True, blank=True)  # 구리(µg/일)
+    fluoride = models.FloatField(default=0.0, null=True, blank=True)  # 불소(mg/일)
+    manganese = models.FloatField(default=0.0, null=True, blank=True)  # 망간(mg/일)
+    iodine = models.FloatField(default=0.0, null=True, blank=True)  # 요오드(µg/일)
+    selenium = models.FloatField(null=True, blank=True)  # 셀레늄(µg/일)
+    molybdenum = models.FloatField(default=0.0, null=True, blank=True)  # 몰리브덴(µg/일)
+    chromium = models.FloatField(default=0.0, null=True, blank=True)  # 크롬(µg/일)
+
+    class Meta:
+        verbose_name_plural = "KDRIs"
+        unique_together = ('category', 'age_range')
+
+    def __str__(self):
+        return f"{self.category} - {self.age_range}"
     
