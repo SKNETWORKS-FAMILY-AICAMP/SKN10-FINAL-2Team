@@ -8,11 +8,11 @@ load_dotenv()
 
 # 데이터베이스 접속 정보 설정
 db_params = {
-    'host': os.getenv('DB_HOST'),
-    'port': int(os.getenv('DB_PORT')),
-    'dbname': os.getenv('DB_NAME'),
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD')
+    'host': os.getenv('POSTGRES_HOST'),
+    'port': '5432',
+    'dbname': 'postgre',
+    'user': 'postgres',
+    'password': os.getenv('POSTGRES_PASSWORD'),
 }
 
 def load_data(query):
