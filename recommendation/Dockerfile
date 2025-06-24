@@ -16,4 +16,4 @@ COPY . .
 
 ENV PYTHONPATH=/app
 
-CMD ["python", "lightfm/lightfm_process.py"]
+CMD ["python", "personalized/lightfm_process.py"]

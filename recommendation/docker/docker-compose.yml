@@ -10,4 +10,4 @@ services:
       - ../:/app
       - ~/.aws:/root/.aws:ro
     working_dir: /app
-    command: python lightfm/lightfm_process.py
+    command: python personalized/lightfm_process.py
