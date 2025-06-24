@@ -39,14 +39,14 @@ class LightFMRecommender:
 
         return pickle.load(buffer)
 
-    def recommend(self, user_id, top_n=5):
+    def recommend(self, user_id, top_k=5):
         """
         입력한 user_id에 대해 top_n개의 추천 상품 ID와 점수를 반환한다.
         존재하지 않는 사용자일 경우 빈 리스트를 반환한다.
         
         Args:
             user_id (str or int): 추천을 받을 사용자 ID
-            top_n (int): 추천할 상품 개수
+            top_k (int): 추천할 상품 개수
         Returns:
             list of (product_id, score): 추천 상품 ID와 점수 쌍 리스트
         """
@@ -65,8 +65,8 @@ class LightFMRecommender:
 
         # 추천 점수 예측
         scores = self.model.predict(user_idx, item_idxs, item_features=self.item_features)
-        # 점수 내림차순으로 상위 top_n 인덱스 추출
-        top_indices = np.argsort(-scores)[:top_n]
+        # 점수 내림차순으로 상위 top_k 인덱스 추출
+        top_indices = np.argsort(-scores)[:top_k]
         # 추천 상품의 실제 product_id 추출
         top_item_ids = [reverse_item_index_map[i] for i in item_idxs[top_indices]]
         # 추천 점수 추출
@@ -94,17 +94,17 @@ class LightFMRecommender:
 
         return df_product_info
     
-    def __call__(self, user_id, top_n=5):
+    def __call__(self, user_id, top_k=5):
         """
         객체를 함수처럼 호출하면 추천 결과 DataFrame을 바로 반환한다.
         
         Args:
             user_id (str or int): 추천을 받을 사용자 ID
-            top_n (int): 추천할 상품 개수
+            top_k (int): 추천할 상품 개수
         Returns:
             pd.DataFrame: 추천 상품 정보와 점수, 타입 컬럼 포함
         """
         # 추천 상품 및 점수 쌍 추출
-        product_score_pairs = self.recommend(user_id, top_n=top_n)
+        product_score_pairs = self.recommend(user_id, top_k=top_k)
 
         return self.get_product_info(product_score_pairs)

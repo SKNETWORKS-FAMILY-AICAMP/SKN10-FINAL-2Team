@@ -1,13 +1,13 @@
 import os
 import ast
+import copy
 import time
 import boto3
 import pickle
 import logging
 import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt
 from io import BytesIO
-from scipy.sparse import coo_matrix
 from lightfm import LightFM
 from lightfm.data import Dataset
 from lightfm.evaluation import precision_at_k, recall_at_k, auc_score
@@ -91,6 +91,7 @@ def prepare_dataset(df_logs, df_products):
 def train_lightfm_model(interaction_matrix, item_features, epochs=10, num_threads=1):
     """
     interaction matrix와 item feature matrix를 받아 LightFM 모델을 학습하는 함수
+    가장 높은 auc@10을 보인 모델을 반환한다.
 
     Args:
         interaction_matrix (scipy.sparse matrix): 유저-아이템 상호작용 행렬
@@ -99,15 +100,80 @@ def train_lightfm_model(interaction_matrix, item_features, epochs=10, num_thread
         num_threads (int): 학습에 사용할 스레드 수
 
     Returns:
-        LightFM: 학습된 LightFM 모델 객체
+        LightFM: auc@10이 가장 높았던 LightFM 모델 객체
     """
     try:
         model = LightFM(loss='warp')
-        model.fit(interaction_matrix, item_features=item_features, epochs=epochs, num_threads=num_threads)
-        return model
+        best_model = None
+        best_auc = -1
+        best_epoch = -1
+
+        for epoch in range(epochs):
+            model.fit_partial(interaction_matrix, item_features=item_features, epochs=1, num_threads=num_threads)
+            auc = auc_score(model, interaction_matrix, item_features=item_features, num_threads=num_threads).mean()
+            if auc > best_auc:
+                best_auc = auc
+                best_epoch = epoch
+                best_model = copy.deepcopy(model)
+            logging.info(f"Epoch {epoch+1}: auc@10={auc:.4f}")
+
+        logging.info(f"Best auc@10: {best_auc:.4f} at epoch {best_epoch+1}")
+        return best_model
     except Exception as e:
         logging.error("모델 학습 중 에러:", e)
         raise
+
+def train_lightfm_with_metrics(interaction_matrix, item_features, epochs=10, num_threads=1, save_path='personalized/lightfm_metrics.png'):
+    model = LightFM(loss='warp')
+    precisions = []
+    recalls = []
+    aucs = []
+    best_auc = -1
+    best_epoch = -1
+    best_model = None
+
+    for epoch in range(epochs):
+        model.fit_partial(interaction_matrix, item_features=item_features, epochs=1, num_threads=num_threads)
+        precision = precision_at_k(model, interaction_matrix, item_features=item_features, k=10).mean()
+        recall = recall_at_k(model, interaction_matrix, item_features=item_features, k=10).mean()
+        auc = auc_score(model, interaction_matrix, item_features=item_features).mean()
+        precisions.append(precision)
+        recalls.append(recall)
+        aucs.append(auc)
+        if auc > best_auc:
+            best_auc = auc
+            best_epoch = epoch
+            best_model = copy.deepcopy(model)
+        logging.info(f"Epoch {epoch+1}: precision@10={precision:.4f}, recall@10={recall:.4f}, auc={auc:.4f}")
+
+    # 그래프 저장
+    plt.figure(figsize=(15, 5))
+
+    plt.subplot(1,3,1)
+    plt.plot(precisions, marker='o', color='g')
+    plt.title('Precision@10')
+    plt.xlabel('Epoch')
+    plt.ylabel('Precision')
+
+    plt.subplot(1,3,2)
+    plt.plot(recalls, marker='o', color='r')
+    plt.title('Recall@10')
+    plt.xlabel('Epoch')
+    plt.ylabel('Recall')
+
+    plt.subplot(1,3,3)
+    plt.plot(aucs, marker='o', color='b')
+    plt.title('AUC')
+    plt.xlabel('Epoch')
+    plt.ylabel('AUC')
+
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
+    logging.info(f"학습 곡선 그래프가 {save_path}에 저장되었습니다.")
+    logging.info(f"Best auc: {best_auc:.4f} at epoch {best_epoch+1}")
+
+    return best_model
 
 def save_model_to_s3(model, dataset, item_features, bucket, prefix='lightfm_model'):
     """
@@ -155,6 +221,16 @@ def main():
         )
     """
     df_logs = load_data(log_query)
+    
+    # action 우선순위 컬럼 추가 (purchase=1, click=2)
+    action_priority = {'purchase': 1, 'click': 2}
+    df_logs['action_priority'] = df_logs['action'].map(action_priority).fillna(3)
+
+    # user_id, product_id별로 action 우선순위로 정렬 후 중복 제거
+    df_logs = df_logs.sort_values(['user_id', 'product_id', 'action_priority'], ascending=[True, True, True])
+    df_logs = df_logs.drop_duplicates(subset=['user_id', 'product_id'], keep='first').reset_index(drop=True)
+
+    df_logs = df_logs[['user_id', 'product_id', 'action']]
 
     # 상품 데이터 쿼리 및 로드
     product_query = """
@@ -174,7 +250,8 @@ def main():
     # 모델 학습
     logging.info("모델 학습 시작")
     start = time.time()
-    model = train_lightfm_model(interaction_matrix, item_features)
+    # model = train_lightfm_model(interaction_matrix, item_features, epochs=30)
+    model = train_lightfm_with_metrics(interaction_matrix, item_features, epochs=30)
     logging.info("모델 학습 완료, 소요 시간: %.4f 초", time.time() - start)
 
     # 테스트 점수 출력 (precision@k, recall@k, auc)
@@ -185,7 +262,7 @@ def main():
     logging.info("모델 평가 완료")
 
     # 모델 저장
-    if precision > 0.4 and recall > 0.2:
+    if precision > 0.4 and recall > 0.4:
         save_model_to_s3(model, dataset, item_features, bucket='lightfm-model', prefix='lightfm_model')
         logging.info("모델 저장 완료 (Precision: %.4f, Recall: %.4f, AUC: %.4f)", precision, recall, auc)
     else:
