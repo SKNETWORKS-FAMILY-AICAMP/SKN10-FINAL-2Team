@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 # 하이퍼파라미터 및 설정
-EPOCHS = 30
+EPOCHS = 50
 NUM_THREADS = 1
-SAVE_CONDITION = {'precision': 0.4, 'recall': 0.4}
+SAVE_CONDITION = {'precision': 0.5, 'recall': 0.6, 'auc': 0.9}
 S3_BUCKET = 'lightfm-model'
 S3_PREFIX = 'lightfm_model'
 METRICS_PATH = 'personalized/output/lightfm_metrics_final.png'
@@ -193,19 +193,19 @@ def train_lightfm_model(interaction_matrix, item_features, epochs, num_threads, 
 
     logger.info(f"Best auc@10: {best_auc:.4f} at epoch {best_epoch+1}")
 
-    if save_plot_path:
-        os.makedirs(os.path.dirname(save_plot_path), exist_ok=True)
-        plt.figure(figsize=(15, 5))
-        for i, (metric, values, color) in enumerate(zip(['Precision@10', 'Recall@10', 'AUC'], [precisions, recalls, aucs], ['r', 'g', 'b'])):
-            plt.subplot(1, 3, i + 1)
-            plt.plot(values, marker='o', color=color)
-            plt.title(metric)
-            plt.xlabel('Epoch')
-            plt.ylabel(metric)
-        plt.tight_layout()
-        plt.savefig(save_plot_path)
-        plt.close()
-        logger.info(f"학습 곡선 그래프 저장됨: {save_plot_path}")
+    # if save_plot_path:
+    #     os.makedirs(os.path.dirname(save_plot_path), exist_ok=True)
+    #     plt.figure(figsize=(15, 5))
+    #     for i, (metric, values, color) in enumerate(zip(['Precision@10', 'Recall@10', 'AUC'], [precisions, recalls, aucs], ['r', 'g', 'b'])):
+    #         plt.subplot(1, 3, i + 1)
+    #         plt.plot(values, marker='o', color=color)
+    #         plt.title(metric)
+    #         plt.xlabel('Epoch')
+    #         plt.ylabel(metric)
+    #     plt.tight_layout()
+    #     plt.savefig(save_plot_path)
+    #     plt.close()
+    #     logger.info(f"학습 곡선 그래프 저장됨: {save_plot_path}")
 
     return best_model, precisions[-1], recalls[-1], aucs[-1]
 
@@ -273,8 +273,7 @@ def main():
 
     # 모델 저장
     if precision > SAVE_CONDITION['precision'] and recall > SAVE_CONDITION['recall']:
-        # save_model_to_s3(model, dataset, item_features, bucket=S3_BUCKET, prefix=S3_PREFIX)
-        pass
+        save_model_to_s3(model, dataset, item_features, bucket=S3_BUCKET, prefix=S3_PREFIX)
     else:
         logger.warning("저장 조건 미충족으로 모델 저장되지 않음")
 

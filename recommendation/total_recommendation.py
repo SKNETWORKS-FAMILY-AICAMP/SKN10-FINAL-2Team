@@ -1,100 +1,88 @@
 import numpy as np
 import pandas as pd
+from common.database import load_data
 from personalized.lightfm_recommendation import LightFMRecommender
-from non_personalized.non_personalized_recommendation import NonPersonalizedRecommender
 
 class TotalRecommender:
-    def __init__(self, user_id=None, product_ids=[], top_k=10, cbf_csv_path='non_personalized/cbf_similar_items.csv'):
-        """
-        user_id: 추천 대상 사용자 ID
-        userlog_product_ids: 최근 userlog에서 추출한 product_id 리스트
-        top_k: 각 추천 방식별 추출 개수
-        cbf_csv_path: CBF 유사 상품 csv 경로
-        """
-        self.random_state = None
-        self.type_weights = {
-            'Personalized': 5.0,
-            'Popularity': 1.0,
-            'CBF': 0.5
-        }
-
+    def __init__(self, user_id=None, product_ids=[]):
         self.user_id = user_id
         self.product_ids = product_ids
-        self.top_k = top_k
-        self.total_k = top_k * 3
-        self.cbf_csv_path = cbf_csv_path
+        self.score_column = 'score'
 
-        # 비개인화 추천
-        self.nonpersonalized = NonPersonalizedRecommender(self.user_id, self.top_k, self.cbf_csv_path)
-        nonpersonalized_result = self.nonpersonalized(target_product_ids=product_ids)
-        self.popular_df = nonpersonalized_result['popular']
-        self.cbf_df = nonpersonalized_result['cbf']
+        self.personalized_recommender = LightFMRecommender()
 
-        # 개인화 추천
-        self.personalized = LightFMRecommender()
-        self.personalized_df = self.personalized(user_id=self.user_id, top_k=self.top_k)
-
-    def recommend(self):
-        # personalized_df가 None이거나 row가 0개면 비개인화만 사용
-        if self.personalized_df is None or len(self.personalized_df) < 5:
-            dfs = [self.popular_df, self.cbf_df]
-        else:
-            dfs = [self.personalized_df, self.popular_df, self.cbf_df]
-
-        all_df = pd.concat(dfs, ignore_index=True)
-        all_df = all_df.sort_values('score', ascending=False)
-
-        return all_df
-    
-    def _get_product_scores(self):
-        personalized_scores = dict(self.personalized.get_product_score(self.user_id, self.product_ids))
-        popular_scores = self.nonpersonalized.get_product_scores(self.product_ids)
-        nonpersonalized_scores = dict(zip(popular_scores['product_id'], popular_scores['popularity_score']))
-
-        row = []
-        for pid in self.product_ids:
-            personalized_score = personalized_scores.get(pid, np.nan)
-            nonpersonalized_score = nonpersonalized_scores.get(pid, np.nan)
-            if not np.isnan(personalized_score):
-                row.append({'product_id': pid, 'score': personalized_score, 'type': 'Personalized'})
-            else:
-                row.append({'product_id': pid, 'score': nonpersonalized_score, 'type': 'Popularity'})
+    def _normalize_score(self, df):
+        if df.empty:
+            df[self.score_column] = []
+            return df
         
-        return pd.DataFrame(row)
-
-    def __call__(self, mode='recommend'):
-        """
-        mode:
-            'recommend' : 추천 pool에서 type별 점수 정규화+가중치로 top_k개 추출 (기본)
-            'score'     : 입력 product_ids에 대해 get_product_scores로 점수 매칭 후 type별 가중치 랜덤 추출
-        """
-        if mode == 'score':
-            if self.product_ids is None:
-                raise ValueError("mode='score'일 때는 product_ids를 입력해야 합니다.")
-            candidates = self._get_product_scores(self.product_ids)
+        min_score = df[self.score_column].min()
+        max_score = df[self.score_column].max()
+        
+        if max_score > min_score:
+            df[self.score_column] = (df[self.score_column] - min_score) / (max_score - min_score)
         else:
-            candidates = self.recommend()
+            df[self.score_column] = 1.0
+        
+        return df
+    
+    def _weighted_shuffle(self, df):
+        probs = df[self.score_column].values
+        if probs.sum() > 0:
+            probs = probs / probs.sum()
+            idx = np.random.choice(df.index, size=len(df), replace=False, p=probs)
+            return df.loc[idx].reset_index(drop=True)
+        else:
+            return df.sample(frac=1).reset_index(drop=True)
 
-        # type별 점수 정규화
-        candidates = candidates.copy()
-        candidates['norm_score'] = 0.0
-        for t in candidates['type'].unique():
-            mask = candidates['type'] == t
-            scores = candidates.loc[mask, 'score']
-            min_s, max_s = scores.min(), scores.max()
-            if max_s > min_s:
-                norm = (scores - min_s) / (max_s - min_s)
-            else:
-                norm = np.ones_like(scores)
-            candidates.loc[mask, 'norm_score'] = norm
+    def _get_recommendations(self):
+        """
+        사용자 ID와 상품 ID 리스트를 받아 추천 점수를 계산한다.
+        1. 상품에 대해 개인화된 추천 점수 계산
+        2. 개인화된 추천 점수가 없는 상품에 대해 비개인화된 추천 점수(CBF) 계산
+        
+        exceptions:
+            user_id가 없는 경우, 인기도 기반 추천 점수 제공
+        
+        Args:
+            user_id (int): 사용자 ID
+            product_ids (list): 상품 ID 리스트
+        
+        Returns:
+            pd.DataFrame: 상품 ID와 추천 점수, 추천 타입을 포함하는 DataFrame
+        """
+        if not self.user_id:
+            # user_id가 없는 경우, 인기도 기반 추천 점수 제공
+            product_ids_str = ', '.join(str(pid) for pid in self.product_ids)
+            query = f"""
+            SELECT id as product_id, popularity_score as score
+            FROM "Product_products"
+            WHERE id IN ({product_ids_str})
+            """
+            total_items_score = load_data(query)
+            total_items_score['type'] = 'Popularity'
+            total_items_score = self._weighted_shuffle(total_items_score)
+            return total_items_score
+        
+        # 개인화 추천 점수 계산
+        personalized_items_score, non_personalized_items = self.personalized_recommender(self.user_id, self.product_ids)
+        personalized_items_score = pd.DataFrame(personalized_items_score, columns=['product_id', 'score'])
+        personalized_items_score['type'] = 'Personalized'
+        personalized_items_score = self._normalize_score(personalized_items_score)
 
-        # type별 가중치 곱
-        candidates['final_prob'] = candidates.apply(
-            lambda row: row['norm_score'] * self.type_weights.get(row['type'], 1.0) + 1e-6, axis=1
-        )
-        probs = candidates['final_prob'].values
-        probs = probs / probs.sum()
+        # 비개인화 추천 점수 계산 - CBF
+        non_personalized_items_score = []
+        non_personalized_items_score = pd.DataFrame(non_personalized_items, columns=['product_id', 'score'])
+        non_personalized_items_score['type'] = 'CBF'
+        non_personalized_items_score = self._normalize_score(non_personalized_items_score)
 
-        rng = np.random.default_rng(self.random_state)
-        chosen_idx = rng.choice(len(candidates), size=min(self.top_k, len(candidates)), replace=False, p=probs)
-        return candidates.iloc[chosen_idx].reset_index(drop=True)
+        # 추천 점수 합치기
+        total_items_score = pd.concat([personalized_items_score, non_personalized_items_score], ignore_index=True)
+
+        # 상품 랜덤 정렬 - 점수 기반
+        total_items_score = self._weighted_shuffle(total_items_score)
+
+        return total_items_score
+
+    def __call__(self):
+        return self._get_recommendations()

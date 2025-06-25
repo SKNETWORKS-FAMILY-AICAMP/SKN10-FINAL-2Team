@@ -7,18 +7,16 @@ from io import BytesIO
 
 class LightFMRecommender:
     """
-    S3에 저장된 LightFM 모델을 불러와 사용자별 맞춤형 상품 추천을 제공하는 클래스
+    S3에 저장된 LightFM 모델을 불러와 사용자별 맞춤형 상품 추천 점수를 제공하는 클래스
 
     주요 기능:
     - S3에서 LightFM 모델, 데이터셋, 아이템 feature를 로드하여 메모리에 저장한다.
-    - recommend(user_id, top_k): 특정 사용자에게 top_k개의 추천 상품 ID와 점수를 반환한다.
-    - get_product_score(user_id, product_ids): 특정 사용자와 상품 리스트에 대해 예측 점수를 반환한다.
-    - _get_product_info(product_score_pairs): 추천 상품 ID와 점수 쌍을 받아 상품 정보와 점수를 포함한 DataFrame을 반환한다.
-    - __call__(user_id, top_k): 객체를 함수처럼 호출하면 추천 결과 DataFrame을 바로 반환한다.
+    - _get_product_score(user_id, product_ids): 특정 사용자와 상품 리스트에 대해 예측 점수를 반환한다.
+    - __call__(user_id, product_ids): 객체를 함수처럼 호출하면 점수가 있는 상품과 nan인 상품을 분리해서 반환한다.
 
     사용 예시:
         recommender = LightFMRecommender()
-        recommendations = recommender(user_id=123, top_k=5)
+        personalized_items, non_personalized_items = recommender(user_id=123, product_ids=[1,2,3])
     """
     def __init__(self):
         """
@@ -59,7 +57,7 @@ class LightFMRecommender:
             user_id (str or int): 사용자 ID
 
         Returns:
-            tuple: (user_idx, item_id_map)
+            tuple: (user_idx, item_id_map) 또는 None
         """
         user_id_map, _, item_id_map, _ = self.dataset.mapping()
         if user_id not in user_id_map:
@@ -69,42 +67,10 @@ class LightFMRecommender:
 
         return user_idx, item_id_map
 
-    def recommend(self, user_id, top_k=5):
-        """
-        입력한 user_id에 대해 top_k개의 추천 상품 ID와 점수를 반환한다.
-        존재하지 않는 사용자일 경우 빈 리스트를 반환한다.
-
-        Args:
-            user_id (str or int): 추천을 받을 사용자 ID
-            top_k (int): 추천할 상품 개수
-
-        Returns:
-            list of (product_id, score): 추천 상품 ID와 점수 쌍 리스트
-        """
-        # 데이터셋에서 매핑 정보 추출
-        user_idx, item_id_map = self._get_user_idx(user_id)
-
-        # 아이템 인덱스 정렬 (LightFM의 내부 인덱스와 일치시키기 위함)
-        sorted_items = sorted(item_id_map.items(), key=lambda x: x[1])
-        item_idxs = np.array([idx for _, idx in sorted_items])
-        # 인덱스에서 실제 product_id로 역변환할 맵 생성
-        reverse_item_index_map = {idx: iid for iid, idx in item_id_map.items()}
-
-        # 추천 점수 예측
-        scores = self.model.predict(user_idx, item_idxs, item_features=self.item_features)
-        # 점수 내림차순으로 상위 top_k 인덱스 추출
-        top_indices = np.argsort(-scores)[:top_k]
-        # 추천 상품의 실제 product_id 추출
-        top_item_ids = [reverse_item_index_map[i] for i in item_idxs[top_indices]]
-        # 추천 점수 추출
-        top_scores = [float(scores[i]) for i in top_indices]
-
-        return list(zip(top_item_ids, top_scores))
-
-    def get_product_score(self, user_id, product_ids):
+    def _get_product_score(self, user_id, product_ids):
         """
         특정 user_id와 product_ids 리스트에 대해 LightFM score를 계산하여 반환한다.
-        모델에 없는 id는 score를 np.nan으로 반환한다.
+        user_id 또는 product_id가 모델에 없으면 score를 np.nan으로 반환한다.
 
         Args:
             user_id (str or int): 사용자 ID
@@ -113,7 +79,10 @@ class LightFMRecommender:
         Returns:
             list of (product_id, score): 각 상품의 예측 점수 (없는 id는 np.nan)
         """
-        user_idx, item_id_map = self._get_user_idx(user_id)
+        result = self._get_user_idx(user_id)
+        if result is None:
+            return [(pid, np.nan) for pid in product_ids]
+        user_idx, item_id_map = result
 
         scores = []
         for pid in product_ids:
@@ -125,40 +94,24 @@ class LightFMRecommender:
                 scores.append((pid, np.nan))
 
         return scores
-
-    def _get_product_info(self, product_score_pairs):
-        """
-        추천 상품 ID와 점수 쌍을 받아 상품 정보(title 등)와 점수를 포함한 DataFrame을 반환한다.
-        추천 결과가 없으면 빈 DataFrame을 반환한다.
-
-        Args:
-            product_score_pairs (list): (product_id, score) 쌍 리스트
-
-        Returns:
-            pd.DataFrame: 추천 상품 정보와 점수, 타입 컬럼 포함
-        """
-        if not product_score_pairs:
-            print("Personalized recommendations are not available.")
-            return pd.DataFrame(columns=["product_id", "type"])
-        
-        df_product_info = pd.DataFrame(product_score_pairs, columns=["product_id", "score"])
-        df_product_info["type"] = "Personalized"
-        df_product_info = df_product_info.sort_values(by="score", ascending=False).reset_index(drop=True)
-
-        return df_product_info
     
-    def __call__(self, user_id, top_k=5):
+    def __call__(self, user_id, product_ids):
         """
-        객체를 함수처럼 호출하면 추천 결과 DataFrame을 바로 반환한다.
+        객체를 함수처럼 호출하면 점수가 있는 상품과 nan인 상품을 분리해서 반환한다.
 
         Args:
             user_id (str or int): 추천을 받을 사용자 ID
-            top_k (int): 추천할 상품 개수
+            product_ids (list): 점수를 계산할 상품 ID 리스트
 
         Returns:
-            pd.DataFrame: 추천 상품 정보와 점수, 타입 컬럼 포함
+            tuple: (personalized_items, non_personalized_items)
+                - personalized_items: [(product_id, score), ...] (score가 nan이 아닌 것)
+                - non_personalized_items: [product_id, ...] (score가 nan인 것)
         """
         # 추천 상품 및 점수 쌍 추출
-        product_score_pairs = self.recommend(user_id, top_k=top_k)
+        product_score_pairs = self._get_product_score(user_id, product_ids)
 
-        return self._get_product_info(product_score_pairs)
+        personalized_items_score = [(pid, score) for pid, score in product_score_pairs if not np.isnan(score)]
+        non_personalized_items = [pid for pid, score in product_score_pairs if np.isnan(score)]
+
+        return personalized_items_score, non_personalized_items
