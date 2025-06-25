@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from common.database import load_data
 from personalized.lightfm_recommendation import LightFMRecommender
+from cbf_rec.cbf import ProductRecommender
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
@@ -15,14 +16,18 @@ class TotalRecommender:
             user_id (int, optional): 추천을 받을 사용자 ID
             product_ids (list, optional): 추천 대상 상품 ID 리스트
         """
-        self.user_id = user_id
-        self.product_ids = product_ids or []
+        if isinstance(user_id, dict):
+            params = user_id
+            self.user_id = params.get("user_id")
+            self.product_ids = params.get("product_ids", [])
+        else:
+            self.user_id = user_id
+            self.product_ids = product_ids or []
         self.score_column = 'score'
         
         self.recent_product_id = self._get_recent_product_id()
 
         self.personalized_recommender = LightFMRecommender()
-        # self.non_personalized_recommender = 
 
         logger.info(f"TotalRecommender 초기화: user_id={self.user_id}, product_ids={self.product_ids}")
     
@@ -123,7 +128,7 @@ class TotalRecommender:
             total_items_list = total_items_score['product_id'].tolist()
 
             logger.info("인기도 기반 추천 %d개 반환", len(total_items_score))
-            return total_items_score
+            return total_items_list
 
         # 개인화 추천 점수 계산
         logger.info(f"개인화 추천 시작: user_id={self.user_id}")
@@ -136,12 +141,13 @@ class TotalRecommender:
 
         # 비개인화 추천 점수 계산 - CBF -> 수정해야 할 부분 -> self.recent_product_id, non_personalized_items 전달
         logger.info("비개인화 추천 시작: 최근 상품 ID=%s", self.recent_product_id)
-        rng = np.random.default_rng()
-        non_personalized_items_score = [(pid, rng.uniform(0, 1)) for pid in non_personalized_items]
+        non_personalized_recommender = ProductRecommender(self.recent_product_id, non_personalized_items)
+        non_personalized_items_score = non_personalized_recommender()
+        logger.info("비개인화 추천 완료: %d개", len(non_personalized_items_score))
+
         non_personalized_items_score = pd.DataFrame(non_personalized_items_score, columns=['product_id', 'score'])
         non_personalized_items_score['type'] = 'CBF'
         non_personalized_items_score = self._normalize_score(non_personalized_items_score)
-        logger.info("비개인화 추천 완료: %d개", len(non_personalized_items_score))
 
         # 추천 점수 합치기
         total_items_score = pd.concat([personalized_items_score, non_personalized_items_score], ignore_index=True)
@@ -151,7 +157,7 @@ class TotalRecommender:
         total_items_list = total_items_score['product_id'].tolist()
 
         logger.info("최종 추천 리스트 생성 완료: %d개", len(total_items_list))
-        return total_items_score
+        return total_items_list
 
     def __call__(self):
         """
