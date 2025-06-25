@@ -1,7 +1,6 @@
-from typing import Dict, List, TypedDict, Any, Optional, Sequence, Annotated, Union
+from typing import Dict, List, TypedDict, Any, Optional, Sequence, Annotated
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
-from operator import add
 
 # 새로 덮어씌우기 위한 리듀서 함수 정의
 def overwrite_reducer(left: Any, right: Any) -> Any:

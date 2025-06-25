@@ -1,5 +1,5 @@
-from typing import Dict, Any, Optional, List
-from langchain_core.messages import HumanMessage, AIMessage
+from typing import Dict, Any, Optional
+from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, END
 import os
 from dotenv import load_dotenv
