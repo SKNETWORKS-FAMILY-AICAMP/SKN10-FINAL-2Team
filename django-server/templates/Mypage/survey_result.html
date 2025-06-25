@@ -30,112 +30,73 @@
     padding-top: 20px;
 }
 
-.health-status {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.health-status h2 {
-    font-family: 'Pretendard';
-    font-style: normal;
-    font-weight: 700;
-    font-size: 18px;
-    line-height: 24px;
-    color: #31444E;
-    margin-bottom: 10px;
-}
-
-.health-status p {
-    font-family: 'Pretendard';
-    font-style: normal;
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 24px;
-    color: #31444E;
-}
-
-.supplements-section {
-    margin-bottom: 30px;
-}
-
-.supplements-section h2 {
-    font-family: 'Pretendard';
-    font-style: normal;
-    font-weight: 700;
-    font-size: 18px;
-    line-height: 24px;
-    color: #31444E;
-    margin-bottom: 20px;
-}
-
-.supplement-card {
-    background: #FDFBF5;
-    border: 1px solid #EADCA6;
+.section-block {
+    background: #fff;
     border-radius: 6px;
-    padding: 15px;
-    margin-bottom: 15px;
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 32px;
+    padding: 24px 20px 20px 20px;
 }
 
-.supplement-card h3 {
+.section-title {
     font-family: 'Pretendard';
     font-style: normal;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 20px;
     line-height: 24px;
-    color: #31444E;
-    margin-bottom: 10px;
-}
-
-.supplement-card p {
-    font-family: 'Pretendard';
-    font-style: normal;
-    font-weight: 500;
-    font-size: 14px;
-    line-height: 20px;
-    color: #31444E;
-    margin-bottom: 5px;
-}
-
-.lifestyle-section {
-    margin-bottom: 30px;
-}
-
-.lifestyle-section h2 {
-    font-family: 'Pretendard';
-    font-style: normal;
-    font-weight: 700;
-    font-size: 18px;
-    line-height: 24px;
-    color: #31444E;
+    color: #DDC66F;
     margin-bottom: 20px;
+    text-align: center;
 }
 
-.lifestyle-list {
-    list-style: none;
-    padding: 0;
-}
-
-.lifestyle-list li {
+.section-content {
     font-family: 'Pretendard';
     font-style: normal;
     font-weight: 500;
     font-size: 14px;
     line-height: 20px;
     color: #31444E;
-    margin-bottom: 10px;
+    text-align: left;
+}
+
+.section-content h4 {
+    font-family: 'Pretendard';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 18px;
+    color: #31444E;
+    margin-top: 15px;
+    margin-bottom: 8px;
+}
+
+.section-content p {
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.section-content ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.section-content li {
+    margin-bottom: 12px;
     padding-left: 20px;
     position: relative;
+    line-height: 1.6;
 }
 
-.lifestyle-list li:before {
+.section-content li:before {
     content: "•";
     color: #DDC66F;
     position: absolute;
     left: 0;
+    font-weight: bold;
 }
 
 .profile-btn {
-    width: 436px;
+    width: 100%;
     height: 48px;
     background: #EADCA6;
     border-radius: 6px;
@@ -148,8 +109,7 @@
     color: #FFFFFF;
     cursor: pointer;
     transition: background-color 0.2s;
-    margin: 0 auto;
-    display: block;
+    margin-top: 20px;
 }
 
 .profile-btn:hover {
@@ -160,56 +120,34 @@
 
 {% block content %}
 <div class="survey-result-container">
-    <h1 class="result-title">설문 결과</h1>
-    
+    <h1 class="result-title">건강 보고서</h1>
     {% if message %}
         <p>{{ message }}</p>
     {% else %}
-        <div class="health-status">
-            <h2>현재 건강 상태</h2>
-            <p>건강 점수: {{ health_score }}점</p>
-            <p>건강 상태: {{ survey_result.answers.health_status }}</p>
-        </div>
-
-        <div class="supplements-section">
-            <h2>추천 영양제</h2>
-            {% for supplement in recommended_supplements %}
-            <div class="supplement-card">
-                <h3>{{ supplement.name }}</h3>
-                <p><strong>추천 이유:</strong> {{ supplement.reason }}</p>
-                <p><strong>효과:</strong> {{ supplement.benefits }}</p>
+        <div class="section-block">
+            <h2 class="section-title">건강 상태 요약</h2>
+            <div class="section-content">
+                {{ health_summary|safe }}
             </div>
-            {% endfor %}
         </div>
-
-        <div class="lifestyle-section">
-            <h2>생활 습관 개선 제안</h2>
-            <ul class="lifestyle-list">
-                {% for recommendation in recommendations %}
-                <li>{{ recommendation }}</li>
-                {% endfor %}
-            </ul>
+        <div class="section-block">
+            <h2 class="section-title">추천하는 핵심 영양제</h2>
+            <div class="section-content">
+                {{ recommended_supplements_section|safe }}
+            </div>
         </div>
-
-        <div class="survey-responses">
-            <h2>설문 응답</h2>
-            <ul class="response-list">
-                <li>키: {{ survey_result.answers.height }}cm</li>
-                <li>체중: {{ survey_result.answers.weight }}kg</li>
-                <li>좌식 작업: {{ survey_result.answers.sitting_work }}</li>
-                <li>실내 활동: {{ survey_result.answers.indoor_daytime }}</li>
-                <li>운동: {{ survey_result.answers.exercise }}</li>
-                <li>흡연: {{ survey_result.answers.smoking }}</li>
-                <li>음주: {{ survey_result.answers.drinking }}</li>
-                <li>피로도: {{ survey_result.answers.fatigue }}</li>
-                <li>수면 질: {{ survey_result.answers.sleep_well }}</li>
-                <li>수면 후 피로: {{ survey_result.answers.still_tired }}</li>
-                <li>수면 시간: {{ survey_result.answers.sleep_hours }}시간</li>
-                <li>운동 빈도: {{ survey_result.answers.exercise_frequency }}</li>
-                <li>물 섭취량: {{ survey_result.answers.water_intake }}L</li>
-            </ul>
+        <div class="section-block">
+            <h2 class="section-title">주의가 필요한 영양소</h2>
+            <div class="section-content">
+                {{ warnings_section|safe }}
+            </div>
         </div>
-
+        <div class="section-block">
+            <h2 class="section-title">영양제 섭취 시 중요 고려사항</h2>
+            <div class="section-content">
+                {{ considerations_section|safe }}
+            </div>
+        </div>
         <button class="profile-btn" onclick="window.location.href='{% url 'mypage:mypage' %}'">마이페이지로 이동</button>
     {% endif %}
 </div>

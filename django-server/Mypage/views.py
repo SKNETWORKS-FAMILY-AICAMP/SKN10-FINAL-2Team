@@ -24,6 +24,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 import ast
 from Chatbot.models import NutritionDailyRec
+import markdown
 
 @login_required
 def mypage_view(request):
@@ -31,25 +32,22 @@ def mypage_view(request):
     latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
     
     if latest_survey:
-        # 건강 점수 계산
-        health_score = calculate_health_score(latest_survey)
-        
-        # 추천 영양제 가져오기
-        recommended_supplements = get_recommended_supplements(latest_survey)
+        # 추천 영양제 가져오기 (보고서 기반)
+        recommended_supplements = get_recommended_supplements_from_report(latest_survey)
         
         # 건강 리포트 생성 또는 업데이트
         health_report, created = UserHealthReport.objects.get_or_create(
             user=request.user,
             survey_result=latest_survey,
             defaults={
-                'health_score': health_score,
-                'recommendations': generate_recommendations(latest_survey, health_score)
+                'health_score': 0,  # 건강점수 제거
+                'recommendations': generate_recommendations(latest_survey, 0)
             }
         )
         
         if not created:
-            health_report.health_score = health_score
-            health_report.recommendations = generate_recommendations(latest_survey, health_score)
+            health_report.health_score = 0  # 건강점수 제거
+            health_report.recommendations = generate_recommendations(latest_survey, 0)
             health_report.save()
         
         # 설문 이력 가져오기
@@ -57,7 +55,6 @@ def mypage_view(request):
         
         context = {
             'latest_survey': latest_survey,
-            'health_score': health_score,
             'recommended_supplements': recommended_supplements,
             'recommendations': health_report.recommendations.split('\n'),
             'survey_history': survey_history
@@ -65,7 +62,6 @@ def mypage_view(request):
     else:
         context = {
             'latest_survey': None,
-            'health_score': 0,
             'recommended_supplements': [],
             'recommendations': [],
             'survey_history': []
@@ -80,17 +76,47 @@ def survey(request):
         with open('static/json/Mypage/survey_questions.json', 'r', encoding='utf-8') as f:
             survey_data = json.load(f)
             
-            # Add IDs to questions
-            for i, question in enumerate(survey_data['questions']):
-                question['id'] = str(i + 1)
+            # Nowa struktura: kategorie z pytaniami
+            # Konwertuj strukturę na płaską listę pytań dla kompatybilności z szablonem
+            questions = []
+            question_id = 1
+            
+            for category, category_questions in survey_data.items():
+                for question_text, default_value in category_questions.items():
+                    question = {
+                        'id': str(question_id),
+                        'category': category,
+                        'text': question_text,
+                        'name': f"question_{question_id}",
+                        'default_value': default_value
+                    }
+                    
+                    # Określ typ pytania na podstawie wartości domyślnej
+                    if isinstance(default_value, list):
+                        question['type'] = 'select'
+                        question['options'] = default_value
+                    elif isinstance(default_value, dict):
+                        question['type'] = 'checkbox'
+                        question['options'] = list(default_value.keys())
+                    elif default_value in ['예', '아니오']:
+                        question['type'] = 'select'
+                        question['options'] = ['예', '아니오']
+                    else:
+                        question['type'] = 'text'
+                        question['default_value'] = default_value
+                    
+                    questions.append(question)
+                    question_id += 1
             
             return render(request, 'Mypage/survey.html', {
-                'survey_questions': survey_data
+                'survey_questions': {'questions': questions},
+                'survey_categories': survey_data
             })
     except Exception as e:
         print(f"Error loading survey questions: {str(e)}")
         return render(request, 'Mypage/survey.html', {
             'survey_questions': {'questions': []},
+            'survey_categories': {},
             'error': str(e)
         })
 
@@ -385,50 +411,66 @@ def submit_survey(request):
         responses = {}
         for key, value in request.POST.items():
             if key != 'csrfmiddlewaretoken':
-                responses[key] = value
-        
+                if key in responses:
+                    if isinstance(responses[key], list):
+                        responses[key].append(value)
+                    else:
+                        responses[key] = [responses[key], value]
+                else:
+                    responses[key] = value
+        for key, value in responses.items():
+            if isinstance(value, list):
+                responses[key] = ', '.join(value)
+        print(f"Survey responses: {responses}")
+
+        # 질문 번호 → 의미있는 키로 매핑
+        question_map = {
+            'question_1': 'gender',
+            'question_2': 'age_range',
+            'question_3': 'sitting_work',
+            'question_4': 'indoor_daytime',
+            'question_5': 'exercise',
+            'question_6': 'smoking',
+            'question_7': 'drinking',
+            'question_8': 'fatigue',
+            'question_9': 'sleep_well',
+            'question_10': 'still_tired',
+            'question_11': 'symptom_1',
+            'question_12': 'symptom_2',
+            'question_13': 'frequent_cold',
+            'question_14': 'dry_eyes',
+            'question_15': 'skin_care',
+            'question_16': 'cognitive_improvement',
+            'question_17': 'weight_loss',
+            'question_18': 'allergies',
+            'question_19': 'chronic_medication',
+            'question_20': 'antibiotics',
+            'question_21': 'surgery_plan',
+            'question_22': 'etc',
+        }
+        mapped_answers = {}
+        for k, v in responses.items():
+            mapped_answers[question_map.get(k, k)] = v
+        print(f"Mapped answers: {mapped_answers}")
+
         # 설문 응답 저장
         survey_response = SurveyResponse.objects.create(
             user=request.user,
             responses=responses,
-            age_range=responses.get('age'),
-            gender=responses.get('gender'),
-            height=responses.get('height'),
-            weight=responses.get('weight'),
-            sitting_work=responses.get('sitting_work'),
-            indoor_daytime=responses.get('indoor_daytime'),
-            exercise=responses.get('exercise'),
-            smoking=responses.get('smoking'),
-            drinking=responses.get('drinking'),
-            fatigue=responses.get('fatigue'),
-            sleep_well=responses.get('sleep_well'),
-            still_tired=responses.get('still_tired'),
-            sleep_hours=responses.get('sleep_hours'),
-            exercise_frequency=responses.get('exercise_frequency'),
-            water_intake=responses.get('water_intake'),
-            health_status=responses.get('health_status')
+            answers=mapped_answers
         )
-
         # 설문 결과 분석 및 저장
         result = analyze_survey_responses(survey_response)
         SurveyResult.objects.create(
             user=request.user,
-            answers=responses,
-            result=result,
-            health_status=responses.get('health_status'),
-            recommended_supplements=result.get('nutrient_needs', [])
+            answers=mapped_answers,
+            result=result
         )
-
-        return JsonResponse({
-            'status': 'success',
-            'message': '설문이 성공적으로 제출되었습니다.'
-        })
+        return redirect('mypage:survey_result')
     except Exception as e:
         print(f"Error submitting survey: {str(e)}")
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=400)
+        messages.error(request, f'설문 제출 중 오류가 발생했습니다: {str(e)}')
+        return redirect('mypage:survey')
 
 @login_required
 def survey_result(request):
@@ -436,8 +478,8 @@ def survey_result(request):
         # 가장 최근 설문 결과 가져오기
         survey_result = SurveyResult.objects.filter(user=request.user).latest('created_at')
         
-        # 건강 점수 계산
-        health_score = calculate_health_score(survey_result)
+        # Debug: sprawdź dane
+        print(f"DEBUG: Survey result answers: {survey_result.answers}")
         
         # 추천 영양제 가져오기
         recommended_supplements = get_recommended_supplements(survey_result)
@@ -447,21 +489,52 @@ def survey_result(request):
             user=request.user,
             survey_result=survey_result,
             defaults={
-                'health_score': health_score,
-                'recommendations': generate_recommendations(survey_result, health_score)
+                'health_score': 0,  # 건강점수 제거
+                'recommendations': generate_recommendations(survey_result, 0)
             }
         )
         
         if not created:
-            health_report.health_score = health_score
-            health_report.recommendations = generate_recommendations(survey_result, health_score)
+            health_report.health_score = 0  # 건강점수 제거
+            health_report.recommendations = generate_recommendations(survey_result, 0)
             health_report.save()
+        
+        # Generuj osobne sekcje raportu
+        health_summary = generate_health_summary_section(request.user, survey_result)
+        recommended_supplements_section = generate_recommended_supplements_section(survey_result)
+        warnings_section = generate_warnings_section(survey_result)
+        considerations_section = generate_considerations_section(survey_result)
+        
+        # Debug: sprawdź wygenerowane sekcje
+        print(f"DEBUG: Health summary: {health_summary[:100]}...")
+        print(f"DEBUG: Recommended supplements section: {recommended_supplements_section[:100]}...")
+        print(f"DEBUG: Warnings section: {warnings_section[:100]}...")
+        print(f"DEBUG: Considerations section: {considerations_section[:100]}...")
+        
+        # Debug: sprawdź długość sekcji
+        print(f"DEBUG: Health summary length: {len(health_summary)}")
+        print(f"DEBUG: Recommended supplements section length: {len(recommended_supplements_section)}")
+        print(f"DEBUG: Warnings section length: {len(warnings_section)}")
+        print(f"DEBUG: Considerations section length: {len(considerations_section)}")
+        
+        # Renderuj markdown do HTML
+        health_summary_html = markdown.markdown(health_summary, extensions=['extra'])
+        recommended_supplements_html = markdown.markdown(recommended_supplements_section, extensions=['extra'])
+        warnings_html = markdown.markdown(warnings_section, extensions=['extra'])
+        considerations_html = markdown.markdown(considerations_section, extensions=['extra'])
+        
+        # Debug: sprawdź HTML po renderowaniu
+        print(f"DEBUG: Recommended supplements HTML length: {len(recommended_supplements_html)}")
+        print(f"DEBUG: Recommended supplements HTML: {recommended_supplements_html[:200]}...")
         
         context = {
             'survey_result': survey_result,
-            'health_score': health_score,
             'recommended_supplements': recommended_supplements,
-            'recommendations': health_report.recommendations.split('\n')
+            'recommendations': health_report.recommendations.split('\n'),
+            'health_summary': health_summary_html,
+            'recommended_supplements_section': recommended_supplements_html,
+            'warnings_section': warnings_html,
+            'considerations_section': considerations_html
         }
         return render(request, 'Mypage/survey_result.html', context)
     except SurveyResult.DoesNotExist:
@@ -1698,3 +1771,530 @@ def get_available_nutrients(request):
             'status': 'error',
             'message': str(e)
         }, status=500)
+
+def generate_health_report_markdown(user, survey_result):
+    """
+    Generuje raport zdrowotny w formacie markdown na podstawie wyników ankiety
+    """
+    try:
+        # Pobierz dane z ankiety
+        answers = survey_result.answers
+        user_name = user.name or user.email.split('@')[0]
+        
+        # Analizuj odpowiedzi z ankiety - używaj rzeczywistych odpowiedzi
+        gender = answers.get('gender', '')
+        age_group = answers.get('age_range', '')
+        
+        # Analizuj style życia na podstawie rzeczywistych odpowiedzi
+        lifestyle_summary = []
+        if answers.get('sitting_work') == '예':  # 주로 앉아서 하는 일
+            lifestyle_summary.append("주로 앉아서 일하는 생활")
+        if answers.get('indoor_daytime') == '예':  # 실내에서 주로 생활
+            lifestyle_summary.append("실내에서 주로 생활")
+        if answers.get('exercise') == '아니오':  # 규칙적인 운동
+            lifestyle_summary.append("규칙적인 운동 부족")
+        if answers.get('smoking') == '예':  # 흡연
+            lifestyle_summary.append("흡연")
+        if answers.get('drinking') == '예':  # 과도한 음주
+            lifestyle_summary.append("과도한 음주")
+        if answers.get('fatigue') == '예':  # 만성 피로
+            lifestyle_summary.append("만성 피로")
+        if answers.get('sleep_well') == '아니오':  # 수면의 질
+            lifestyle_summary.append("수면의 질 저하")
+        if answers.get('still_tired') == '예':  # 수면 후 피로
+            lifestyle_summary.append("수면 후에도 피로함")
+        
+        # Analizuj stan zdrowia na podstawie rzeczywistych odpowiedzi
+        health_status = []
+        if answers.get('stress') == '예':  # 스트레스
+            health_status.append("스트레스 과다")
+        if answers.get('digestive_issues') == '예':  # 소화기 문제
+            health_status.append("소화기 문제")
+        if answers.get('frequent_cold') == '예':  # 면역력 저하
+            health_status.append("면역력 저하")
+        if answers.get('dry_eyes') == '예':  # 눈 건강 문제
+            health_status.append("눈 건강 문제")
+        
+        # Analizuj cele zdrowotne na podstawie rzeczywistych odpowiedzi
+        health_goals = []
+        if answers.get('skin_care') == '예':  # 피부 건강
+            health_goals.append("피부 건강 개선")
+        if answers.get('cognitive_improvement') == '예':  # 인지력 개선
+            health_goals.append("인지력 및 기억력 개선")
+        if answers.get('weight_loss') == '예':  # 체중 감량
+            health_goals.append("체중 감량")
+        
+        # Analizuj istniejące choroby i leki na podstawie rzeczywistych odpowiedzi
+        medical_conditions = []
+        if answers.get('allergies'):  # 알레르기
+            medical_conditions.append("식품 알레르기")
+        if answers.get('chronic_medication'):  # 만성질환 약물
+            medical_conditions.append("만성질환 약물 복용")
+        if answers.get('antibiotics') == '예':  # 항생제 복용
+            medical_conditions.append("최근 항생제 복용")
+        if answers.get('surgery_plan') == '예':  # 수술 계획
+            medical_conditions.append("수술 계획/경험")
+        
+        # Generuj spersonalizowane rekomendacje na podstawie rzeczywistych odpowiedzi
+        recommended_supplements = []
+        
+        # 비타민 D - jeśli 실내 생활
+        if answers.get('indoor_daytime'):
+            recommended_supplements.append({
+                'name': '비타민 D',
+                'reason': '실내 생활이 많고 햇빛 노출이 부족합니다.',
+                'benefits': '면역력 강화와 뼈 건강에 도움을 줍니다.'
+            })
+        
+        # 오메가-3 추천 조건
+        if survey_result.answers.get('sitting_work') and survey_result.answers.get('exercise_frequency') in ['전혀 안함', '1-2회']:
+            recommended_supplements.append({
+                'name': '오메가-3',
+                'reason': '장시간 앉아서 일하고 운동이 부족합니다.',
+                'benefits': '심장 건강과 염증 감소에 도움을 줍니다.'
+            })
+        
+        # 비타민 B 복합체 추천 조건
+        if survey_result.answers.get('fatigue') or survey_result.answers.get('still_tired'):
+            recommended_supplements.append({
+                'name': '비타민 B 복합체',
+                'reason': '피로감이 심하고 수면의 질이 좋지 않습니다.',
+                'benefits': '에너지 대사와 신경계 건강에 도움을 줍니다.'
+            })
+        
+        return recommended_supplements
+    except Exception as e:
+        print(f"Error generating health report: {str(e)}")
+        return f"보고서 생성 중 오류가 발생했습니다: {str(e)}"
+
+@login_required
+def get_available_nutrients(request):
+    try:
+        nutrients = Nutrient.objects.all().values('id', 'name', 'unit', 'daily_recommended')
+        return JsonResponse({'nutrients': list(nutrients)})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def generate_health_summary_section(user, survey_result):
+    """
+    Generuje sekcję 1: 건강 상태 요약
+    """
+    try:
+        # Mapowanie odpowiedzi z ankiety
+        answers = survey_result.answers
+        
+        # Sprawdź czy answers to string JSON
+        if isinstance(answers, str):
+            answers = json.loads(answers)
+        
+        user_name = user.name or user.email.split('@')[0]
+        
+        print(f"DEBUG: All answers in generate_health_summary_section: {answers}")
+        
+        # Analizuj odpowiedzi z ankiety
+        gender = answers.get('gender', '')  # 성별
+        age_group = answers.get('age_range', '')  # 연령대
+        
+        print(f"DEBUG: Gender: {gender}, Age group: {age_group}")
+        
+        # Analizuj style życia
+        lifestyle_summary = []
+        sitting_work = answers.get('sitting_work', '')  # 앉아서 일하는지
+        if sitting_work == '예':
+            lifestyle_summary.append("주로 앉아서 일하는 생활")
+        
+        indoor_daytime = answers.get('indoor_daytime', '')  # 실내 생활
+        if indoor_daytime == '예':
+            lifestyle_summary.append("실내에서 주로 생활")
+        
+        exercise = answers.get('exercise', '')  # 운동 여부
+        if exercise == '아니오':
+            lifestyle_summary.append("규칙적인 운동 부족")
+        
+        smoking = answers.get('smoking', '')  # 흡연
+        if smoking == '예':
+            lifestyle_summary.append("흡연")
+        
+        drinking = answers.get('drinking', '')  # 음주
+        if drinking == '예':
+            lifestyle_summary.append("과도한 음주")
+        
+        fatigue = answers.get('fatigue', '')  # 피로
+        if fatigue == '예':
+            lifestyle_summary.append("만성 피로")
+        
+        sleep_well = answers.get('sleep_well', '')  # 수면의 질
+        if sleep_well == '아니오':
+            lifestyle_summary.append("수면의 질 저하")
+        
+        still_tired = answers.get('still_tired', '')  # 수면 후 피로
+        if still_tired == '예':
+            lifestyle_summary.append("수면 후에도 피로함")
+        
+        print(f"DEBUG: Lifestyle summary: {lifestyle_summary}")
+        
+        # Analizuj stan zdrowia
+        health_status = []
+        symptom_1 = answers.get('symptom_1', '')  # 증상 1
+        if symptom_1 == '예':
+            health_status.append("건강 문제 있음")
+        
+        symptom_2 = answers.get('symptom_2', '')  # 증상 2
+        if symptom_2 == '예':
+            health_status.append("소화기 문제")
+        
+        frequent_cold = answers.get('frequent_cold', '')  # 면역력 저하
+        if frequent_cold == '예':
+            health_status.append("면역력 저하")
+        
+        dry_eyes = answers.get('dry_eyes', '')  # 눈 건강 문제
+        if dry_eyes == '예':
+            health_status.append("눈 건강 문제")
+        
+        print(f"DEBUG: Health status: {health_status}")
+        
+        # Analizuj cele zdrowotne
+        health_goals = []
+        skin_care = answers.get('skin_care', '')  # 피부 관리
+        if skin_care == '예':
+            health_goals.append("피부 건강 개선")
+        
+        cognitive_improvement = answers.get('cognitive_improvement', '')  # 인지력 개선
+        if cognitive_improvement == '예':
+            health_goals.append("인지력 및 기억력 개선")
+        
+        weight_loss = answers.get('weight_loss', '')  # 체중 감량
+        if weight_loss == '예':
+            health_goals.append("체중 감량")
+        
+        if not health_goals:
+            health_goals = ["건강 유지 및 개선"]
+        
+        print(f"DEBUG: Health goals: {health_goals}")
+        
+        # Analizuj istniejące choroby i leki
+        medical_conditions = []
+        allergies = answers.get('allergies', '')  # 알레르기
+        if allergies == '예':
+            medical_conditions.append("식품 알레르기")
+        
+        chronic_medication = answers.get('chronic_medication', '')  # 만성질환 약물
+        if chronic_medication == '예':
+            medical_conditions.append("만성질환 약물 복용")
+        
+        antibiotics = answers.get('antibiotics', '')  # 항생제
+        if antibiotics == '예':
+            medical_conditions.append("최근 항생제 복용")
+        
+        surgery_plan = answers.get('surgery_plan', '')  # 수술 계획
+        if surgery_plan == '예':
+            medical_conditions.append("수술 계획/경험")
+        
+        print(f"DEBUG: Medical conditions: {medical_conditions}")
+        
+        # Generuj sekcję
+        summary = f"""안녕하세요, {user_name}님! 설문조사를 통해 파악된 건강 상태와 생활 습관을 바탕으로, 꼭 필요한 영양제를 추천해 드립니다.
+
+#### **기본 정보**: {gender}, {age_group}
+
+#### **생활 습관**: {', '.join(lifestyle_summary) if lifestyle_summary else '규칙적인 생활 습관을 유지하고 계십니다'}
+
+#### **현재 건강 상태**: {', '.join(health_status) if health_status else '전반적으로 양호한 건강 상태입니다'}
+
+#### **건강 목표**: {', '.join(health_goals)}
+
+#### **기존 질환 및 약 복용**: {', '.join(medical_conditions) if medical_conditions else '특별한 질환이나 복용 중인 약물이 없습니다'}"""
+        
+        print(f"DEBUG: Generated summary: {summary}")
+        return summary
+        
+    except Exception as e:
+        print(f"Error generating health summary: {str(e)}")
+        return f"건강 상태 요약 생성 중 오류가 발생했습니다: {str(e)}"
+
+def is_nutrient_in_db(nutrient_name):
+    from Mypage.models import Nutrient
+    if not hasattr(is_nutrient_in_db, '_cache'):
+        is_nutrient_in_db._cache = set(Nutrient.objects.values_list('name', flat=True))
+    return nutrient_name in is_nutrient_in_db._cache
+
+
+def generate_recommended_supplements_section(survey_result):
+    """
+    Generuje sekcję 2: 추천하는 핵심 영양제
+    """
+    try:
+        # Mapowanie odpowiedzi z ankiety
+        answers = survey_result.answers
+        
+        # Sprawdź czy answers to string JSON
+        if isinstance(answers, str):
+            answers = json.loads(answers)
+        
+        recommended_supplements = []
+
+        # 비타민 D - 실내 생활 여부 확인
+        if is_nutrient_in_db('비타민 D') and answers.get('indoor_daytime') == '예':  # 실내에서 주로 생활
+            recommended_supplements.append({
+                'name': '비타민 D',
+                'reason': '실내에서 주로 생활하시므로 햇빛 노출이 부족할 수 있어 비타민 D 보충이 필요합니다. 뼈 건강과 면역력 강화에 도움이 됩니다.'
+            })
+        
+        # 마그네슘 - 수면 문제 확인
+        if is_nutrient_in_db('마그네슘') and (answers.get('sleep_well') == '아니오' or answers.get('still_tired') == '예'):  # 수면의 질
+            recommended_supplements.append({
+                'name': '마그네슘',
+                'reason': '수면의 질 저하와 피로 증상 개선을 위해 추천합니다. 근육 이완과 신경 안정에 도움이 됩니다.'
+            })
+        
+        # 비타민 B 복합체 - 피로 확인
+        b_complex = ['비타민 B1', '비타민 B2', '비타민 B6', '비타민 B12', '나이아신', '엽산', '판토텐산', '비오틴']
+        if any(is_nutrient_in_db(b) for b in b_complex) and answers.get('fatigue') == '예':  # 피로
+            recommended_supplements.append({
+                'name': '비타민 B 복합체',
+                'reason': '에너지 대사와 피로 회복을 위해 추천합니다. 특히 스트레스 상황에서 소모되기 쉬운 영양소입니다.'
+            })
+        
+        # 루테인 - 눈 건강 문제 확인
+        if is_nutrient_in_db('루테인') and answers.get('dry_eyes') == '예':  # 눈 건강 문제
+            recommended_supplements.append({
+                'name': '루테인',
+                'reason': '눈 건강 문제 개선을 위해 추천합니다. 시력 보호와 눈 피로 완화에 효과적입니다.'
+            })
+        
+        # 비타민 C - 면역력 확인
+        if is_nutrient_in_db('비타민 C') and answers.get('frequent_cold') == '예':  # 면역력 저하
+            recommended_supplements.append({
+                'name': '비타민 C',
+                'reason': '면역력 강화를 위해 추천합니다. 스트레스 상황에서 소모되기 쉬운 영양소입니다.'
+            })
+        
+        # 철분 - 여성, 특히 젊은 여성
+        if is_nutrient_in_db('철') and answers.get('gender') == '여성' and answers.get('age_range') in ['19-29', '30-49']:
+            recommended_supplements.append({
+                'name': '철',
+                'reason': '여성의 경우 철분 섭취에 특히 주의가 필요합니다. 월경으로 인한 철분 손실을 보충하는 데 도움이 됩니다.'
+            })
+        
+        # 칼슘 - 나이 많은 여성
+        if is_nutrient_in_db('칼슘') and answers.get('gender') == '여성' and answers.get('age_range') in ['50-64', '65+']:
+            recommended_supplements.append({
+                'name': '칼슘',
+                'reason': '골다공증 예방을 위해 충분한 칼슘 섭취가 중요합니다. 특히 폐경 후 여성에게 필요합니다.'
+            })
+        
+        # 기본 추천 (추천이 없을 경우)
+        if not recommended_supplements:
+            if is_nutrient_in_db('비타민 D'):
+                recommended_supplements.append({
+                    'name': '비타민 D',
+                    'reason': '전반적인 건강 유지를 위한 기본 영양소 보충을 위해 추천합니다. 특히 햇빛 노출이 부족한 현대인에게 필요합니다.'
+                })
+            elif is_nutrient_in_db('비타민 C'):
+                recommended_supplements.append({
+                    'name': '비타민 C',
+                    'reason': '면역력 강화와 항산화 작용을 위해 추천합니다. 전반적인 건강 유지에 도움이 됩니다.'
+                })
+            else:
+                recommended_supplements.append({
+                    'name': '종합 비타민',
+                    'reason': '전반적인 건강 유지를 위한 기본 영양소 보충을 위해 추천합니다.'
+                })
+        
+        section = "설문 결과를 종합적으로 고려하여 다음 영양소들을 추천합니다.\n\n"
+        for supplement in recommended_supplements:
+            section += f"#### **{supplement['name']}**: {supplement['reason']}\n\n"
+        
+        return section
+        
+    except Exception as e:
+        print(f"Error generating recommended supplements: {str(e)}")
+        return f"추천 영양제 생성 중 오류가 발생했습니다: {str(e)}"
+
+
+def get_recommended_supplements_from_report(survey_result):
+    """
+    보고서 기반으로 추천 영양제를 가져옵니다 (마이페이지용)
+    """
+    try:
+        answers = survey_result.answers
+        recommended_supplements = []
+        
+        # 비타민 D - 실내 생활 여부 확인
+        if is_nutrient_in_db('비타민 D') and answers.get('indoor_daytime') == '예':  # 실내에서 주로 생활
+            recommended_supplements.append({
+                'name': '비타민 D',
+                'reason': '실내에서 주로 생활하시므로 햇빛 노출이 부족할 수 있어 비타민 D 보충이 필요합니다.'
+            })
+        
+        # 마그네슘 - 수면 문제 확인
+        if is_nutrient_in_db('마그네슘') and (answers.get('sleep_well') == '아니오' or answers.get('still_tired') == '예'):  # 수면의 질
+            recommended_supplements.append({
+                'name': '마그네슘',
+                'reason': '수면의 질 저하와 피로 증상 개선을 위해 추천합니다.'
+            })
+        
+        # 비타민 B 복합체 - 피로 확인
+        b_complex = ['비타민 B1', '비타민 B2', '비타민 B6', '비타민 B12', '나이아신', '엽산', '판토텐산', '비오틴']
+        if any(is_nutrient_in_db(b) for b in b_complex) and answers.get('fatigue') == '예':  # 피로
+            recommended_supplements.append({
+                'name': '비타민 B 복합체',
+                'reason': '에너지 대사와 피로 회복을 위해 추천합니다.'
+            })
+        
+        # 루테인 - 눈 건강 문제 확인
+        if is_nutrient_in_db('루테인') and answers.get('dry_eyes') == '예':  # 눈 건강 문제
+            recommended_supplements.append({
+                'name': '루테인',
+                'reason': '눈 건강 문제 개선을 위해 추천합니다.'
+            })
+        
+        # 비타민 C - 면역력 확인
+        if is_nutrient_in_db('비타민 C') and answers.get('frequent_cold') == '예':  # 면역력 저하
+            recommended_supplements.append({
+                'name': '비타민 C',
+                'reason': '면역력 강화를 위해 추천합니다.'
+            })
+        
+        # 기본 추천 (추천이 없을 경우)
+        if not recommended_supplements:
+            if is_nutrient_in_db('비타민 D'):
+                recommended_supplements.append({
+                    'name': '비타민 D',
+                    'reason': '전반적인 건강 유지를 위한 기본 영양소 보충을 위해 추천합니다.'
+                })
+            elif is_nutrient_in_db('비타민 C'):
+                recommended_supplements.append({
+                    'name': '비타민 C',
+                    'reason': '면역력 강화와 항산화 작용을 위해 추천합니다.'
+                })
+            else:
+                recommended_supplements.append({
+                    'name': '종합 비타민',
+                    'reason': '전반적인 건강 유지를 위한 기본 영양소 보충을 위해 추천합니다.'
+                })
+        
+        return recommended_supplements[:3]
+        
+    except Exception as e:
+        print(f"Error getting recommended supplements from report: {str(e)}")
+        return []
+
+def generate_warnings_section(survey_result):
+    """
+    Generuje sekcję 3: 주의가 필요한 영양소
+    """
+    try:
+        # Mapowanie odpowiedzi z ankiety
+        answers = survey_result.answers
+        
+        # Sprawdź czy answers to string JSON
+        if isinstance(answers, str):
+            answers = json.loads(answers)
+        
+        section = "설문 결과를 바탕으로, 다음 영양소들은 섭취에 주의하거나 피하시는 것이 좋습니다.\n\n"
+        
+        # 비타민 K - 약물 복용 확인
+        if is_nutrient_in_db('비타민 K') and answers.get('chronic_medication') == '예':  # 만성질환 약물
+            section += "#### **비타민 K**: 만성질환 약물을 복용하고 계시다면, 비타민 K는 혈액 응고에 영향을 줄 수 있으므로 의사와 상담 후 섭취하시기 바랍니다.\n\n"
+        
+        # 철 - 소화기 문제 확인
+        if is_nutrient_in_db('철') and answers.get('symptom_2') == '예':  # 소화기 문제
+            section += "#### **철**: 소화기 문제를 경험하고 계시다면, 철분 보충제는 위장 자극을 일으킬 수 있으므로 식사와 함께 섭취하시기 바랍니다.\n\n"
+        
+        # 칼슘 - 약물 복용 확인
+        if is_nutrient_in_db('칼슘') and answers.get('chronic_medication') == '예':  # 만성질환 약물
+            section += "#### **칼슘**: 특정 약물을 복용하고 계시다면, 칼슘은 약물 흡수를 방해할 수 있으므로 복용 시간을 조절하시기 바랍니다.\n\n"
+        
+        # 알레르기 주의사항
+        if answers.get('allergies') == '예':
+            section += "#### **알레르기 주의**: 알레르기가 있는 성분이 포함된 보충제는 피하시고, 새로운 보충제 섭취 시에는 소량부터 시작하여 반응을 관찰하시기 바랍니다.\n\n"
+        
+        if section == "설문 결과를 바탕으로, 다음 영양소들은 섭취에 주의하거나 피하시는 것이 좋습니다.\n\n":
+            section += "현재 특별한 주의사항이 없습니다. 하지만 새로운 영양제 섭취 시에는 반드시 성분표를 확인하시고, 알레르기 반응이 나타나면 즉시 섭취를 중단하시기 바랍니다.\n\n"
+        
+        return section
+        
+    except Exception as e:
+        print(f"Error generating warnings: {str(e)}")
+        return f"주의사항 생성 중 오류가 발생했습니다: {str(e)}"
+
+def generate_considerations_section(survey_result):
+    """
+    Generuje sekcję uwag i dodatkowych informacji na podstawie odpowiedzi z ankiety
+    """
+    try:
+        # Mapowanie odpowiedzi z ankiety
+        answers = survey_result.answers
+        
+        # Sprawdź czy answers to string JSON
+        if isinstance(answers, str):
+            answers = json.loads(answers)
+        
+        considerations = []
+        
+        # Sprawdź płeć i wiek
+        gender = answers.get('gender', '')
+        age_range = answers.get('age_range', '')
+        
+        if gender == '여성' and age_range in ['19-29', '30-49']:
+            considerations.append("• **철분 섭취**: 여성의 경우 철분 섭취에 특히 주의하세요.")
+            considerations.append("• **칼슘 섭취**: 골다공증 예방을 위해 충분한 칼슘 섭취가 중요합니다.")
+        
+        if age_range in ['50-64', '65+']:
+            considerations.append("• **노화와 영양소 흡수**: 나이가 들수록 영양소 흡수율이 감소할 수 있으므로 의사와 상담하세요.")
+        
+        # Sprawdź styl życia
+        sitting_work = answers.get('sitting_work', '')
+        if sitting_work == '예':
+            considerations.append("• **운동 습관**: 장시간 앉아서 일하는 경우 정기적인 운동이 필요합니다.")
+        
+        exercise = answers.get('exercise', '')
+        if exercise == '아니오':
+            considerations.append("• **운동 습관**: 규칙적인 운동을 통해 건강을 유지하세요.")
+        
+        # Sprawdź stres i 피로
+        fatigue = answers.get('fatigue', '')
+        if fatigue == '예':
+            considerations.append("• **피로 관리**: 충분한 휴식과 스트레스 관리가 중요합니다.")
+        
+        # Sprawdź sen
+        sleep_well = answers.get('sleep_well', '')
+        still_tired = answers.get('still_tired', '')
+        if sleep_well == '아니오' or still_tired == '예':
+            considerations.append("• **수면 관리**: 충분한 수면과 휴식이 중요합니다.")
+        
+        # Sprawdź alergie
+        allergies = answers.get('allergies', '')
+        if allergies == '예':
+            considerations.append("• **알레르기 주의**: 알레르기가 있는 성분이 포함된 보충제는 피하세요.")
+        
+        # Sprawdź leki
+        chronic_medication = answers.get('chronic_medication', '')
+        if chronic_medication == '예':
+            considerations.append("• **약물 상호작용**: 복용 중인 약물과 보충제 간의 상호작용을 확인하세요.")
+            considerations.append("• **의사 상담**: 약물을 복용 중인 경우 보충제 섭취 전 의사와 상담하세요.")
+        
+        # Dodaj ogólne uwagi
+        considerations.append("• **점진적 섭취**: 새로운 보충제는 소량부터 시작하여 점진적으로 늘리세요.")
+        considerations.append("• **지속적 모니터링**: 보충제 섭취 후 건강 상태를 지속적으로 관찰하세요.")
+        considerations.append("• **균형잡힌 식단**: 보충제는 균형잡힌 식단을 대체할 수 없습니다.")
+        considerations.append("• **성분 확인**: 보충제 구매 시 성분표를 꼼꼼히 확인하세요.")
+        considerations.append("• **유통기한**: 보충제의 유통기한을 확인하고 올바르게 보관하세요.")
+        
+        if not considerations:
+            considerations = [
+                "• **균형잡힌 식단**: 다양한 영양소를 포함한 균형잡힌 식단을 유지하세요.",
+                "• **규칙적인 운동**: 건강한 생활습관을 위해 규칙적인 운동을 하세요.",
+                "• **충분한 수면**: 하루 7-8시간의 충분한 수면을 취하세요.",
+                "• **스트레스 관리**: 적절한 스트레스 관리가 중요합니다.",
+                "• **의사 상담**: 보충제 섭취 전 의사와 상담하세요."
+            ]
+        
+        markdown_content = "\n\n".join(considerations)
+        
+        return markdown_content
+        
+    except Exception as e:
+        print(f"Error generating considerations section: {str(e)}")
+        return "• **의사 상담**: 보충제 섭취 전 의사와 상담하세요.\n\n• **균형잡힌 식단**: 보충제는 균형잡힌 식단을 대체할 수 없습니다."

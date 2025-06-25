@@ -48,67 +48,6 @@
     gap: 16px;
 }
 
-.health-score-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    text-align: center;
-    border-left: 4px solid #DDC66F;
-}
-
-.health-score-section h2 {
-    font-size: 1.3em;
-    color: #333;
-    margin-bottom: 15px;
-    font-weight: 600;
-}
-
-.score-circle {
-    display: inline-block;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: #DDC66F;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 10px auto;
-}
-
-.score {
-    font-size: 1.8em;
-    font-weight: bold;
-    color: white;
-}
-
-.score-label {
-    font-size: 1em;
-    color: white;
-    margin-left: 2px;
-}
-
-.health-status {
-    margin-top: 10px;
-    font-size: 1.1em;
-    font-weight: 500;
-}
-
-.status-good {
-    color: #DDC66F;
-}
-
-.status-normal {
-    color: #EADCA6;
-}
-
-.status-warning {
-    color: #C4A94C;
-}
-
-.status-bad {
-    color: #B39B3A;
-}
-
 .recommended-supplements-section {
     background: #f8f9fa;
     border-radius: 8px;
@@ -147,11 +86,6 @@
     font-size: 0.9em;
     color: #666;
     margin-bottom: 5px;
-}
-
-.supplement-card .benefits {
-    font-size: 0.9em;
-    color: #333;
 }
 
 .health-recommendations-section {
@@ -227,12 +161,6 @@
     color: #666;
 }
 
-.history-score {
-    font-size: 0.9em;
-    color: #DDC66F;
-    font-weight: 600;
-}
-
 .btn-primary, .btn-secondary {
     display: inline-block;
     padding: 8px 16px;
@@ -291,60 +219,48 @@
     </div>
 
     <div class="mypage-content">
-        <!-- 건강 점수 섹션 -->
-        <div class="health-score-section">
-            <h2>나의 건강 점수</h2>
+        <!-- 추천 영양제 섹션 -->
+        <div class="recommended-supplements-section">
+            <h2>추천 영양제</h2>
             {% if latest_survey %}
-                <div class="score-circle">
-                    <span class="score">{{ health_score }}</span>
-                    <span class="score-label">점</span>
-                </div>
-                <div class="health-status">
-                    {% if health_score >= 80 %}
-                        <span class="status-good">매우 좋음</span>
-                    {% elif health_score >= 60 %}
-                        <span class="status-normal">좋음</span>
-                    {% elif health_score >= 40 %}
-                        <span class="status-warning">보통</span>
-                    {% else %}
-                        <span class="status-bad">주의 필요</span>
-                    {% endif %}
-                </div>
+                {% if recommended_supplements %}
+                    <div class="supplements-grid">
+                        {% for supplement in recommended_supplements %}
+                        <div class="supplement-card">
+                            <h3>{{ supplement.name }}</h3>
+                            <p class="reason">{{ supplement.reason }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="{% url 'mypage:survey_result' %}" class="btn-primary">상세 보고서 보기</a>
+                    </div>
+                {% else %}
+                    <p>아직 추천 영양제가 없습니다.</p>
+                    <a href="{% url 'mypage:survey' %}" class="btn-primary">설문하러 가기</a>
+                {% endif %}
             {% else %}
                 <p>아직 설문을 진행하지 않았습니다.</p>
                 <a href="{% url 'mypage:survey' %}" class="btn-primary">설문하러 가기</a>
             {% endif %}
         </div>
 
-        <!-- 추천 영양제 섹션 -->
-        <div class="recommended-supplements-section">
-            <h2>추천 영양제</h2>
-            {% if recommended_supplements %}
-                <div class="supplements-grid">
-                    {% for supplement in recommended_supplements %}
-                    <div class="supplement-card">
-                        <h3>{{ supplement.name }}</h3>
-                        <p class="reason">{{ supplement.reason }}</p>
-                        <p class="benefits">{{ supplement.benefits }}</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p>아직 추천 영양제가 없습니다.</p>
-            {% endif %}
-        </div>
-
         <!-- 건강 추천사항 섹션 -->
         <div class="health-recommendations-section">
             <h2>건강 추천사항</h2>
-            {% if recommendations %}
-                <ul class="recommendations-list">
-                    {% for recommendation in recommendations %}
-                    <li class="recommendation-item">{{ recommendation }}</li>
-                    {% endfor %}
-                </ul>
+            {% if latest_survey %}
+                {% if recommendations %}
+                    <ul class="recommendations-list">
+                        {% for recommendation in recommendations %}
+                        <li class="recommendation-item">{{ recommendation }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>아직 추천사항이 없습니다.</p>
+                {% endif %}
             {% else %}
-                <p>아직 추천사항이 없습니다.</p>
+                <p>아직 설문을 진행하지 않았습니다.</p>
+                <a href="{% url 'mypage:survey' %}" class="btn-primary">설문하러 가기</a>
             {% endif %}
         </div>
 
@@ -356,7 +272,6 @@
                     {% for survey in survey_history %}
                     <div class="history-item">
                         <div class="history-date">{{ survey.created_at|date:"Y년 m월 d일" }}</div>
-                        <div class="history-score">건강 점수: {{ survey.health_score }}점</div>
                         <a href="{% url 'mypage:survey_result' %}" class="btn-secondary">상세보기</a>
                     </div>
                     {% endfor %}

@@ -29,3 +29,4 @@ langchain-community
 langchain-openai
 langchain-core
 langchain-neo4j
+markdown
