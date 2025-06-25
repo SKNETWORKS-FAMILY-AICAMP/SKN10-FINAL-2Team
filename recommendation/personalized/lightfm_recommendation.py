@@ -89,7 +89,7 @@ class LightFMRecommender:
             if pid in item_id_map:
                 item_idx = item_id_map[pid]
                 score = self.model.predict(user_idx, np.array([item_idx]), item_features=self.item_features)[0]
-                scores.append((pid, abs(float(score))))
+                scores.append((pid, float(score)))
             else:
                 scores.append((pid, np.nan))
 

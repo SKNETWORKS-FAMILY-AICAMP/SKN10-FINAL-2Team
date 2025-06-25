@@ -86,6 +86,8 @@ class TotalRecommender:
         probs = np.nan_to_num(probs, nan=0.0)
         nonzero_count = np.count_nonzero(probs)
         if probs.sum() > 0 and nonzero_count == len(df):
+            alpha = 2
+            probs = probs ** alpha
             probs = probs / probs.sum()
             idx = np.random.choice(df.index, size=len(df), replace=False, p=probs)
 
@@ -121,7 +123,7 @@ class TotalRecommender:
             total_items_list = total_items_score['product_id'].tolist()
 
             logger.info("인기도 기반 추천 %d개 반환", len(total_items_score))
-            return total_items_list
+            return total_items_score
 
         # 개인화 추천 점수 계산
         logger.info(f"개인화 추천 시작: user_id={self.user_id}")
@@ -149,7 +151,7 @@ class TotalRecommender:
         total_items_list = total_items_score['product_id'].tolist()
 
         logger.info("최종 추천 리스트 생성 완료: %d개", len(total_items_list))
-        return total_items_list
+        return total_items_score
 
     def __call__(self):
         """
