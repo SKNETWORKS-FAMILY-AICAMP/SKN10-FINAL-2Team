@@ -9,20 +9,18 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 class TotalRecommender:
-    def __init__(self, user_id=None, product_ids=None):
+    def __init__(self, params):
         """
         TotalRecommender 클래스 초기화
+
         Args:
-            user_id (int, optional): 추천을 받을 사용자 ID
-            product_ids (list, optional): 추천 대상 상품 ID 리스트
+            params (dict): {
+                "user_id": 추천을 받을 사용자 ID (int),
+                "product_ids": 추천 대상 상품 ID 리스트 (list)
+            }
         """
-        if isinstance(user_id, dict):
-            params = user_id
-            self.user_id = params.get("user_id")
-            self.product_ids = params.get("product_ids", [])
-        else:
-            self.user_id = user_id
-            self.product_ids = product_ids or []
+        self.user_id = params.get("user_id")
+        self.product_ids = params.get("product_ids")
         self.score_column = 'score'
         
         self.recent_product_id = self._get_recent_product_id()
