@@ -1,291 +1,82 @@
-{% extends 'base/index.html' %}
 {% load static %}
-
-{% block title %}마이페이지{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/Mypage/header.css' %}">
-<link rel="stylesheet" href="{% static 'css/Mypage/mypage.css' %}">
-<style>
-/* Główny kontener - stabilny layout */
-body {
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-    min-height: 100vh;
-    position: relative;
-}
-
-/* Header - przyklejony na górze */
-header {
-    position: fixed;
-    width: 100%;
-    height: 80px;
-    background: #FFFFFF;
-    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.12);
-    z-index: 1000;
-    top: 0;
-    left: 0;
-}
-
-/* Główna treść - z marginesem górnym */
-main {
-    margin-top: 80px;
-    min-height: calc(100vh - 80px);
-    padding: 2rem;
-    display: flex;
-    gap: 2rem;
-    position: relative;
-    z-index: 1;
-    box-sizing: border-box;
-}
-
-/* Sidebar - stabilne pozycjonowanie */
-.sidebar {
-    width: 250px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 100px;
-    height: fit-content;
-    z-index: 100;
-}
-
-/* Content area - stabilne pozycjonowanie */
-.content {
-    flex-grow: 1;
-    background: transparent;
-    border-radius: 12px;
-    padding: 0;
-    box-shadow: none;
-    position: relative;
-    z-index: 1;
-    min-height: calc(100vh - 120px);
-}
-
-/* 네비게이션 메뉴 오버라이드 */
-.nav-menu {
-    display: flex !important;
-    gap: 60px !important;
-    align-items: center !important;
-    position: relative !important;
-}
-
-.nav-label {
-    cursor: pointer;
-    padding: 10px 15px;
-    border-radius: 5px;
-    transition: background-color 0.2s;
-}
-
-.nav-label:hover {
-    background-color: #f0f0f0;
-}
-
-.nav-label.mypage {
-    color: #DDC66F !important;
-    font-weight: bold !important;
-    position: relative !important;
-    display: inline-block !important;
-}
-
-.nav-label.chatbot {
-    color: #333 !important;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-.logo img {
-    height: 40px;
-    width: auto;
-}
-
-.dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.dropdown-toggle {
-    background: #DDC66F;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 700;
-}
-
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    background-color: white;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1;
-    border-radius: 6px;
-    margin-top: 5px;
-}
-
-.dropdown-item {
-    color: #333;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-    transition: background-color 0.2s;
-}
-
-.dropdown-item:hover {
-    background-color: #f8f9fa;
-    color: #DDC66F;
-}
-
-.dropdown-item:first-child {
-    border-radius: 6px 6px 0 0;
-}
-
-.dropdown-item:last-child {
-    border-radius: 0 0 6px 6px;
-}
-
-/* 마이페이지 드롭다운 메뉴 스타일 */
-.mypage-dropdown {
-    position: absolute !important;
-    top: 100% !important;
-    left: 0 !important;
-    background-color: white !important;
-    min-width: 160px !important;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2) !important;
-    z-index: 1000 !important;
-    border-radius: 6px !important;
-    margin-top: 5px !important;
-    display: none !important;
-    border: 1px solid #E6E6E6 !important;
-}
-
-.mypage-dropdown-item {
-    color: #333 !important;
-    padding: 12px 16px !important;
-    text-decoration: none !important;
-    display: block !important;
-    transition: background-color 0.2s !important;
-    font-family: 'Pretendard' !important;
-    font-size: 16px !important;
-}
-
-.mypage-dropdown-item:hover {
-    background-color: #f8f9fa !important;
-    color: #DDC66F !important;
-}
-
-.mypage-dropdown-item:first-child {
-    border-radius: 6px 6px 0 0 !important;
-}
-
-.mypage-dropdown-item:last-child {
-    border-radius: 0 0 6px 6px !important;
-}
-
-/* Responsywność */
-@media (max-width: 768px) {
-    main {
-        padding: 1rem;
-        flex-direction: column;
-    }
-    
-    .sidebar {
-        width: 100%;
-        position: relative;
-        top: 0;
-        margin-bottom: 1rem;
-    }
-    
-    .content {
-        min-height: auto;
-    }
-}
-</style>
-{% endblock %}
-
-{% block content %}
-{% include 'base/header.html' %}
-
-<header>
-    <nav>
-        <div class="logo" onclick="location.href='/'">
-            <img src="{% static 'image/Logo.png' %}" alt="T&P Logo">
-        </div>
-        <div class="nav-menu">
-            <div class="nav-label chatbot" onclick="location.href='{% url 'chatbot:chat' %}'">챗봇</div>
-            <div class="nav-label mypage" onclick="toggleMypageMenu()">마이페이지
-                <div class="mypage-dropdown" id="mypageDropdown">
-                    <a href="{% url 'mypage:mypage' %}" class="mypage-dropdown-item">내 정보</a>
-                    <a href="{% url 'mypage:survey' %}" class="mypage-dropdown-item">설문 조사</a>
-                    <a href="{% url 'mypage:like_list' %}" class="mypage-dropdown-item">좋아요</a>
-                    <a href="{% url 'mypage:analysis' %}" class="mypage-dropdown-item">영양 분석</a>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}영양제 추천 서비스{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/header.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <nav>
+            <a class="Logo" href="/">
+            <img src="{% static 'image/Logo.png' %}" alt="Logo">
+            </a>
+            
+            <div class="nav-label chatbot" id="chatbot">챗봇</div>
+            <div class="nav-label mypage" onclick="toggleDropdown()">
+                마이페이지
+                <div class="dropdown-menu" id="mypageDropdown">
+                    <a href="{% url 'mypage:mypage' %}" class="dropdown-item">내 정보</a>
+                    <a href="{% url 'mypage:survey' %}" class="dropdown-item">설문 조사</a>
+                    <a href="{% url 'mypage:like_list' %}" class="dropdown-item">좋아요</a>
+                    <a href="{% url 'mypage:analysis' %}" class="dropdown-item">영양 분석</a>
                 </div>
             </div>
-        </div>
-        <div class="login-item">
-            {% if user.is_authenticated %}
-                <a href="{% url 'account:custom_logout' %}">로그아웃</a>
-            {% else %}
-                <a href="{% url 'account:login_api' %}">로그인</a>
-                <a href="{% url 'account:signup_api' %}">회원가입</a>
-            {% endif %}
-        </div>
-    </nav>
-</header>
-
-<main>
-    <div class="sidebar">
-        <div class="dropdown">
-            <button class="dropdown-toggle" onclick="toggleDropdown()">메뉴</button>
-            <div class="dropdown-menu" id="dropdownMenu">
-                <a href="{% url 'mypage:mypage' %}" class="dropdown-item">내 정보</a>
-                <a href="{% url 'mypage:survey' %}" class="dropdown-item">설문 조사</a>
-                <a href="{% url 'mypage:like_list' %}" class="dropdown-item">좋아요</a>
-                <a href="{% url 'mypage:analysis' %}" class="dropdown-item">영양 분석</a>
+            
+            <div class="login-item">
+                     <a id="logout-btn">로그아웃</a>
             </div>
-        </div>
-    </div>
-    <div class="content">
-        {% block mypage_content %}{% endblock %}
-    </div>
-</main>
+        </nav>
+    </header>
 
-<footer>
-    <p>&copy; 2024 T&P. All rights reserved.</p>
-</footer>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
 
-<script>
-function toggleDropdown() {
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
-}
+    <footer>
+        <p>&copy; 2024 영양제 추천 서비스. All rights reserved.</p>
+    </footer>
+    <script src="{% static 'js/auth.js' %}"></script>
+    <script>
+        document.getElementById('chatbot').addEventListener('click', function () {
+            window.location.href = "{% url 'mypage:chatbot' %}";
+        });
+        document.getElementById("logout-btn").addEventListener("click", function () {
+            logoutUser();  // auth.js의 함수 호출
+            window.location.href = "/login/";  // 로그아웃 후 로그인 페이지로 리디렉션
+        });
+        function toggleDropdown() {
+            const dropdown = document.getElementById('mypageDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
 
-function toggleMypageMenu() {
-    const dropdown = document.getElementById('mypageDropdown');
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-}
+        // 드롭다운 외부 클릭 시 닫기
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('mypageDropdown');
+            const mypageMenu = document.querySelector('.nav-label.mypage');
+            if (!mypageMenu.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+        document.addEventListener("DOMContentLoaded", function () {
+            const currentPath = window.location.pathname;
 
-// Zamknij dropdown po kliknięciu poza nim
-document.addEventListener('click', function(event) {
-    const dropdown = document.getElementById('mypageDropdown');
-    const mypageLabel = document.querySelector('.nav-label.mypage');
-    
-    if (!mypageLabel.contains(event.target)) {
-        dropdown.style.display = 'none';
-    }
-    
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    const dropdownToggle = document.querySelector('.dropdown-toggle');
-    
-    if (!dropdownToggle.contains(event.target)) {
-        dropdownMenu.style.display = 'none';
-    }
-});
-</script>
-{% endblock %} 
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                if (item.getAttribute('href') === currentPath) {
+                    item.classList.add('selected');
+
+                    // 드롭다운 버튼 텍스트도 선택된 것으로 바꾸고 싶다면:
+                    const toggle = item.closest('.dropdown').querySelector('.dropdown-toggle');
+                    if (toggle) toggle.textContent = item.textContent;
+                }
+            });
+        });
+            </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

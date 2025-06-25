@@ -11,7 +11,7 @@ header {
 }
 
 nav {
-    max-width: 1200px;
+    max-width: none; 
     height: 100%;
     margin: 0 auto;
     padding: 0 20px;
@@ -23,36 +23,16 @@ nav {
 }
 
 /* Logo styles */
-.logo {
+.Logo {
+    margin-left: 230px;
     display: flex;
     align-items: center;
-    gap: 5px;
-    cursor: pointer;
-    position: relative;
-    z-index: 1002;
+    height: 80px; /* nav 높이와 맞춤 */
 }
 
-.logo-t, .logo-p {
-    font-family: 'Pretendard';
-    font-weight: 700;
-    font-size: 48px;
-    line-height: 1;
-    color: #EADCA6;
-}
-
-.logo-rectangle {
-    width: 36px;
-    height: 48px;
-    border: 4px solid #EADCA6;
-    border-radius: 6px;
-}
-
-.logo-rectangle-2 {
-    width: 25px;
-    height: 30px;
-    background: #EADCA6;
-    border-radius: 0px 4px 4px 0px;
-    transform: rotate(90deg);
+.Logo img {
+    height: 50px;
+    display: block;
 }
 
 /* Navigation menu */
@@ -65,46 +45,44 @@ nav {
 }
 
 .nav-label {
+    position: absolute;
     font-family: 'Pretendard';
-    font-size: 20px;
-    font-weight: 500;
-    color: #5C6B73;
-    cursor: pointer;
-    transition: color 0.3s;
-    padding: 10px 20px;
-    border-radius: 8px;
-    position: relative;
-    z-index: 1003;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    top: 20px;
 }
-
+.nav-label.chatbot {
+    left: 940px;
+    font-weight: 700;
+    color: #DDC66F;
+    cursor: pointer;
+}
 .nav-label:hover {
     color: #EADCA6;
     background-color: rgba(234, 220, 166, 0.1);
 }
 
 .nav-label.mypage {
+    left: 1055px;
     font-weight: 700;
     color: #DDC66F;
 }
 
 /* Login/Logout section */
 .login-item {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    position: relative;
-    z-index: 1002;
+    position: absolute;
+    right: 450px;
+    top: 22px;
 }
 
 .login-item a {
     font-family: 'Pretendard';
-    font-size: 16px;
-    color: #5C6B73;
+    font-size: 20px;
+    color: #DDC66F;
     text-decoration: none;
-    transition: color 0.3s;
-    padding: 8px 16px;
-    border-radius: 6px;
 }
+
 
 .login-item a:hover {
     color: #DDC66F;
@@ -180,15 +158,15 @@ main {
     text-decoration: none;
     transition: all 0.3s;
 }
+.dropdown-item.selected {
+    color: #DDC66F;
+}
 
 .dropdown-item:hover {
     background-color: #F8F8F8;
     color: #DDC66F;
 }
 
-.dropdown-item:first-child {
-    color: #DDC66F;
-}
 
 /* Content area */
 .content {

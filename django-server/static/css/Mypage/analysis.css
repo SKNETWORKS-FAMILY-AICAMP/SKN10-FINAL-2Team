@@ -65,28 +65,7 @@
     align-items: flex-start;
 }
 
-/* Figma 기반 상단 바 */
-header.top-bar {
-    position: fixed;
-    width: 1920px;
-    height: 80px;
-    left: 0;
-    top: 0;
-    background: #FFFFFF;
-    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.12);
-    z-index: 1000;
-}
 
-.top-bar .username {
-    position: absolute;
-    left: 1580px;
-    top: 30px;
-    font-family: 'Pretendard';
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 24px;
-    color: #000000;
-}
 
 /* 화살표 관련 CSS 제거 */
 .top-bar .dropdown-arrow,
@@ -95,33 +74,6 @@ header.top-bar {
     display: none;
 }
 
-.nav-label {
-    position: absolute;
-    font-family: 'Pretendard';
-    font-size: 24px;
-    line-height: 29px;
-    display: flex;
-    align-items: center;
-}
-
-.nav-label.chatbot {
-    left: 781px;
-    top: 26px;
-    color: #5C6B73;
-}
-
-.nav-label.mypage {
-    left: 898px;
-    top: 26px;
-    font-weight: 700;
-    color: #DDC66F;
-}
-
-.nav-label.products {
-    left: 1077px;
-    top: 26px;
-    color: #5C6B73;
-}
 
 /* 사이드 메뉴 카드 */
 .sidebar-menu {
