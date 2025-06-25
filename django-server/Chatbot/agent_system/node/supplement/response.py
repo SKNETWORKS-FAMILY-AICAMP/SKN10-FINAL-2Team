@@ -27,7 +27,7 @@ def generate_supplement_response(state: AgentState) -> Dict[str, Any]:
     if not final_results:
         # 검색 결과가 없는 경우
         return {
-            "final_recommendation": "죄송합니다. 요청하신 조건에 맞는 영양제를 찾을 수 없습니다. 조건을 조정해서 다시 검색해보시겠어요?",
+            "response": "죄송합니다. 요청하신 조건에 맞는 영양제를 찾을 수 없습니다. 조건을 조정해서 다시 검색해보시겠어요?",
             "followup_question": "어떤 영양소와 건강 목적에 관심이 있으신가요?"
         }
     print("final_result:", final_results)
