@@ -16,7 +16,7 @@ class TotalRecommender:
             product_ids (list, optional): 추천 대상 상품 ID 리스트
         """
         self.user_id = user_id
-        self.product_ids = product_ids or []
+        self.product_ids = product_ids
         self.score_column = 'score'
 
         self.personalized_recommender = LightFMRecommender()
@@ -85,22 +85,6 @@ class TotalRecommender:
             pd.DataFrame: 상품 ID와 추천 점수, 추천 타입을 포함하는 DataFrame
         """
         logger.info("추천 생성 시작")
-        if not self.user_id:
-            logger.info("user_id 없음 → 인기도 기반 추천 사용")
-            # user_id가 없는 경우, 인기도 기반 추천 점수 제공
-            product_ids_str = ', '.join(str(pid) for pid in self.product_ids)
-            query = f"""
-            SELECT id as product_id, popularity_score as score
-            FROM "Product_products"
-            WHERE id IN ({product_ids_str})
-            """
-            total_items_score = load_data(query)
-            total_items_score['type'] = 'Popularity'
-            total_items_score = self._weighted_shuffle(total_items_score)
-            total_items_list = total_items_score['product_id'].tolist()
-
-            logger.info("인기도 기반 추천 %d개 반환", len(total_items_score))
-            return total_items_list
 
         # 개인화 추천 점수 계산
         logger.info(f"개인화 추천 시작: user_id={self.user_id}")
@@ -124,10 +108,8 @@ class TotalRecommender:
 
         # 상품 랜덤 정렬 - 점수 기반
         total_items_score = self._weighted_shuffle(total_items_score)
-        total_items_list = total_items_score['product_id'].tolist()
 
-        logger.info("최종 추천 리스트 생성 완료: %d개", len(total_items_list))
-        return total_items_list
+        return total_items_score
 
     def __call__(self):
         """
@@ -136,4 +118,9 @@ class TotalRecommender:
             pd.DataFrame: 추천 결과
         """
         logger.info("TotalRecommender 호출: user_id=%s, product_ids=%s", self.user_id, self.product_ids)
-        return self.get_recommendations()
+
+        total_items_score = self.get_recommendations()
+        total_items_list = total_items_score['product_id'].tolist()
+
+        logger.info("최종 추천 리스트 생성 완료: %d개", len(total_items_list))
+        return total_items_list

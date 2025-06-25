@@ -67,7 +67,7 @@ class LightFMRecommender:
 
         return user_idx, item_id_map
 
-    def _get_product_score(self, user_id, product_ids):
+    def get_product_score(self, user_id, product_ids):
         """
         특정 user_id와 product_ids 리스트에 대해 LightFM score를 계산하여 반환한다.
         user_id 또는 product_id가 모델에 없으면 score를 np.nan으로 반환한다.
@@ -109,7 +109,7 @@ class LightFMRecommender:
                 - non_personalized_items: [product_id, ...] (score가 nan인 것)
         """
         # 추천 상품 및 점수 쌍 추출
-        product_score_pairs = self._get_product_score(user_id, product_ids)
+        product_score_pairs = self.get_product_score(user_id, product_ids)
 
         personalized_items_score = [(pid, score) for pid, score in product_score_pairs if not np.isnan(score)]
         non_personalized_items = [pid for pid, score in product_score_pairs if np.isnan(score)]
