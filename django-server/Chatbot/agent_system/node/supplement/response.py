@@ -32,8 +32,31 @@ def summary_node_process(state: AgentState) -> Dict[str, Any]:
    - 예시: "요청하신 비타민 C는 이미 충분히 섭취하고 계셔서, 비슷한 효능을 가진 베타카로틴을 추천했습니다. 베타카로틴은 비타민 C와 유사하게 항산화 작용과 면역력 강화에 도움을 주는 영양소입니다."
 5. **최종 결과**: 어떤 영양제를 찾았는지
 
+출력 형식(반드시 지키세요.):
+
+## 1. **수행된 주요 작업들**
+- [수행 작업 설명 1]
+- [수행 작업 설명 2]
+- [수행 작업 설명 3]
+- [수행 작업 설명 4]
+- [수행 작업 설명 5]
+...
+
+## 2. **사용자 정보 분석**
+- [사용자 정보 분석 설명]
+
+## 3. **영양소 분석 결과**
+- [영양소 분석 결과 설명]
+
+## 4. **검색 전략**
+- [검색 전략 설명]
+
+## 5. **최종 결과**
+- [최종 결과 설명]
+
 주의 사항:
-**절대 구체적인 노드 이름을 작성하지 마세요**
+- **절대 구체적인 노드 이름을 작성하지 마세요**
+- **반드시 출력 형식을 지키세요**
 
 요약은 간결하고 명확하게 작성해주세요. 사용자가 이해하기 쉽도록 자연스러운 한국어로 작성하세요.
 """
@@ -49,7 +72,8 @@ def summary_node_process(state: AgentState) -> Dict[str, Any]:
     # LLM에 요청하여 응답 생성
     response = get_llm_response(
         system_prompt=system_prompt,
-        user_prompt=user_prompt
+        user_prompt=user_prompt,
+        model="gpt-4.1-nano-2025-04-14"
     )
 
     node_messages_summary = response
@@ -223,7 +247,8 @@ personalized_info에는 다음 정보가 포함되어 있습니다:
     # LLM에 요청하여 응답 생성
     response = get_llm_response(
         system_prompt=system_prompt,
-        user_prompt=user_prompt
+        user_prompt=user_prompt,
+        model="gpt-4.1-nano-2025-04-14"
     )
     
     # node_messages_summary가 있으면 첫 번째 문단에 추가
@@ -253,11 +278,14 @@ personalized_info에는 다음 정보가 포함되어 있습니다:
 챗봇 응답:
 {response}
 
-후속 질문 (한 문장으로):"""
+후속 질문 (짧은 문장으로):
+예시) 혹시 [기존 건강 목표] 외에 다른 건강 목표가 있으신가요?
+예시) 혹시 [기존 추천 영양소] 외에 다른 영양소나 건강 목표에 대해 추가로 추천을 원하시나요?"""
 
     followup_question = get_llm_response(
         system_prompt="자연스러운 후속 질문을 생성하는 전문가입니다.",
-        user_prompt=followup_prompt
+        user_prompt=followup_prompt,
+        model="gpt-4.1-nano-2025-04-14"
     )
 
     if not (is_personalized and personalized_info):

@@ -222,6 +222,8 @@ class SupplementRecommendationAgent:
         Returns:
             응답 텍스트와 후속 질문을 포함하는 딕셔너리
         """
+        import time
+
         # 워크플로우, 스레드 구성 가져오기
         workflow = cls.get_workflow()
         config = cls.get_thread_config(thread_id)
