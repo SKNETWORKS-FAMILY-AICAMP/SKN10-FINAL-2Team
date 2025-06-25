@@ -15,6 +15,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from langchain_core.messages import HumanMessage
 from datetime import date
+from django.core.cache import cache  # 캐시 임포트
 
 @permission_classes([IsAuthenticated])
 class ChatWithNutiAPIView(APIView):
@@ -43,6 +44,13 @@ class ChatWithNutiAPIView(APIView):
                 chat_room_id = chat_room.id
             else:
                 chat_room = ChatRooms.objects.get(id=chat_room_id)
+
+            # 답변 대기 중인지 확인 (캐시)
+            cache_key = f"chatbot_waiting_{chat_room_id}"
+            if cache.get(cache_key):
+                return Response({"error": "이전 답변이 완료될 때까지 기다려주세요."}, status=429)
+            # 답변 대기 상태로 설정
+            cache.set(cache_key, True, timeout=60)
 
             # 사용자 메시지 저장
             ChatMessages.objects.create(
@@ -87,6 +95,9 @@ class ChatWithNutiAPIView(APIView):
                 product_ids=product_ids
             )
 
+            # 답변 완료 후 대기 상태 해제
+            cache.delete(cache_key)
+
             # 응답 반환
             return Response({
                 "final_recommendation": ai_response,
@@ -95,6 +106,10 @@ class ChatWithNutiAPIView(APIView):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
+            # 예외 발생 시에도 대기 상태 해제
+            if 'chat_room_id' in locals():
+                cache_key = f"chatbot_waiting_{chat_room_id}"
+                cache.delete(cache_key)
             return Response(
                 {"error": f"An error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
