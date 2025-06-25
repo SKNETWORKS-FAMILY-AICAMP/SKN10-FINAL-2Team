@@ -147,10 +147,10 @@ SKN10-FINAL-2TEAM/
 
 ### 개인화 추천 시스템
 
-- ASRec 및 S3Rec
-  - 사용자의 행동 데이터를 기반으로 상품 추천
-
-  - 모델 비교 후 최선의 모델 선택
+- LightFM 모델
+  - 사용자의 행동 데이터 및 상품 데이터를 기반으로 상품 추천
+ 
+  - 서비스 이용 규모를 통해 SASRec과 같은 딥러닝 기반 추천 시스템보다 LightFM의 머신러닝 모델이 합리적이라고 판단
 
 <br/>
 
@@ -231,7 +231,6 @@ uv pip install -r requirements.txt
 
 ```bash
 python manage.py makemigrations
-python manage.py migrate
 python manage.py runserver
 ```
 
