@@ -633,10 +633,13 @@ def add_manual_nutrient_intake(request):
                 'message': '영양소 이름이 필요합니다.'
             }, status=400)
         
+        # 영양소 이름 매핑 적용
+        mapped_name = map_nutrient_name(nutrient_name)
+        
         # 기존 영양소만 사용 - 새로 생성하지 않음
         try:
-            nutrient = Nutrient.objects.get(name=nutrient_name)
-            print(f"기존 영양소 사용: {nutrient_name}")
+            nutrient = Nutrient.objects.get(name=mapped_name)
+            print(f"기존 영양소 사용: {nutrient_name} → {mapped_name}")
         except Nutrient.DoesNotExist:
             return JsonResponse({
                 'status': 'error',
@@ -654,7 +657,8 @@ def add_manual_nutrient_intake(request):
         # 영양분석 실행
         try:
             analyze_nutrients(request)
-        except Exception as e:            print(f"영양분석 실행 중 오류 발생: {str(e)}")
+        except Exception as e:
+            print(f"영양분석 실행 중 오류 발생: {str(e)}")
             # 분석 실패해도 기록은 저장됨
 
         return JsonResponse({
@@ -1548,11 +1552,18 @@ def extract_nutrients_from_text(text):
         if isinstance(data, list):
             for item in data:
                 if isinstance(item, dict) and 'ingredient_name' in item and 'amount' in item and 'unit' in item:
-                    nutrients[item['ingredient_name']] = f"{item['amount']} {item['unit']}"
+                    nutrient_name = item['ingredient_name']
+                    # 영양소 이름 매핑 적용
+                    mapped_name = map_nutrient_name(nutrient_name)
+                    # DB에 있는 영양소만 추가
+                    if is_nutrient_in_db(mapped_name):
+                        nutrients[mapped_name] = f"{item['amount']} {item['unit']}"
         elif isinstance(data, dict):
             for k, v in data.items():
                 if isinstance(v, (int, float)):
-                    nutrients[k] = f"{v} mg"
+                    mapped_name = map_nutrient_name(k)
+                    if is_nutrient_in_db(mapped_name):
+                        nutrients[mapped_name] = f"{v} mg"
         if nutrients:
             return nutrients
     except Exception as e:
@@ -1586,17 +1597,22 @@ def extract_nutrients_from_text(text):
                 
                 try:
                     amount = float(amount_str)
-                    # 이미 존재하는 영양소인 경우 더 큰 값으로 업데이트
-                    if nutrient_name in nutrients:
-                        existing_amount = float(nutrients[nutrient_name].split()[0])
-                        if amount > existing_amount:
-                            nutrients[nutrient_name] = f"{amount} {unit}"
-                    else:
-                        nutrients[nutrient_name] = f"{amount} {unit}"
+                    # 영양소 이름 매핑 적용
+                    mapped_name = map_nutrient_name(nutrient_name)
+                    
+                    # DB에 있는 영양소만 추가
+                    if is_nutrient_in_db(mapped_name):
+                        # 이미 존재하는 영양소인 경우 더 큰 값으로 업데이트
+                        if mapped_name in nutrients:
+                            existing_amount = float(nutrients[mapped_name].split()[0])
+                            if amount > existing_amount:
+                                nutrients[mapped_name] = f"{amount} {unit}"
+                        else:
+                            nutrients[mapped_name] = f"{amount} {unit}"
                 except ValueError:
                     continue
     
-    # 3. 특별한 영어 영양소 패턴들 (OCR에서 자주 나오는 형태)
+    # 3. 특별한 영어 영양소 패턴들 (OCR에서 자주 나오는 형태) - 매핑 적용
     special_patterns = [
         # Biotin 패턴들
         (r'Biotin\s+([\d,\.]+)\s*mcg', 'Biotin'),
@@ -1630,7 +1646,13 @@ def extract_nutrients_from_text(text):
             try:
                 amount = float(amount_str)
                 unit = 'mg' if 'mg' in pattern else ('mcg' if 'mcg' in pattern else 'iu')
-                nutrients[nutrient_name] = f"{amount} {unit}"
+                
+                # 영양소 이름 매핑 적용
+                mapped_name = map_nutrient_name(nutrient_name)
+                
+                # DB에 있는 영양소만 추가
+                if is_nutrient_in_db(mapped_name):
+                    nutrients[mapped_name] = f"{amount} {unit}"
             except ValueError:
                 continue
     
@@ -1653,14 +1675,19 @@ def extract_nutrients_from_text(text):
                     
                 try:
                     amount = float(amount_str)
-                    if nutrient_name not in nutrients:  # 중복 방지
-                        nutrients[nutrient_name] = f"{amount} {unit}"
+                    
+                    # 영양소 이름 매핑 적용
+                    mapped_name = map_nutrient_name(nutrient_name)
+                    
+                    # DB에 있는 영양소만 추가
+                    if is_nutrient_in_db(mapped_name) and mapped_name not in nutrients:  # 중복 방지
+                        nutrients[mapped_name] = f"{amount} {unit}"
                 except ValueError:
                     continue
     
     # 5. 디버깅을 위한 로그 추가
     print(f"OCR 텍스트: {text[:200]}...")  # 처음 200자만 출력
-    print(f"추출된 영양소: {nutrients}")
+    print(f"추출된 영양소 (매핑 후): {nutrients}")
     
     return nutrients
 
@@ -2311,3 +2338,150 @@ def generate_considerations_section(survey_result):
     except Exception as e:
         print(f"Error generating considerations section: {str(e)}")
         return "• **의사 상담**: 보충제 섭취 전 의사와 상담하세요.\n\n• **균형잡힌 식단**: 보충제는 균형잡힌 식단을 대체할 수 없습니다."
+
+def get_nutrient_name_mapping():
+    """
+    영양소 이름 매핑 (영어 → 한글) - DB에서 가져오기
+    """
+    from Mypage.models import Nutrient
+    
+    # 캐시를 위한 클래스 변수
+    if not hasattr(get_nutrient_name_mapping, '_mapping'):
+        mapping = {}
+        
+        # DB에서 모든 영양소 가져오기
+        nutrients = Nutrient.objects.all()
+        
+        # 영어-한글 매핑 (OCR에서 자주 나오는 영어 이름들) - 다양한 변형 포함
+        english_to_korean = {
+            # 비타민들 - 다양한 변형
+            'vitamin a': '비타민 A',
+            'vitamin c': '비타민 C', 
+            'vitamin d': '비타민 D',
+            'vitamin e': '비타민 E',
+            'vitamin k': '비타민 K',
+            'vitamin b1': '비타민 B1',
+            'vitamin b2': '비타민 B2', 
+            'vitamin b6': '비타민 B6',
+            'vitamin b12': '비타민 B12',
+            'vitamin b3': '나이아신',
+            'niacin': '나이아신',
+            'vitamin b5': '판토텐산',
+            'pantothenic acid': '판토텐산',
+            'vitamin b9': '엽산',
+            'folic acid': '엽산',
+            'folate': '엽산',
+            'vitamin b7': '비오틴',
+            'biotin': '비오틴',
+            'vitamin h': '비오틴',
+            
+            # 대문자 변형들
+            'Vitamin A': '비타민 A',
+            'Vitamin C': '비타민 C',
+            'Vitamin D': '비타민 D',
+            'Vitamin E': '비타민 E',
+            'Vitamin K': '비타민 K',
+            'Vitamin B1': '비타민 B1',
+            'Vitamin B2': '비타민 B2',
+            'Vitamin B6': '비타민 B6',
+            'Vitamin B12': '비타민 B12',
+            'Vitamin B3': '나이아신',
+            'Niacin': '나이아신',
+            'Vitamin B5': '판토텐산',
+            'Pantothenic Acid': '판토텐산',
+            'Vitamin B9': '엽산',
+            'Folic Acid': '엽산',
+            'Folate': '엽산',
+            'Vitamin B7': '비오틴',
+            'Biotin': '비오틴',
+            'Vitamin H': '비오틴',
+            
+            # 미네랄들
+            'calcium': '칼슘',
+            'iron': '철',
+            'zinc': '아연',
+            'magnesium': '마그네슘',
+            'selenium': '셀레늄',
+            'copper': '구리',
+            'iodine': '요오드',
+            'molybdenum': '몰리브덴',
+            'potassium': '칼륨',
+            'phosphorus': '인',
+            'chromium': '크롬',
+            
+            # 미네랄들 대문자 변형
+            'Calcium': '칼슘',
+            'Iron': '철',
+            'Zinc': '아연',
+            'Magnesium': '마그네슘',
+            'Selenium': '셀레늄',
+            'Copper': '구리',
+            'Iodine': '요오드',
+            'Molybdenum': '몰리브덴',
+            'Potassium': '칼륨',
+            'Phosphorus': '인',
+            'Chromium': '크롬',
+            
+            # 아미노산들
+            'methionine': '메티오닌',
+            'cysteine': '시스테인',
+            'leucine': '류신',
+            'isoleucine': '이소류신',
+            'lysine': '라이신',
+            'threonine': '트레오닌',
+            'phenylalanine': '페닐알라닌',
+            'tyrosine': '티로신',
+            'tryptophan': '트립토판',
+            
+            # 아미노산들 대문자 변형
+            'Methionine': '메티오닌',
+            'Cysteine': '시스테인',
+            'Leucine': '류신',
+            'Isoleucine': '이소류신',
+            'Lysine': '라이신',
+            'Threonine': '트레오닌',
+            'Phenylalanine': '페닐알라닌',
+            'Tyrosine': '티로신',
+            'Tryptophan': '트립토판',
+            
+            # 기타 영양소들
+            'beta carotene': '베타카로틴',
+            'beta-carotene': '베타카로틴',
+            'lutein': '루테인',
+            'Beta Carotene': '베타카로틴',
+            'Beta-Carotene': '베타카로틴',
+            'Lutein': '루테인',
+        }
+        
+        # 매핑 생성
+        for english_name, korean_name in english_to_korean.items():
+            # 해당 한글 이름이 DB에 있는지 확인
+            if Nutrient.objects.filter(name=korean_name).exists():
+                mapping[english_name.lower()] = korean_name
+        
+        get_nutrient_name_mapping._mapping = mapping
+        print(f"영양소 매핑 생성 완료: {len(mapping)}개")
+        print(f"매핑 예시: {list(mapping.items())[:5]}")
+    
+    return get_nutrient_name_mapping._mapping
+
+def map_nutrient_name(nutrient_name):
+    """
+    영양소 이름을 한글 DB 이름으로 매핑
+    """
+    mapping = get_nutrient_name_mapping()
+    
+    # 소문자로 변환하여 매칭
+    normalized_name = nutrient_name.lower().strip()
+    
+    # 직접 매칭
+    if normalized_name in mapping:
+        return mapping[normalized_name]
+    
+    # 부분 매칭 (예: "vitamin c" → "vitamin c")
+    for english_name, korean_name in mapping.items():
+        if english_name in normalized_name or normalized_name in english_name:
+            return korean_name
+    
+    # 매칭되지 않으면 원래 이름 반환
+    return nutrient_name
