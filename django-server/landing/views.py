@@ -9,6 +9,10 @@ import numpy as np
 import pandas as pd
 from Product.models import Products
 from django.db.models import F, FloatField, ExpressionWrapper, Q
+from django.views import View
+from django.http import JsonResponse
+from django.db.models import F, FloatField, ExpressionWrapper
+from .models import Products
 
 def landing(request):
     return render(request, 'landing/landing.html')
@@ -33,29 +37,36 @@ def landing(request):
 #     return JsonResponse({'products': data})
 
 
-def get_weighted_scores(request):
-    products = Products.objects.annotate(
-    score=ExpressionWrapper(
-        F('average_rating') / F('price_value'),
-        output_field=FloatField()
-    )
-).order_by('-score'  # 예시 계산 방식
-    ).order_by('-score')[:10]
 
-    results = [{'id': p.id, 'score': p.score} for p in products]
-    return JsonResponse({'results': results})
 
-def get_popular_products(request):
-    products = Products.objects.order_by('-popularity_score')[:10]
+class ProductRankingView(View):
+    def get(self, request, *args, **kwargs):
+        mode = kwargs.get('mode', request.GET.get('mode', 'weighted'))
+        
+        products = Products.objects.all()
 
-    results = [{'id': p.id, 'popularity_score': p.popularity_score} for p in products]
-    return JsonResponse({'results': results})
+        if mode == "weighted":
+            products = products.annotate(
+                score=ExpressionWrapper(
+                    F('popularity_score') / F('price_value'),
+                    output_field=FloatField()
+                )
+            ).order_by("-score")[:10]
+            results = [{'id': p.id, 'score': p.score} for p in products]
 
-def get_best_selling_products(request):
-    products = Products.objects.order_by('sales_ranks')[:10]
+        elif mode == "popular":
+            products = products.order_by("-popularity_score")[:10]
+            results = [{'id': p.id, 'popularity_score': p.popularity_score} for p in products]
 
-    results = [{'id': p.id, 'sales_ranks': p.sales_ranks} for p in products]
-    return JsonResponse({'results': results})
+        elif mode == "sales":
+            products = products.order_by("sales_ranks")[:10]
+            results = [{'id': p.id, 'sales_ranks': p.sales_ranks} for p in products]
+
+        else:
+            return JsonResponse({"error": "Invalid mode"}, status=400)
+
+        return JsonResponse({"results": results})
+
 
 def search_products(request):
     query = request.GET.get('q', '').strip()
