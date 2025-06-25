@@ -12,7 +12,7 @@ from django.db.models import F, FloatField, ExpressionWrapper, Q
 from django.views import View
 from django.http import JsonResponse
 from django.db.models import F, FloatField, ExpressionWrapper
-from .models import Products
+from Product.models import Products
 
 def landing(request):
     return render(request, 'landing/landing.html')
