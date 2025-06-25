@@ -180,13 +180,18 @@ def toggle_like(request):
 
 @login_required
 def analysis_view(request):
+    print("=== ANALYSIS_VIEW START ===")
     try:
+        print("Getting latest analysis...")
         # 사용자의 최신 영양소 분석 결과 가져오기
         latest_analysis = NutrientAnalysis.objects.filter(user=request.user).order_by('-date').first()
+        print(f"Latest analysis: {latest_analysis}")
         
+        print("Getting liked supplements...")
         # 사용자가 좋아요한 영양제 가져오기
         likes = Like.objects.filter(user=request.user).select_related('product')
         liked_supplements = [like.product for like in likes]
+        print(f"Liked supplements count: {len(liked_supplements)}")
         
         # 좋아요한 제품 데이터를 JSON으로 직렬화
         liked_supplements_json = json.dumps([
@@ -200,18 +205,22 @@ def analysis_view(request):
         
         print(f"[DEBUG] liked_supplements: {liked_supplements}")  # 추가: 콘솔에 리스트 출력
 
+        print("Getting recommended supplements...")
         # 추천 영양제 가져오기
         latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
         if latest_survey:
             recommended_supplements = get_recommended_supplements(latest_survey)
         else:
             recommended_supplements = []
+        print(f"Recommended supplements count: {len(recommended_supplements)}")
         
+        print("Loading nutrient standards...")
         # 영양소 기준치 데이터 로드
         json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 nutrient_standards = json.load(f)
+            print(f"Nutrient standards loaded: {len(nutrient_standards)} items")
         except Exception as e:
             nutrient_standards = {}
             print(f"영양소 기준치 파일 로드 실패: {str(e)}")
@@ -226,9 +235,13 @@ def analysis_view(request):
             }
         }
         print(f"[DEBUG] context['liked_supplements']: {context['liked_supplements']}")  # 추가: context 전달 확인
+        print("Rendering template...")
         return render(request, 'Mypage/analysis.html', context)
     except Exception as e:
         print(f"[ERROR] analysis_view 오류: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         # 오류 정보를 포함한 context로 렌더링
         context = {
             'error_message': f'영양소 분석 결과를 불러오는 중 오류가 발생했습니다: {str(e)}',
