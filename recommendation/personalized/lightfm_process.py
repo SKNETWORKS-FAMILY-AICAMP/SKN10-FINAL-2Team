@@ -7,7 +7,7 @@ import pickle
 import logging
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from io import BytesIO
 from lightfm import LightFM
 from lightfm.data import Dataset
