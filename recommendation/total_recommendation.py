@@ -16,13 +16,34 @@ class TotalRecommender:
             product_ids (list, optional): 추천 대상 상품 ID 리스트
         """
         self.user_id = user_id
-        self.product_ids = product_ids
+        self.product_ids = product_ids or []
         self.score_column = 'score'
+        
+        self.recent_product_id = self._get_recent_product_id()
 
         self.personalized_recommender = LightFMRecommender()
         # self.non_personalized_recommender = 
 
         logger.info(f"TotalRecommender 초기화: user_id={self.user_id}, product_ids={self.product_ids}")
+    
+    def _get_recent_product_id(self):
+        """
+        DB에서 해당 user_id의 로그 이력이 존재하는지 확인
+        Returns:
+            bool: 로그 이력이 있으면 True, 없으면 False
+        """
+        query = f"""
+        SELECT product_id
+        FROM "Mypage_userlog"
+        WHERE user_id = {self.user_id}
+        ORDER BY
+            CASE WHEN action = 'purchase' THEN 0 ELSE 1 END,
+            timestamp DESC
+        """
+        product_id = load_data(query)
+        if not product_id.empty:
+            return int(product_id.iloc[0]['product_id'])
+        return None
 
     def _normalize_score(self, df):
         """
@@ -64,7 +85,7 @@ class TotalRecommender:
         probs = df[self.score_column].values
         probs = np.nan_to_num(probs, nan=0.0)
         nonzero_count = np.count_nonzero(probs)
-        if probs.sum() > 0 and nonzero_count > len(df):
+        if probs.sum() > 0 and nonzero_count == len(df):
             probs = probs / probs.sum()
             idx = np.random.choice(df.index, size=len(df), replace=False, p=probs)
 
@@ -85,6 +106,22 @@ class TotalRecommender:
             pd.DataFrame: 상품 ID와 추천 점수, 추천 타입을 포함하는 DataFrame
         """
         logger.info("추천 생성 시작")
+        if not self.recent_product_id:
+            logger.info("user_id 없음 → 인기도 기반 추천 사용")
+            # user_id가 없는 경우, 인기도 기반 추천 점수 제공
+            product_ids_str = ', '.join(str(pid) for pid in self.product_ids)
+            query = f"""
+            SELECT id as product_id, popularity_score as score
+            FROM "Product_products"
+            WHERE id IN ({product_ids_str})
+            """
+            total_items_score = load_data(query)
+            total_items_score['type'] = 'Popularity'
+            total_items_score = self._weighted_shuffle(total_items_score)
+            total_items_list = total_items_score['product_id'].tolist()
+
+            logger.info("인기도 기반 추천 %d개 반환", len(total_items_score))
+            return total_items_list
 
         # 개인화 추천 점수 계산
         logger.info(f"개인화 추천 시작: user_id={self.user_id}")
@@ -95,21 +132,24 @@ class TotalRecommender:
         personalized_items_score['type'] = 'Personalized'
         personalized_items_score = self._normalize_score(personalized_items_score)
 
-        # 비개인화 추천 점수 계산 - CBF -> 수정해야 할 부분
-
+        # 비개인화 추천 점수 계산 - CBF -> 수정해야 할 부분 -> self.recent_product_id, non_personalized_items 전달
+        logger.info("비개인화 추천 시작: 최근 상품 ID=%s", self.recent_product_id)
         rng = np.random.default_rng()
         non_personalized_items_score = [(pid, rng.uniform(0, 1)) for pid in non_personalized_items]
         non_personalized_items_score = pd.DataFrame(non_personalized_items_score, columns=['product_id', 'score'])
         non_personalized_items_score['type'] = 'CBF'
         non_personalized_items_score = self._normalize_score(non_personalized_items_score)
+        logger.info("비개인화 추천 완료: %d개", len(non_personalized_items_score))
 
         # 추천 점수 합치기
         total_items_score = pd.concat([personalized_items_score, non_personalized_items_score], ignore_index=True)
 
         # 상품 랜덤 정렬 - 점수 기반
         total_items_score = self._weighted_shuffle(total_items_score)
+        total_items_list = total_items_score['product_id'].tolist()
 
-        return total_items_score
+        logger.info("최종 추천 리스트 생성 완료: %d개", len(total_items_list))
+        return total_items_list
 
     def __call__(self):
         """
@@ -118,9 +158,4 @@ class TotalRecommender:
             pd.DataFrame: 추천 결과
         """
         logger.info("TotalRecommender 호출: user_id=%s, product_ids=%s", self.user_id, self.product_ids)
-
-        total_items_score = self.get_recommendations()
-        total_items_list = total_items_score['product_id'].tolist()
-
-        logger.info("최종 추천 리스트 생성 완료: %d개", len(total_items_list))
-        return total_items_list
+        return self.get_recommendations()
