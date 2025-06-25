@@ -15,10 +15,10 @@ def rerank_node(state: AgentState) -> Dict[str, Any]:
     Returns:
         변경된 상태 필드만 포함하는 딕셔너리
     """
+    node_messages = state.get("node_messages", [])
+
     # 필요한 정보 가져오기
     kag_results = state.get("kag_results", [])
-    extracted_info = state.get("extracted_info", {})
-    user_health_info = state.get("user_health_info", {})
     
     print(f"\n=== 리랭킹 시작 ===")
     print(f"입력된 kag_results 개수: {len(kag_results)}")
@@ -40,9 +40,14 @@ def rerank_node(state: AgentState) -> Dict[str, Any]:
     print(f"정렬 후 id와 popularity_score: {post_id_score}")
     print(f"최종 reranked_results: {reranked_results}")
     print("=== 리랭킹 완료(popularity_score 기준) ===\n")
+
+    node_messages.append("rerank_node 노드: '비개인화 추천 모델을 사용하여 주어진 상품 리스트 재순위화를 완료했습니다.'")
     
     # 변경된 상태 필드만 반환
-    return {"rerank_results": reranked_results}
+    return {
+        "rerank_results": reranked_results,
+        "node_messages": node_messages
+    }
 
 def select_products_node(state: AgentState) -> Dict[str, Any]:
     """
@@ -54,6 +59,8 @@ def select_products_node(state: AgentState) -> Dict[str, Any]:
     Returns:
         변경된 상태 필드만 포함하는 딕셔너리
     """
+    node_messages = state.get("node_messages", [])
+
     # 재순위화된 결과 가져오기
     rerank_results = state.get("rerank_results", [])
     
@@ -62,6 +69,8 @@ def select_products_node(state: AgentState) -> Dict[str, Any]:
     
     final_results = rerank_results
     print("=== 최종 제품 선택 완료 ===\n")
+
+    node_messages.append("select_products_node 노드: '순위가 높은 상품만을 선택하였습니다.'")
     
     # 변경된 상태 필드만 반환
     return {"final_results": final_results} 

@@ -17,6 +17,7 @@ def analyze_input(state: AgentState) -> Dict[str, Any]:
     """
 
     print("질문 분석을 시작했어요!")
+    node_messages = state.get("node_messages", [])
 
     # 가장 최근 사용자 메시지 추출
     messages = state.get("messages", [])
@@ -48,17 +49,10 @@ def analyze_input(state: AgentState) -> Dict[str, Any]:
    - 영양제의 효과나 사용법 문의
    - 예시: "비타민 C 영양제 추천해주세요", "눈 건강에 좋은 영양제가 있을까요?"
 
-[개인화 여부 판단]
-- True: 사용자가 자신에게 맞는 맞춤형 추천을 요청한 경우(사용자의 입력에 '나에게 맞는', '저에게 맞는' 이라는 키워드가 있는 경우만 True입니다.)
-  예시: "나에게 맞는 영양제를 추천해주세요", "저에게 맞는 비타민을 찾고 싶어요"
-- False: 일반적인 제품 추천 요청(사용자의 입력에 '나에게 맞는', '저에게 맞는' 이라는 키워드가 없는 경우 모두 False입니다.)
-  예시: "비타민 C 영양제 추천해주세요", "피로회복에 좋은 영양제 알려주세요"
-
 [응답 형식]
 다음 JSON 형식으로 응답해주세요:
 {
   "conversation_type": "general" | "nutrient" | "supplement",
-  "is_personalized": true | false,
   "confidence": 0.0-1.0,
   "explanation": "분류 근거에 대한 간단한 설명"
 }
@@ -75,11 +69,19 @@ def analyze_input(state: AgentState) -> Dict[str, Any]:
     )
     
     conversation_type = result.get("conversation_type", "general")
-    is_personalized = result.get("is_personalized", False)
+
+    if conversation_type == "general":
+        node_messages.append("analyze_input 노드: '사용자의 입력이 영양소, 영양제 관련이 아닌 일반 대화 목적으로 판단되었습니다.'")
+    elif conversation_type == "nutrient":
+        node_messages.append("analyze_input 노드: '사용자의 입력이 영양소 정보 검색 목적으로 판단되었습니다.'")
+    elif conversation_type == "supplement":
+        node_messages.append("analyze_input 노드: '사용자의 입력이 영양제 상품 검색 목적으로 판단되었습니다.'")
+    else:
+        node_messages.append("analyze_input 노드: '사용자의 입력 목적을 판별할 수 없었습니다.'")
 
     print("질문 분석이 끝났어요!", conversation_type)
     # 변경된 상태 필드만 반환
     return {
         "conversation_type": conversation_type,
-        "is_personalized": is_personalized
+        "node_messages": node_messages
     } 

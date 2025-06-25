@@ -7,7 +7,7 @@ from ..base import get_llm_json_response
 
 def is_personalized_supplement(state: AgentState) -> Dict[str, Any]:
     """
-    사용자 입력을 분석하여 대화 유형을 결정하는 노드
+    사용자 입력을 분석하여 개인화/비개인화 추천 유형을 결정하는 노드
     
     Args:
         state: 현재 에이전트 상태
@@ -17,6 +17,7 @@ def is_personalized_supplement(state: AgentState) -> Dict[str, Any]:
     """
 
     print("개인화 여부 판단을 시작했어요!")
+    node_messages = state.get("node_messages", [])
 
     # 가장 최근 사용자 메시지 추출
     messages = state.get("messages", [])
@@ -52,9 +53,17 @@ def is_personalized_supplement(state: AgentState) -> Dict[str, Any]:
 
     is_personalized = result.get("is_personalized", False)
 
+    if is_personalized:
+        node_messages.append("is_personalized_supplement 노드: '사용자가 설문조사 및 영양소 섭취량을 고려한 개인화된 영양제 상품 검색 및 추천을 원한다고 판단되었습니다.'")
+    elif not is_personalized:
+        node_messages.append("is_personalized_supplement 노드: '사용자가 일반적인 영양제 상품 검색 및 추천을 원한다고 판단되었습니다.'")
+    else:
+        node_messages.append("is_personalized_supplement 노드: '오류가 발생했습니다. 이 메세지는 무시하세요.'")
+
     print("개인화 여부 판단이 끝났어요!", is_personalized)
     return {
-        "is_personalized": is_personalized
+        "is_personalized": is_personalized,
+        "node_messages": node_messages
     } 
 
 
@@ -69,6 +78,9 @@ def is_enough_supplement_info(state: AgentState) -> Dict[str, Any]:
         변경된 상태 필드만 포함하는 딕셔너리
     """
     print("영양소, 건강 목적을 추출합니다!")
+
+    node_messages = state.get("node_messages", [])
+
     # 가장 최근 사용자 메시지 추출
     messages = state.get("messages", [])
     if not messages:
@@ -206,20 +218,22 @@ def is_enough_supplement_info(state: AgentState) -> Dict[str, Any]:
             user_prompt=user_query,
             response_format_json=False
         )
-
+        node_messages.append("is_enough_supplement_info 노드: '사용자의 입력에 영양제 상품을 검색하기 위한 조건이 부족하여 영양제 상품을 검색할 수 없었습니다.'")
         print(f"정보 부족으로 진행할 수 없습니다: {response}")
         return {
             "response": response,
             "is_enough_sup_info": False
         } 
         
-
+    node_messages.append(f"is_enough_supplement_info 노드: '사용자의 입력에 영양제 상품을 검색하기 위한 충분한 조건이 확인되었습니다. 인식된 조건(영양소: {nutrients}, 건강목적: {purpose_tags}, 영양제유형: {supplement_types})'")
     print("영양소, 건강 목적을 추출을 완료했습니다!")
     # 변경된 상태 필드만 반환
     return {
         "extracted_info": result,
-        "is_enough_sup_info": True
+        "is_enough_sup_info": True,
+        "node_messages": node_messages
     }
+
 
 def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
     """
@@ -289,8 +303,6 @@ def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
         user_prompt=user_query
     )
     print(result)
-    
-
 
     # 변경된 상태 필드만 반환
     return {

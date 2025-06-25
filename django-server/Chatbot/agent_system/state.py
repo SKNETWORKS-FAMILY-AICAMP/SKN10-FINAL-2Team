@@ -28,6 +28,12 @@ class AgentState(TypedDict):
 
     # 메시지 기록
     messages: Annotated[Sequence[BaseMessage], add_messages]
+
+    # 각각의 노드에서 수행한 작업을 저장
+    node_messages: Annotated[Optional[List[Any]], overwrite_reducer]
+
+    # 각각의 노드에서 수행한 작업을 요약
+    node_messages_summary: Annotated[Optional[str], overwrite_reducer]
     
     # 사용자 건강 정보
     user_health_info: Annotated[Optional[Dict[str, Any]], merge_dict]
@@ -59,7 +65,6 @@ class AgentState(TypedDict):
     
     # 최종 결과
     final_results: Annotated[Optional[List[Any]], overwrite_reducer]
-    # final_recommendation: Annotated[Optional[str], overwrite_reducer]
     
     # 추천된 상품 ID 목록
     product_ids: Annotated[Optional[List[Dict[str, Any]]], overwrite_reducer]
@@ -74,6 +79,4 @@ class AgentState(TypedDict):
     nutrient_knowledge: Annotated[Optional[Dict[str, Any]], overwrite_reducer]
     
     # Human-in-the-loop 관련 필드
-    needs_human_input: Annotated[bool, overwrite_reducer]
-    human_input_request: Annotated[Optional[str], overwrite_reducer]
     followup_question: Annotated[Optional[str], overwrite_reducer]
