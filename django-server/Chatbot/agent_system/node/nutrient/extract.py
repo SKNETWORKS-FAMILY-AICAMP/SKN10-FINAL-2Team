@@ -48,30 +48,44 @@ JSON 형식으로 다음 정보를 반환해주세요:
     nutrients = result.get("nutrients", [])
 
     if not nutrients:
-        response = get_llm_json_response(
-            system_prompt=f"""당신은 영양제와 영양소에 관한 전문 지식을 갖춘 친절한 챗봇입니다.
-영양소, 영양제와 관련없는 질문은 대답하지 마세요.
-사용자에게 어떤 영양소에 대한 정보를 얻고싶은지 네 문장으로 물어보세요.
-
-사용자의 사전 설문조사 내용을 참고하여 어떤 영양소를 물어볼 수 있는지 영양소 예시에 있는 영양소 3가지만 추천해주세요.
-
-예를 들면, 사전 설문조사 내용에서 주로 실내에서 활동하신다고 응답하셨는데 비타민 D에 대한 정보를 알려드릴까요? 라고 말할 수 있습니다.
-
-사전 설문조사 내용은 다음과 같습니다:
-**사전 설문 조사**: {state['user_health_info']}
-
-영양소 예시는 다음과 같습니다:
-**영양소**: {', '.join(nutrient_lst)}
-""",
-            user_prompt=user_query,
-            response_format_json=False
-        )
-
-        print(f"정보 부족으로 진행할 수 없습니다: {response}")
-
+        # 일반적인 질문인 경우 설문 데이터를 바탕으로 개인화된 영양소 추천
+        user_health_info = state.get("user_health_info", {})
+        
+        # 설문 데이터를 바탕으로 추천할 영양소 결정
+        recommended_nutrients = []
+        
+        # 실내 생활이 많으면 비타민 D 추천
+        if user_health_info.get('indoor_daytime') == '예':
+            recommended_nutrients.append("비타민 D")
+        
+        # 피로감이 있으면 비타민 B 복합체 추천
+        if user_health_info.get('fatigue') == '예':
+            recommended_nutrients.append("비타민 B12")
+        
+        # 수면의 질이 좋지 않으면 마그네슘 추천
+        if user_health_info.get('sleep_well') == '아니오' or user_health_info.get('still_tired') == '예':
+            recommended_nutrients.append("마그네슘")
+        
+        # 눈이 건조하면 루테인 추천
+        if user_health_info.get('dry_eyes') == '예':
+            recommended_nutrients.append("루테인")
+        
+        # 감기에 잘 걸리면 비타민 C 추천
+        if user_health_info.get('frequent_cold') == '예':
+            recommended_nutrients.append("비타민 C")
+        
+        # 기본 추천 (추천이 없을 경우)
+        if not recommended_nutrients:
+            recommended_nutrients = ["비타민 D", "비타민 C", "종합 비타민"]
+        
+        # 최대 3개까지만 추천
+        recommended_nutrients = recommended_nutrients[:3]
+        
+        print(f"설문 기반 추천 영양소: {recommended_nutrients}")
+        
         return {
-            "response": response,
-            "is_enough_nut_info": False
+            "nutrients": recommended_nutrients,
+            "is_enough_nut_info": True
         }
     
     # 변경된 상태 필드만 반환

@@ -3,6 +3,7 @@ import json
 
 from ...state import AgentState
 from ..base import get_llm_response
+from Product.models import Products
 
 def generate_nutrient_response(state: AgentState) -> Dict[str, Any]:
     """
@@ -31,6 +32,39 @@ def generate_nutrient_response(state: AgentState) -> Dict[str, Any]:
     # 추출된 영양소 정보 가져오기
     extracted_info = state.get("extracted_info", {})
     nutrients = extracted_info.get("nutrients", [])
+
+    # 관련 제품 찾기
+    product_ids = []
+    if nutrients:
+        print(f"검색할 영양소: {nutrients}")
+        for nutrient in nutrients:
+            # 영양소 이름으로 관련 제품 검색 (더 넓은 범위로 검색)
+            related_products = Products.objects.filter(
+                supplement_type__icontains=nutrient
+            ).order_by('-average_rating')[:3]  # 평점 높은 순으로 3개
+            
+            print(f"'{nutrient}' 관련 제품 수: {related_products.count()}")
+            
+            # 제품을 찾지 못한 경우 제품명으로도 검색
+            if not related_products.exists():
+                related_products = Products.objects.filter(
+                    title__icontains=nutrient
+                ).order_by('-average_rating')[:3]
+                print(f"제품명으로 '{nutrient}' 검색 결과: {related_products.count()}")
+            
+            # 여전히 찾지 못한 경우 브랜드로도 검색
+            if not related_products.exists():
+                related_products = Products.objects.filter(
+                    brand__icontains=nutrient
+                ).order_by('-average_rating')[:3]
+                print(f"브랜드로 '{nutrient}' 검색 결과: {related_products.count()}")
+            
+            for product in related_products:
+                if product.id not in product_ids:
+                    product_ids.append(product.id)
+                    print(f"추가된 제품: {product.title} (ID: {product.id})")
+    
+    print(f"최종 product_ids: {product_ids}")
 
     nutrient_lst = [
         "비타민 A", "베타카로틴", "비타민 D", "비타민 E", "비타민 K", "비타민 B1", "비타민 B2",
@@ -92,8 +126,68 @@ def generate_nutrient_response(state: AgentState) -> Dict[str, Any]:
         user_prompt=followup_prompt
     )
     
+    # 건강 추천사항 생성
+    health_recommendations_prompt = f"""사용자의 영양소 질문과 응답을 바탕으로 개인화된 건강 관리 조언을 생성해주세요.
+
+사용자 질문: {user_query}
+관련 영양소: {', '.join(nutrients)}
+챗봇 응답: {response}
+
+다음 형식으로 3-5개의 구체적인 건강 관리 조언을 생성해주세요:
+- [구체적인 건강 관리 조언 1]
+- [구체적인 건강 관리 조언 2]
+- [구체적인 건강 관리 조언 3]
+
+조언은 다음을 포함해야 합니다:
+1. 해당 영양소와 관련된 생활 습관 개선
+2. 영양소 섭취 관련 주의사항
+3. 정기적인 건강 관리 방법
+4. 개인 상황에 맞는 구체적인 조언
+
+JSON 배열 형태로 응답해주세요:
+["조언1", "조언2", "조언3"]"""
+
+    health_recommendations_response = get_llm_response(
+        system_prompt="건강 관리 전문가로서 개인화된 건강 조언을 생성합니다.",
+        user_prompt=health_recommendations_prompt
+    )
+    
+    # JSON 응답 파싱 시도
+    try:
+        import re
+        # JSON 배열 패턴 찾기
+        json_match = re.search(r'\[.*\]', health_recommendations_response, re.DOTALL)
+        if json_match:
+            health_recommendations = json.loads(json_match.group())
+        else:
+            # JSON 파싱 실패 시 줄바꿈으로 분리
+            health_recommendations = [line.strip() for line in health_recommendations_response.split('\n') 
+                                    if line.strip() and line.strip().startswith('-')]
+            health_recommendations = [rec.replace('- ', '') for rec in health_recommendations]
+    except:
+        # 파싱 실패 시 기본 조언
+        health_recommendations = [
+            "규칙적인 운동과 함께 영양소를 섭취하세요",
+            "충분한 수분 섭취를 유지하세요",
+            "균형 잡힌 식단을 우선으로 하세요"
+        ]
+    
     # 변경된 상태 필드만 반환
-    return {
+    result = {
         "response": response,
-        "followup_question": followup_question
-    } 
+        "followup_question": followup_question,
+        "product_ids": product_ids,
+        "health_recommendations": health_recommendations
+    }
+    
+    # DEBUG: 결과 출력
+    print(f"=== DEBUG NUTRIENT RESPONSE ===")
+    print(f"response: {response[:100]}...")
+    print(f"followup_question: {followup_question}")
+    print(f"product_ids: {product_ids}")
+    print(f"health_recommendations: {health_recommendations}")
+    print(f"health_recommendations type: {type(health_recommendations)}")
+    print(f"health_recommendations length: {len(health_recommendations) if isinstance(health_recommendations, list) else 'N/A'}")
+    print(f"=== END DEBUG ===")
+    
+    return result 

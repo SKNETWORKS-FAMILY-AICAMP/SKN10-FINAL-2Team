@@ -171,6 +171,57 @@ personalized_info에는 다음 정보가 포함되어 있습니다:
         user_prompt=user_prompt
     )
     
+    # 건강 추천사항 생성
+    health_recommendations_prompt = f"""사용자의 건강 상태와 영양제 추천을 바탕으로 개인화된 건강 관리 조언을 생성해주세요.
+
+사용자 건강 정보:
+{json.dumps(user_health_info, ensure_ascii=False, indent=2)}
+
+추천된 영양제:
+{json.dumps(simplified_product_details, ensure_ascii=False, indent=2)}
+
+개인화 분석 정보:
+{json.dumps(personalized_info if is_personalized else {}, ensure_ascii=False, indent=2)}
+
+다음 형식으로 3-5개의 구체적인 건강 관리 조언을 생성해주세요:
+- [구체적인 건강 관리 조언 1]
+- [구체적인 건강 관리 조언 2]
+- [구체적인 건강 관리 조언 3]
+
+조언은 다음을 포함해야 합니다:
+1. 생활 습관 개선 (수면, 운동, 식단)
+2. 영양제 복용 관련 주의사항
+3. 정기적인 건강 관리 방법
+4. 개인 상황에 맞는 구체적인 조언
+
+JSON 배열 형태로 응답해주세요:
+["조언1", "조언2", "조언3"]"""
+
+    health_recommendations_response = get_llm_response(
+        system_prompt="건강 관리 전문가로서 개인화된 건강 조언을 생성합니다.",
+        user_prompt=health_recommendations_prompt
+    )
+    
+    # JSON 응답 파싱 시도
+    try:
+        import re
+        # JSON 배열 패턴 찾기
+        json_match = re.search(r'\[.*\]', health_recommendations_response, re.DOTALL)
+        if json_match:
+            health_recommendations = json.loads(json_match.group())
+        else:
+            # JSON 파싱 실패 시 줄바꿈으로 분리
+            health_recommendations = [line.strip() for line in health_recommendations_response.split('\n') 
+                                    if line.strip() and line.strip().startswith('-')]
+            health_recommendations = [rec.replace('- ', '') for rec in health_recommendations]
+    except:
+        # 파싱 실패 시 기본 조언
+        health_recommendations = [
+            "규칙적인 운동과 함께 영양제를 복용하세요",
+            "충분한 수분 섭취를 유지하세요",
+            "균형 잡힌 식단을 우선으로 하세요"
+        ]
+    
     # 후속 질문 생성
     followup_prompt = f"""사용자와의 대화를 바탕으로 자연스러운 후속 질문을 1개만 생성해주세요.
 후속 질문은 다음 중 하나를 목적으로 해야 합니다:
@@ -198,5 +249,6 @@ personalized_info에는 다음 정보가 포함되어 있습니다:
     return {
         "response": response,
         "followup_question": followup_question,
-        "product_ids": product_ids
+        "product_ids": product_ids,
+        "health_recommendations": health_recommendations
     } 

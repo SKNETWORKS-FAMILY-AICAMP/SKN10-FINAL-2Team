@@ -211,6 +211,7 @@ class SupplementRecommendationAgent:
         Args:
             thread_id: 사용자 스레드 ID
             message: 사용자 메시지
+            user_id: 사용자 ID
             user_health_info: 사용자 건강 정보 (선택적)
             
         Returns:
@@ -236,7 +237,8 @@ class SupplementRecommendationAgent:
             "followup_question": "",
             "is_enough_nut_info": False,
             "nutrients": [],
-            "nutrient_knowledge": {}
+            "nutrient_knowledge": {},
+            "user_health_info": user_health_info or {}
         })
 
         # 기존 상태 가져오기 (LangGraph checkpointer가 자동으로 관리)
@@ -291,13 +293,15 @@ class SupplementRecommendationAgent:
         followup_question = result.get("followup_question", "")
         needs_human_input = result.get("needs_human_input", False)
         human_input_request = result.get("human_input_request", "")
+        health_recommendations = result.get("health_recommendations", [])
         print(f"최종 응답: {response}")
 
         return {
             "response": response,
             "followup_question": followup_question,
             "needs_human_input": needs_human_input,
-            "product_ids": product_ids
+            "product_ids": product_ids,
+            "health_recommendations": health_recommendations
         }
     
     @classmethod

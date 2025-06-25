@@ -9,10 +9,12 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from Account.models import CustomUser
 import json
-from .models import ChatRooms, ChatMessages
+from .models import ChatRooms, ChatMessages, ChatbotRecommendation
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from langchain_core.messages import HumanMessage
+from Product.models import Products
+from Mypage.models import SurveyResult
 
 @permission_classes([IsAuthenticated])
 class ChatWithNutiAPIView(APIView):
@@ -33,6 +35,67 @@ class ChatWithNutiAPIView(APIView):
             # 사용자 정보 가져오기
             user = request.user
 
+            # 사용자의 최신 설문 결과 가져오기
+            latest_survey = SurveyResult.objects.filter(user=user).order_by('-created_at').first()
+            
+            # 사용자 건강 정보 - 실제 설문 데이터 사용
+            if latest_survey:
+                user_health_info = latest_survey.answers
+            else:
+                # 설문 데이터가 없는 경우 기본값 사용
+                user_health_info = {
+                    "기본 정보": {
+                        "이름": user.name if hasattr(user, 'name') else "사용자",
+                        "성별": "남자",
+                        "생년": 1990,
+                        "몸무게": 70,
+                        "키": 175
+                    },
+                    "생활 습관": {
+                        "주로 앉아서 하는 일을 하시나요?": "예",
+                        "낮에 실내에 주로 계신가요?": "예",
+                        "규칙적으로 운동을 하시나요?": "아니오",
+                        "담배를 피우시나요?": "아니오",
+                        "일주일에 소주 2병 또는 맥주 8병을 초과하여 드시나요?": "아니오",
+                        "평상시에 피곤함을 많이 느끼시나요?": "예",
+                        "잠을 개운하게 푹 주무시나요?": "아니오",
+                        "충분한 수면(7~8시간) 잠을 자도 피곤한가요?": "예"
+                    },
+                    "현재 건강 상태": {
+                        "스트레스를 많이 받으시나요?": "예",
+                        "평상시에 설사나 변비를 자주 경험하시나요?": "아니오",
+                        "다음 중 해당하는 증상을 모두 골라주세요.": {
+                            "땀이 잘 나지 않는 편입니다.": "아니오",
+                            "일어날 때 어지러움을 자주 느낍니다.": "예",
+                            "어두운 곳에서 사물 구별이 어렵습니다.": "예",
+                            "소변이 자주 마려워서 생활이 불편합니다.": "아니오"
+                        },
+                        "식사 후 자주 경험하는 증상을 모두 선택하세요.": {
+                            "배에 가스가 잘 찹니다.(복부팽만감, 방귀)": "예",
+                            "트름이 잦고 소화가 잘 안되어 속이 두부룩한 느낌입니다.": "예"
+                        },
+                        "감기에 잘 걸리거나 입술 포진(물집)이 잘 생기시나요?": "예",
+                        "편도선이 자주 붓거나 눈병이 잘 생기시나요?": "아니오",
+                        "눈이 건조하거나 피로감을 자주 느끼시나요?": "예"
+                    },
+                    "건강 목표": {
+                        "피부보습에 도움이 되는 영양제를 추천해 드릴까요?": "예",
+                        "인지력과 기억력 개선에 도움되는 영양제를 추천해드릴까요?": "아니오",
+                        "체중 감량 계획이 있으신가요?": "아니오"
+                    },
+                    "기존 질환 및 약 복용": {
+                        "아래 중 알러지가 있어 전혀 못드시는 식품을 선택해 주세요.": [
+                            "땅콩",
+                            "밀"
+                        ],
+                        "드시고 계신 만성질환 약이 있으신가요?": [
+                            "고혈압 약"
+                        ],
+                        "지난 1년간 항생제나 항바이러스제를 복용하신적이 한번이라도 있으신가요?": "예",
+                        "향후 2주 이내에 수술 계획이 있거나 지난 2주 이내에 수술받은 적이 있으신가요?": "아니오"
+                    }
+                }
+
             # 새 채팅방 생성 또는 기존 채팅방 가져오기
             if not chat_room_id:
                 chat_room = ChatRooms.objects.create(
@@ -50,72 +113,29 @@ class ChatWithNutiAPIView(APIView):
                 message=user_query
             )
 
-            # 사용자 건강 정보 - 이 부분은 실제 사용자 데이터로 대체해야 함
-            user_health_info = {
-                "기본 정보": {
-                    "이름": "홍승표",
-                    "성별": "남자",
-                    "생년": 1990,
-                    "몸무게": 70,
-                    "키": 175
-                },
-                "생활 습관": {
-                    "주로 앉아서 하는 일을 하시나요?": "예",
-                    "낮에 실내에 주로 계신가요?": "예",
-                    "규칙적으로 운동을 하시나요?": "아니오",
-                    "담배를 피우시나요?": "아니오",
-                    "일주일에 소주 2병 또는 맥주 8병을 초과하여 드시나요?": "아니오",
-                    "평상시에 피곤함을 많이 느끼시나요?": "예",
-                    "잠을 개운하게 푹 주무시나요?": "아니오",
-                    "충분한 수면(7~8시간) 잠을 자도 피곤한가요?": "예"
-                },
-                "현재 건강 상태": {
-                    "스트레스를 많이 받으시나요?": "예",
-                    "평상시에 설사나 변비를 자주 경험하시나요?": "아니오",
-                    "다음 중 해당하는 증상을 모두 골라주세요.": {
-                        "땀이 잘 나지 않는 편입니다.": "아니오",
-                        "일어날 때 어지러움을 자주 느낍니다.": "예",
-                        "어두운 곳에서 사물 구별이 어렵습니다.": "예",
-                        "소변이 자주 마려워서 생활이 불편합니다.": "아니오"
-                    },
-                    "식사 후 자주 경험하는 증상을 모두 선택하세요.": {
-                        "배에 가스가 잘 찹니다.(복부팽만감, 방귀)": "예",
-                        "트름이 잦고 소화가 잘 안되어 속이 두부룩한 느낌입니다.": "예"
-                    },
-                    "감기에 잘 걸리거나 입술 포진(물집)이 잘 생기시나요?": "예",
-                    "편도선이 자주 붓거나 눈병이 잘 생기시나요?": "아니오",
-                    "눈이 건조하거나 피로감을 자주 느끼시나요?": "예"
-                },
-                "건강 목표": {
-                    "피부보습에 도움이 되는 영양제를 추천해 드릴까요?": "예",
-                    "인지력과 기억력 개선에 도움되는 영양제를 추천해드릴까요?": "아니오",
-                    "체중 감량 계획이 있으신가요?": "아니오"
-                },
-                "기존 질환 및 약 복용": {
-                    "아래 중 알러지가 있어 전혀 못드시는 식품을 선택해 주세요.": [
-                        "땅콩",
-                        "밀"
-                    ],
-                    "드시고 계신 만성질환 약이 있으신가요?": [
-                        "고혈압 약"
-                    ],
-                    "지난 1년간 항생제나 항바이러스제를 복용하신적이 한번이라도 있으신가요?": "예",
-                    "향후 2주 이내에 수술 계획이 있거나 지난 2주 이내에 수술받은 적이 있으신가요?": "아니오"
-                }
-            }
-
             # 랭그래프 에이전트를 사용하여 응답 생성
             # process_message 메서드를 사용하여 간소화
             result = SupplementRecommendationAgent.process_message(
                 thread_id=str(chat_room_id),
                 message=user_query,
-                user_health_info=user_health_info,
-                user_id=user.id
+                user_id=user.id,
+                user_health_info=user_health_info
             )
             
             ai_response = result.get("response", "")
             followup_question = result.get("followup_question", "")
             product_ids = result.get("product_ids", "")
+            health_recommendations = result.get("health_recommendations", [])
+
+            # DEBUG: 결과 출력
+            print(f"=== DEBUG AGENT RESULT ===")
+            print(f"ai_response: {ai_response[:100]}...")
+            print(f"followup_question: {followup_question}")
+            print(f"product_ids: {product_ids}")
+            print(f"health_recommendations: {health_recommendations}")
+            print(f"health_recommendations type: {type(health_recommendations)}")
+            print(f"health_recommendations length: {len(health_recommendations) if isinstance(health_recommendations, list) else 'N/A'}")
+            print(f"=== END DEBUG ===")
 
             # 추가 정보가 필요한 경우 처리
             if followup_question:
@@ -128,6 +148,47 @@ class ChatWithNutiAPIView(APIView):
                 message=ai_response,
                 product_ids=product_ids
             )
+
+            # 챗봇 추천 결과 저장 (제품이 추천된 경우 또는 건강 추천사항이 있는 경우)
+            should_save_recommendation = bool(product_ids) or (isinstance(health_recommendations, list) and len(health_recommendations) > 0)
+            print(f"should_save_recommendation: {should_save_recommendation}")
+            
+            if should_save_recommendation:
+                # 기존 활성 추천을 비활성화
+                ChatbotRecommendation.objects.filter(
+                    user=user, 
+                    is_active=True
+                ).update(is_active=False)
+                
+                # 추천된 제품 정보 가져오기
+                recommended_products = []
+                if product_ids:
+                    for product_id in product_ids:
+                        try:
+                            product = Products.objects.get(id=product_id)
+                            recommended_products.append({
+                                'id': product.id,
+                                'title': product.title,
+                                'brand': product.brand,
+                                'average_rating': product.average_rating,
+                                'total_reviews': product.total_reviews,
+                                'supplement_type': product.supplement_type,
+                                'product_form': product.product_form,
+                                'vegan': product.vegan,
+                                'directions': product.directions,
+                                'safety_info': product.safety_info
+                            })
+                        except Products.DoesNotExist:
+                            continue
+                
+                # 새로운 추천 결과 저장
+                ChatbotRecommendation.objects.create(
+                    user=user,
+                    recommended_products=recommended_products,
+                    recommendation_reason=ai_response,
+                    health_recommendations=health_recommendations,
+                    user_query=user_query
+                )
 
             # 응답 반환
             return Response({
@@ -202,3 +263,38 @@ def delete_chat_room(request, room_id):
             return JsonResponse({'success': False, 'error': str(e)})
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_chatbot_recommendations(request):
+    """사용자의 최신 챗봇 추천 결과를 가져옵니다."""
+    try:
+        # 사용자의 최신 활성 추천 결과 가져오기
+        latest_recommendation = ChatbotRecommendation.objects.filter(
+            user=request.user,
+            is_active=True
+        ).first()
+        
+        if latest_recommendation:
+            return Response({
+                'success': True,
+                'recommendation': {
+                    'id': latest_recommendation.id,
+                    'recommended_products': latest_recommendation.recommended_products,
+                    'recommendation_reason': latest_recommendation.recommendation_reason,
+                    'user_query': latest_recommendation.user_query,
+                    'created_at': latest_recommendation.created_at.isoformat()
+                }
+            })
+        else:
+            return Response({
+                'success': True,
+                'recommendation': None,
+                'message': '챗봇 추천 결과가 없습니다.'
+            })
+            
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

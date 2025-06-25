@@ -125,15 +125,24 @@
         <p>{{ message }}</p>
     {% else %}
         <div class="section-block">
-            <h2 class="section-title">건강 상태 요약</h2>
+            <h2 class="section-title">내 설문 응답 요약</h2>
             <div class="section-content">
-                {{ health_summary|safe }}
+                <table style="width:100%; font-size:14px; border-collapse:collapse;">
+                    <tbody>
+                    {% for item in answers_summary %}
+                        <tr style="border-bottom:1px solid #eee;">
+                            <td style="padding:4px 8px; color:#888; width:60%;">{{ item.question }}</td>
+                            <td style="padding:4px 8px; color:#31444E; font-weight:600;">{{ item.answer }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         <div class="section-block">
-            <h2 class="section-title">추천하는 핵심 영양제</h2>
+            <h2 class="section-title">건강 상태 요약</h2>
             <div class="section-content">
-                {{ recommended_supplements_section|safe }}
+                {{ health_summary|safe }}
             </div>
         </div>
         <div class="section-block">
@@ -148,7 +157,8 @@
                 {{ considerations_section|safe }}
             </div>
         </div>
-        <button class="profile-btn" onclick="window.location.href='{% url 'mypage:mypage' %}'">마이페이지로 이동</button>
+        <button class="profile-btn" onclick="window.location.href='{% url 'chatbot:chat' %}'">챗봇과 상담하기</button>
+        <button class="profile-btn" onclick="window.location.href='{% url 'mypage:mypage' %}'" style="margin-top: 10px; background: #6c757d;">마이페이지로 이동</button>
     {% endif %}
 </div>
 {% endblock %} 

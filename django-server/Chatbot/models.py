@@ -134,3 +134,25 @@ class NutritionDailyRec(models.Model):
     
     def __str__(self):
         return f"{self.sex} {self.age} - {self.nutrient}: {self.daily}"
+
+class ChatbotRecommendation(models.Model):
+    id = models.AutoField(primary_key=True)
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='chatbot_recommendations'
+    )
+    
+    recommended_products = models.JSONField()  # 추천된 상품 정보를 JSON으로 저장
+    recommendation_reason = models.TextField()  # 추천 이유
+    health_recommendations = models.JSONField(default=list)  # 건강 추천사항을 JSON 배열로 저장
+    user_query = models.TextField()  # 사용자 질문
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)  # 활성 상태 (최신 추천만 표시)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
