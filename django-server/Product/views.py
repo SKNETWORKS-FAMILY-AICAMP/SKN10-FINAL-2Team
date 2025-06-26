@@ -1,16 +1,10 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
 from .models import Products
 from django.http import JsonResponse
 from Mypage.models import Like
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import api_view, permission_classes
-import os, json
-from django.conf import settings
+import json
 from django.http import JsonResponse
-from django.contrib.auth import get_user_model
 from Chatbot.models import NutritionDailyRec
 from datetime import date
 
@@ -162,8 +156,10 @@ def get_product_details(request, product_id=None):
                     'country_of_origin': product.country_of_origin,
                     'is_liked': product.is_liked,
                 })
-            
-            return JsonResponse({'products': products_data})
+            # 요청한 id_list 순서대로 정렬
+            id_to_product = {p['id']: p for p in products_data}
+            ordered_products_data = [id_to_product[pid] for pid in id_list if pid in id_to_product]
+            return JsonResponse({'products': ordered_products_data})
     
     except Products.DoesNotExist:
         return JsonResponse({'error': f'상품 ID {product_id}를 찾을 수 없습니다.'}, status=404)
