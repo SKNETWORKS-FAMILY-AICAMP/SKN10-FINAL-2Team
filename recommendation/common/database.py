@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import psycopg2
 import os
 import pandas as pd
+from sqlalchemy import create_engine
 
 # .env 파일에서 환경변수 로드
 load_dotenv()
@@ -15,6 +16,11 @@ db_params = {
     'password': os.getenv('POSTGRES_PASSWORD'),
 }
 
+def get_engine():
+    return create_engine(
+        f"postgresql+psycopg2://{db_params['user']}:{db_params['password']}@{db_params['host']}:{db_params['port']}/{db_params['dbname']}"
+    )
+
 def load_data(query):
     """
     데이터베이스에서 상품과 리뷰 데이터를 조인하여 전처리된 DataFrame을 반환하는 함수
@@ -24,12 +30,12 @@ def load_data(query):
         pd.DataFrame: id, title, sentiment 컬럼을 가진 DataFrame
     """
     # 데이터베이스 연결
-    conn = psycopg2.connect(**db_params)
+    engine = get_engine()
 
     # 쿼리 결과를 DataFrame으로 변환
-    df = pd.read_sql(query, conn)
+    df = pd.read_sql(query, engine)
     # 연결 종료
-    conn.close()
+    engine.dispose()
     return df
 
 def save_data_to_db(query, data):
