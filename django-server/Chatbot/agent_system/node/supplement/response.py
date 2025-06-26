@@ -60,11 +60,11 @@ def summary_node_process(state: AgentState) -> Dict[str, Any]:
 
 요약은 간결하고 명확하게 작성해주세요. 사용자가 이해하기 쉽도록 자연스러운 한국어로 작성하세요.
 """
-
+    node_messages_text = "\n".join(node_messages)
     user_prompt = f"""
 다음은 영양제 추천 시스템의 각 노드에서 수행한 작업들의 기록입니다:
 
-{"\n".join(node_messages)}
+{node_messages_text}
 
 위 메시지들을 분석하여 작업 과정을 요약해주세요.
 """
