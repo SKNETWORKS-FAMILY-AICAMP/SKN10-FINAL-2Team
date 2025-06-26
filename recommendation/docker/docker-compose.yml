@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  recommender:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: recommender
+    volumes:
+      - ../:/app
+      - ~/.aws:/root/.aws:ro
+    working_dir: /app
+    command: python personalized/lightfm_process.py

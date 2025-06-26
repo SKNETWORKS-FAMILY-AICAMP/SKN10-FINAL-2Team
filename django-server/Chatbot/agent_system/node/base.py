@@ -1,10 +1,8 @@
-from typing import Dict, Any, Optional, TypeVar, Generic, Callable
-from django.conf import settings
+from typing import Dict, Any, Optional
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
 
-from ..state import AgentState
 
 # 환경변수 로드
 load_dotenv()

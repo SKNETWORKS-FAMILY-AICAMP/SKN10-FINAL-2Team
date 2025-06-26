@@ -2,18 +2,24 @@ from dotenv import load_dotenv
 import psycopg2
 import os
 import pandas as pd
+from sqlalchemy import create_engine
 
 # .env 파일에서 환경변수 로드
 load_dotenv()
 
 # 데이터베이스 접속 정보 설정
 db_params = {
-    'host': os.getenv('DB_HOST'),
-    'port': int(os.getenv('DB_PORT')),
-    'dbname': os.getenv('DB_NAME'),
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD')
+    'host': os.getenv('POSTGRES_HOST'),
+    'port': '5432',
+    'dbname': 'postgre',
+    'user': 'postgres',
+    'password': os.getenv('POSTGRES_PASSWORD'),
 }
+
+def get_engine():
+    return create_engine(
+        f"postgresql+psycopg2://{db_params['user']}:{db_params['password']}@{db_params['host']}:{db_params['port']}/{db_params['dbname']}"
+    )
 
 def load_data(query):
     """
@@ -24,12 +30,12 @@ def load_data(query):
         pd.DataFrame: id, title, sentiment 컬럼을 가진 DataFrame
     """
     # 데이터베이스 연결
-    conn = psycopg2.connect(**db_params)
+    engine = get_engine()
 
     # 쿼리 결과를 DataFrame으로 변환
-    df = pd.read_sql(query, conn)
+    df = pd.read_sql(query, engine)
     # 연결 종료
-    conn.close()
+    engine.dispose()
     return df
 
 def save_data_to_db(query, data):
