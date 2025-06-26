@@ -1,5 +1,5 @@
-from typing import Dict, Any, Optional, List
-from langchain_core.messages import HumanMessage, AIMessage
+from typing import Dict, Any, Optional
+from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, END
 import os
 from dotenv import load_dotenv
@@ -13,10 +13,10 @@ from .state import AgentState
 # 영양제 관련 노드들 import
 from .node.input_analysis import analyze_input
 from .node.general_chat import handle_general_chat
-from .node.supplement.extract import is_enough_supplement_info, extract_supplement_info
-from .node.supplement.query import execute_kag_query
+from .node.supplement.extract import is_personalized_supplement, is_enough_supplement_info, extract_supplement_info
+from .node.supplement.query import search_personal_sup, search_nonpersonal_sup
 from .node.supplement.rerank import rerank_node, select_products_node
-from .node.supplement.response import generate_supplement_response
+from .node.supplement.response import summary_node_process, generate_supplement_response
 
 # 영양소 관련 노드들 import
 from .node.nutrient.extract import extract_nutrient_info
@@ -88,6 +88,9 @@ class SupplementRecommendationAgent:
             def route_by_is_enough_nutrient_info(state: AgentState):
                 return "enough" if state.get("is_enough_nut_info", False) else "not_enough"
             
+            def route_by_is_personalized(state: AgentState):
+                return "personalized" if state.get("is_personalized", False) else "non_personalized"
+            
             # 시작점 설정!
             builder = StateGraph(AgentState)
             
@@ -98,12 +101,14 @@ class SupplementRecommendationAgent:
             builder.add_node("general_chat", handle_general_chat)
 
             # 영양제 관련 노드
-            # builder.add_node("extract_health_info", extract_health_info)
+            builder.add_node("is_personalized_supplement", is_personalized_supplement)
             builder.add_node("is_enough_supplement_info", is_enough_supplement_info)
             builder.add_node("extract_supplement_info", extract_supplement_info)  # 함수명 매핑
-            builder.add_node("execute_kag_query", execute_kag_query)  # 함수명 매핑
+            builder.add_node("search_personal_sup", search_personal_sup)
+            builder.add_node("search_nonpersonal_sup", search_nonpersonal_sup)  # 함수명 매핑
             builder.add_node("rerank_node", rerank_node)  # 노드 이름 변경
             builder.add_node("select_products_node", select_products_node)  # 노드 이름 변경
+            builder.add_node("summary_node_process", summary_node_process)
             builder.add_node("generate_supplement_response", generate_supplement_response)  # 함수명 매핑
             
             # 영양소 관련 노드
@@ -141,24 +146,25 @@ class SupplementRecommendationAgent:
                 }
             )
 
-            # # 추가 정보 요청 분기
-            # builder.add_conditional_edges(
-            #     "extract_supplement_info",
-            #     check_human_input_needed,
-            #     {
-            #         "needs_input": END,  # 사용자 입력 대기
-            #         "continue": "build_kag_query"  # 다음 단계로
-            #     }
-            # )
+            builder.add_conditional_edges(
+                "is_personalized_supplement",
+                route_by_is_personalized,
+                {
+                    "personalized": "search_personal_sup",
+                    "non_personalized": "search_nonpersonal_sup"
+                }
+            )
             
             # 일반 대화 처리 후 종료
             builder.add_edge("general_chat", END)
             
             # 영양제 추천 플로우
-            builder.add_edge("extract_supplement_info", "execute_kag_query")
-            builder.add_edge("execute_kag_query", "rerank_node")
+            builder.add_edge("extract_supplement_info", "is_personalized_supplement")
+            builder.add_edge("search_personal_sup", "rerank_node")
+            builder.add_edge("search_nonpersonal_sup", "rerank_node")
             builder.add_edge("rerank_node", "select_products_node")
-            builder.add_edge("select_products_node", "generate_supplement_response")
+            builder.add_edge("select_products_node", "summary_node_process")
+            builder.add_edge("summary_node_process", "generate_supplement_response")
             builder.add_edge("generate_supplement_response", END)
 
             # 영양소 설명 플로우
@@ -216,6 +222,8 @@ class SupplementRecommendationAgent:
         Returns:
             응답 텍스트와 후속 질문을 포함하는 딕셔너리
         """
+        import time
+
         # 워크플로우, 스레드 구성 가져오기
         workflow = cls.get_workflow()
         config = cls.get_thread_config(thread_id)
@@ -223,6 +231,8 @@ class SupplementRecommendationAgent:
         # 질문이 들어올 때마다 주요 state 필드 초기화
         workflow.update_state(config, {
             "response": "",
+            "node_messages": [],
+            "node_messages_summary": "",
             "conversation_type": None,
             "is_personalized": False,
             "is_enough_sup_info": False,

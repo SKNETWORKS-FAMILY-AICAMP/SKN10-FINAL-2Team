@@ -1,72 +1,71 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 import json
 
 from ...state import AgentState
 from ..base import get_llm_json_response
 
-# def extract_health_info(state: AgentState) -> Dict[str, Any]:
-#     """
-#     사용자 입력에서 건강 정보를 추출하여 기존 설문조사 데이터를 업데이트하는 함수
+
+def is_personalized_supplement(state: AgentState) -> Dict[str, Any]:
+    """
+    사용자 입력을 분석하여 개인화/비개인화 추천 유형을 결정하는 노드
     
-#     Args:
-#         state: 현재 에이전트 상태
+    Args:
+        state: 현재 에이전트 상태
         
-#     Returns:
-#         변경된 상태 필드만 포함하는 딕셔너리
-#     """
-#     print("건강 정보를 추출할게요!")
-#     # 가장 최근 사용자 메시지 추출
-#     messages = state.get("messages", [])
-#     if not messages:
-#         return {}
-    
-#     latest_message = messages[-1]
-#     if latest_message.type != "human":
-#         return {}
-    
-#     user_query = latest_message.content
-#     current_health_data = state.get("user_health_info", {})
-    
-#     # 시스템 프롬프트 정의
-#     system_prompt = f"""당신은 건강 정보 추출 전문가입니다.
+    Returns:
+        변경된 상태 필드만 포함하는 딕셔너리
+    """
 
-# **임무**: 사용자의 입력에서 건강 관련 정보를 추출하여 기존 설문조사 데이터를 업데이트하세요.
+    print("개인화 여부 판단을 시작했어요!")
+    node_messages = state.get("node_messages", [])
 
-# **현재 설문조사 데이터**:
-# ```json
-# {json.dumps(current_health_data, ensure_ascii=False, indent=2)}
-# ```
-
-# **지침**:
-# 1. 사용자 입력에서 설문조사 항목과 관련된 정보만 추출하세요.
-# 2. 기존 데이터를 수정하거나 새로운 정보를 추가하세요.
-# 3. 확실하지 않은 정보는 추가하지 마세요.
-# 4. 알레르기 정보는 리스트에 추가하세요 (기존 항목 유지).
-# 5. 약물 정보도 리스트에 추가하세요 (기존 항목 유지).
-
-# **응답 형식**:
-# 다음과 같은 JSON 형태로 응답하세요:
-# {{
-#   "updated_health_info": {{업데이트된 전체 건강 정보}},
-#   "extracted_changes": {{
-#     "category": "변경된 카테고리",
-#     "field": "변경된 필드명",
-#     "old_value": "기존 값",
-#     "new_value": "새로운 값",
-#     "action": "add|update|remove"
-#   }}
-# }}"""
-
-#     # LLM에 요청하여 건강 정보 추출
-#     result = get_llm_json_response(
-#         system_prompt=system_prompt,
-#         user_prompt=user_query
-#     )
+    # 가장 최근 사용자 메시지 추출
+    messages = state.get("messages", [])
+    if not messages:
+        return {"conversation_type": "general"}
     
-#     updated_health_info = result.get("updated_health_info", current_health_data)
+    latest_message = messages[-1]
+    if latest_message.type != "human":
+        return {"conversation_type": "general"}
     
-#     # 변경된 상태 필드만 반환
-#     return {"user_health_info": updated_health_info}
+    user_query = latest_message.content
+    
+    # 시스템 프롬프트 정의
+    system_prompt = """당신은 사용자의 메시지를 분석하여 개인화된 영양제 추천 여부를 판단하는 전문가입니다. 각 메시지를 다음 기준에 따라 정확하게 분류해주세요.
+
+[개인화 여부 판단]
+- True: 사용자가 자신에게 맞는 맞춤형 추천을 요청한 경우(사용자의 입력에 '나에게 맞는', '저에게 맞는' 이라는 키워드가 있는 경우만 True입니다.)
+  예시: "나에게 맞는 영양제를 추천해주세요", "저에게 맞는 비타민을 찾고 싶어요"
+- False: 일반적인 제품 추천 요청(사용자의 입력에 '나에게 맞는', '저에게 맞는' 이라는 키워드가 없는 경우 모두 False입니다.)
+  예시: "비타민 C 영양제 추천해주세요", "피로회복에 좋은 영양제 알려주세요"
+
+[응답 형식]
+다음 JSON 형식으로 응답해주세요:
+{
+  "is_personalized": true | false,
+}"""
+
+    # LLM에 요청하여 대화 유형 분류
+    result = get_llm_json_response(
+        system_prompt=system_prompt,
+        user_prompt=user_query
+    )
+
+    is_personalized = result.get("is_personalized", False)
+
+    if is_personalized:
+        node_messages.append("is_personalized_supplement 노드: '사용자가 설문조사 및 영양소 섭취량을 고려한 개인화된 영양제 상품 검색 및 추천을 원한다고 판단되었습니다.'")
+    elif not is_personalized:
+        node_messages.append("is_personalized_supplement 노드: '사용자가 일반적인 영양제 상품 검색 및 추천을 원한다고 판단되었습니다.'")
+    else:
+        node_messages.append("is_personalized_supplement 노드: '오류가 발생했습니다. 이 메세지는 무시하세요.'")
+
+    print("개인화 여부 판단이 끝났어요!", is_personalized)
+    return {
+        "is_personalized": is_personalized,
+        "node_messages": node_messages
+    } 
+
 
 def is_enough_supplement_info(state: AgentState) -> Dict[str, Any]:
     """
@@ -79,6 +78,9 @@ def is_enough_supplement_info(state: AgentState) -> Dict[str, Any]:
         변경된 상태 필드만 포함하는 딕셔너리
     """
     print("영양소, 건강 목적을 추출합니다!")
+
+    node_messages = state.get("node_messages", [])
+
     # 가장 최근 사용자 메시지 추출
     messages = state.get("messages", [])
     if not messages:
@@ -216,20 +218,22 @@ def is_enough_supplement_info(state: AgentState) -> Dict[str, Any]:
             user_prompt=user_query,
             response_format_json=False
         )
-
+        node_messages.append("is_enough_supplement_info 노드: '사용자의 입력에 영양제 상품을 검색하기 위한 조건이 부족하여 영양제 상품을 검색할 수 없었습니다.'")
         print(f"정보 부족으로 진행할 수 없습니다: {response}")
         return {
             "response": response,
             "is_enough_sup_info": False
         } 
         
-
+    node_messages.append(f"is_enough_supplement_info 노드: '사용자의 입력에 영양제 상품을 검색하기 위한 충분한 조건이 확인되었습니다. 인식된 조건(영양소: {nutrients}, 건강목적: {purpose_tags}, 영양제유형: {supplement_types})'")
     print("영양소, 건강 목적을 추출을 완료했습니다!")
     # 변경된 상태 필드만 반환
     return {
         "extracted_info": result,
-        "is_enough_sup_info": True
+        "is_enough_sup_info": True,
+        "node_messages": node_messages
     }
+
 
 def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
     """
@@ -299,8 +303,6 @@ def extract_supplement_info(state: AgentState) -> Dict[str, Any]:
         user_prompt=user_query
     )
     print(result)
-    
-
 
     # 변경된 상태 필드만 반환
     return {

@@ -6,6 +6,83 @@ from ..base import get_llm_response
 
 from Product.models import Products
 
+def summary_node_process(state: AgentState) -> Dict[str, Any]:
+    """
+    노드의 작업과정을 요약하는 노드
+    
+    Args:
+        state: 현재 에이전트 상태
+        
+    Returns:
+        변경된 상태 필드만 포함하는 딕셔너리
+    """
+    node_messages = state.get("node_messages", [])
+    node_messages_summary = state.get("node_messages_summary", "")
+
+    system_prompt = f"""
+당신은 영양제 추천 시스템의 작업 과정을 분석하고 요약하는 전문가입니다.
+
+주어진 노드 메시지들을 분석하여 다음과 같은 정보를 추출하고 요약해주세요:
+
+1. **수행된 주요 작업들**: 어떤 노드들이 어떤 작업을 수행했는지
+2. **사용자 정보 분석**: 성별, 나이, 건강 정보 등이 어떻게 활용되었는지
+3. **영양소 분석 결과**: 어떤 영양소가 부족하거나 과다 섭취인지
+4. **검색 전략**: 어떤 방식으로 영양제를 검색했는지 (목적 태그, 영양제 유형, 직접 언급 영양소 등)
+   - 사용자가 요구한 영양소가 과다 섭취 판단 시: "요청하신 [영양소명]은 이미 충분히 섭취하고 계셔서, 비슷한 효능을 가진 [관련영양소명]을 추천했습니다. [관련영양소명]은 [영양소명]과 유사하게 [구체적인 효능]에 도움을 주는 영양소입니다."
+   - 예시: "요청하신 비타민 C는 이미 충분히 섭취하고 계셔서, 비슷한 효능을 가진 베타카로틴을 추천했습니다. 베타카로틴은 비타민 C와 유사하게 항산화 작용과 면역력 강화에 도움을 주는 영양소입니다."
+5. **최종 결과**: 어떤 영양제를 찾았는지
+
+출력 형식(반드시 지키세요.):
+
+## 1. **수행된 주요 작업들**
+- [수행 작업 설명 1]
+- [수행 작업 설명 2]
+- [수행 작업 설명 3]
+- [수행 작업 설명 4]
+- [수행 작업 설명 5]
+...
+
+## 2. **사용자 정보 분석**
+- [사용자 정보 분석 설명]
+
+## 3. **영양소 분석 결과**
+- [영양소 분석 결과 설명]
+
+## 4. **검색 전략**
+- [검색 전략 설명]
+
+## 5. **최종 결과**
+- [최종 결과 설명]
+
+주의 사항:
+- **절대 구체적인 노드 이름을 작성하지 마세요**
+- **반드시 출력 형식을 지키세요**
+
+요약은 간결하고 명확하게 작성해주세요. 사용자가 이해하기 쉽도록 자연스러운 한국어로 작성하세요.
+"""
+
+    user_prompt = f"""
+다음은 영양제 추천 시스템의 각 노드에서 수행한 작업들의 기록입니다:
+
+{"\n".join(node_messages)}
+
+위 메시지들을 분석하여 작업 과정을 요약해주세요.
+"""
+
+    # LLM에 요청하여 응답 생성
+    response = get_llm_response(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        model="gpt-4.1-nano-2025-04-14"
+    )
+
+    node_messages_summary = response
+    
+    return {
+        "node_messages_summary": node_messages_summary
+    }
+
+
 def generate_supplement_response(state: AgentState) -> Dict[str, Any]:
     """
     영양제 추천 결과를 바탕으로 사용자에게 응답을 생성하는 노드
@@ -23,11 +100,12 @@ def generate_supplement_response(state: AgentState) -> Dict[str, Any]:
     user_health_info = state.get("user_health_info", {})
     is_personalized = state.get("is_personalized", False)
     personalized_info = state.get("personalized_info", {})
+    node_messages_summary = state.get("node_messages_summary", "")
 
     if not final_results:
         # 검색 결과가 없는 경우
         return {
-            "final_recommendation": "죄송합니다. 요청하신 조건에 맞는 영양제를 찾을 수 없습니다. 조건을 조정해서 다시 검색해보시겠어요?",
+            "response": "죄송합니다. 요청하신 조건에 맞는 영양제를 찾을 수 없습니다. 조건을 조정해서 다시 검색해보시겠어요?",
             "followup_question": "어떤 영양소와 건강 목적에 관심이 있으신가요?"
         }
     print("final_result:", final_results)
@@ -52,7 +130,7 @@ def generate_supplement_response(state: AgentState) -> Dict[str, Any]:
     
     # 개인화 정보가 있는 경우 프롬프트 수정
     if is_personalized and personalized_info:
-        system_prompt = """당신은 영양제 추천 전문가입니다.
+        system_prompt = f"""당신은 영양제 추천 전문가입니다.
 사용자의 나이, 성별, 영양소 섭취 상태를 분석하여 맞춤형 영양제를 추천해주세요.
 
 **개인화 분석 데이터 설명**:
@@ -169,8 +247,23 @@ personalized_info에는 다음 정보가 포함되어 있습니다:
     # LLM에 요청하여 응답 생성
     response = get_llm_response(
         system_prompt=system_prompt,
-        user_prompt=user_prompt
+        user_prompt=user_prompt,
+        model="gpt-4.1-nano-2025-04-14"
     )
+    
+    # node_messages_summary가 있으면 첫 번째 문단에 추가
+    if node_messages_summary:
+        # 첫 번째 문단을 찾아서 그 뒤에 node_messages_summary 추가
+        lines = response.split('\n')
+        modified_lines = []
+        for i, line in enumerate(lines):
+            modified_lines.append(line)
+            if i > 0 and (line.strip() == '' or line.strip().startswith('##')):
+                modified_lines.insert(i, f"\n<details><summary>클릭하여 자세한 분석 과정 보기</summary>\n\n{node_messages_summary}\n\n</details>")
+                # 나머지 줄 추가
+                modified_lines.extend(lines[i+1:])
+                break
+        response = '\n'.join(modified_lines)
     
     # 후속 질문 생성
     followup_prompt = f"""사용자와의 대화를 바탕으로 자연스러운 후속 질문을 1개만 생성해주세요.
@@ -185,15 +278,20 @@ personalized_info에는 다음 정보가 포함되어 있습니다:
 챗봇 응답:
 {response}
 
-후속 질문 (한 문장으로):"""
+후속 질문 (짧은 문장으로):
+예시) 혹시 [기존 건강 목표] 외에 다른 건강 목표가 있으신가요?
+예시) 혹시 지금 추천해드린 [기존 추천 영양소] 외에 다른 영양소나 건강 목표에 대해 추가로 추천을 원하시나요?"""
 
     followup_question = get_llm_response(
         system_prompt="자연스러운 후속 질문을 생성하는 전문가입니다.",
-        user_prompt=followup_prompt
+        user_prompt=followup_prompt,
+        model="gpt-4.1-nano-2025-04-14"
     )
 
     if not (is_personalized and personalized_info):
         followup_question += "\n\n설문조사 데이터를 기반으로 영양제를 추천받고 싶으시면 '나에게 맞는'과 같은 키워드를 입력해주세요."
+
+    print(f"최종 응답이에요:\n{response}")
 
     # 변경된 상태 필드만 반환
     return {
