@@ -16,6 +16,7 @@ def summary_node_process(state: AgentState) -> Dict[str, Any]:
     Returns:
         변경된 상태 필드만 포함하는 딕셔너리
     """
+    print("노드 작업 요약 시작")
     node_messages = state.get("node_messages", [])
     node_messages_summary = state.get("node_messages_summary", "")
 
@@ -77,7 +78,7 @@ def summary_node_process(state: AgentState) -> Dict[str, Any]:
     )
 
     node_messages_summary = response
-    
+    print("노드 작업 요약 완료:\n", response)
     return {
         "node_messages_summary": node_messages_summary
     }
@@ -109,11 +110,9 @@ def generate_supplement_response(state: AgentState) -> Dict[str, Any]:
             "followup_question": "어떤 영양소와 건강 목적에 관심이 있으신가요?"
         }
     print("final_result:", final_results)
-    product_ids = []
     simplified_product_details = []
     for result in final_results:
         product_id = result.get('id')
-        product_ids.append(product_id)
         product = Products.objects.get(id=product_id)
         simplified_product_details.append({
             'title': product.title,
@@ -161,7 +160,7 @@ personalized_info에는 다음 정보가 포함되어 있습니다:
 **출력 형식 (정확히 따라주세요)**:
 
 [사용자 이름]님, 설문조사 데이터와 현재 섭취중이신 영양소, 그리고 질문하신 요구사항을 분석한 결과 다음 영양제를 추천해 드립니다.
-[recommendation_type이 related인 경우 요청하신 영양제는 이미 과다섭취 상태이므로 related_to 영양소를 추천했다고 작성하세요.]
+[recommendation_type이 related인 경우, 요청하신 영양소는 이미 과다섭취 상태이므로 요청하신 영양소와 비슷한 효능을 가진 related_to에 적혀있는 영양소를 추천했다고 작성하세요.]
 
 ## 개인 맞춤 분석
 - **나이/성별 기준**: [나이]세 [성별] 기준으로 분석했습니다.
@@ -296,6 +295,5 @@ personalized_info에는 다음 정보가 포함되어 있습니다:
     # 변경된 상태 필드만 반환
     return {
         "response": response,
-        "followup_question": followup_question,
-        "product_ids": product_ids
+        "followup_question": followup_question
     } 

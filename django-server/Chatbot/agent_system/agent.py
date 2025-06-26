@@ -300,7 +300,6 @@ class SupplementRecommendationAgent:
         product_ids = result.get("product_ids", "")
         followup_question = result.get("followup_question", "")
         needs_human_input = result.get("needs_human_input", False)
-        human_input_request = result.get("human_input_request", "")
         print(f"최종 응답: {response}")
 
         return {
