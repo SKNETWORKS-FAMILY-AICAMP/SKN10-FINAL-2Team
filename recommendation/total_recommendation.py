@@ -1,9 +1,9 @@
 import logging
 import numpy as np
 import pandas as pd
-from common.database import load_data
-from personalized.lightfm_recommendation import LightFMRecommender
-from cbf_rec.cbf import ProductRecommender
+from .common.database import load_data
+from .personalized.lightfm_recommendation import LightFMRecommender
+from .cbf_rec.cbf import ProductRecommender
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')

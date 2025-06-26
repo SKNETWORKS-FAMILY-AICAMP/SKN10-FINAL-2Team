@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import ast
-from common.database import load_data
+from ..common.database import load_data
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 class ProductRecommender:
