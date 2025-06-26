@@ -9,7 +9,12 @@ COPY ./run.sh /app/run.sh
 COPY ./nginx-server/default.conf /etc/nginx/conf.d/default.conf
 
 WORKDIR /app
-
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    python3-dev && \
+    rm -rf /var/lib/apt/lists/*
+    
 RUN pip install -r requirements.txt
 
 RUN chmod +x run.sh
