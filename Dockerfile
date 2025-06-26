@@ -15,6 +15,9 @@ RUN apt-get update && \
     python3-dev && \
     rm -rf /var/lib/apt/lists/*
     
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install --no-use-pep517 lightfm
+
 RUN pip install -r requirements.txt
 
 RUN chmod +x run.sh
