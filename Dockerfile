@@ -5,7 +5,7 @@ RUN apt update && apt install -y curl nginx
 COPY ./django-server /app
 COPY ./requirements.txt /app/requirements.txt
 COPY ./run.sh /app/run.sh
-
+COPY ./recommendation /app/recommendation
 COPY ./nginx-server/default.conf /etc/nginx/conf.d/default.conf
 
 WORKDIR /app
