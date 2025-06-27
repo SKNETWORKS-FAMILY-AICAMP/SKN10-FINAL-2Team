@@ -68,7 +68,7 @@ class TotalRecommender:
         max_score = df[self.score_column].max()
 
         if max_score > min_score:
-            df[self.score_column] = (df[self.score_column] - min_score) / (max_score - min_score)
+            df[self.score_column] = (df[self.score_column] - min_score) / (max_score - min_score) + 1
             logger.info("정규화 완료: min=%.4f, max=%.4f", min_score, max_score)
         else:
             df[self.score_column] = 1.0
@@ -138,7 +138,7 @@ class TotalRecommender:
         personalized_items_score['type'] = 'Personalized'
         personalized_items_score = self._normalize_score(personalized_items_score)
 
-        # 비개인화 추천 점수 계산 - CBF -> 수정해야 할 부분 -> self.recent_product_id, non_personalized_items 전달
+        # 비개인화 추천 점수 계산 - CBF
         logger.info("비개인화 추천 시작: 최근 상품 ID=%s", self.recent_product_id)
         non_personalized_recommender = ProductRecommender(self.recent_product_id, non_personalized_items)
         non_personalized_items_score = non_personalized_recommender()
