@@ -336,9 +336,9 @@ def generate_recommendations(survey_result, health_score):
         recommendations.append("하루 8잔 이상의 물을 마시는 것을 권장합니다.")
     
     # 생활습관 관련 추천
-    if answers.get('smoking'):
+    if answers.get('smoking')=="예":
         recommendations.append("흡연을 줄이거나 중단하는 것을 권장합니다.")
-    if answers.get('drinking'):
+    if answers.get('drinking')=="예":
         recommendations.append("음주를 줄이는 것을 권장합니다.")
     
     return '\n'.join(recommendations)
