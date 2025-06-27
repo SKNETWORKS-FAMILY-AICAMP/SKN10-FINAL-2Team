@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 from lightfm import LightFM
 from lightfm.data import Dataset
+from scipy.sparse import lil_matrix
 from lightfm.cross_validation import random_train_test_split
 from lightfm.evaluation import precision_at_k, recall_at_k, auc_score
 from common.database import load_data
@@ -44,7 +45,7 @@ def load_logs():
         SELECT user_id
         FROM "Mypage_userlog"
         GROUP BY user_id
-        HAVING COUNT(product_id) >= 3
+        HAVING COUNT(product_id) >= 5
         )
     """
     df = load_data(query)
@@ -144,6 +145,30 @@ def prepare_dataset(df_logs, df_products):
     item_features = dataset.build_item_features(item_features_data)
 
     return dataset, interaction_matrix, item_features, interactions
+
+def train_test_split(interaction_matrix, test_percentage=0.2, random_state=42):
+    np.random.seed(random_state)
+    matrix = interaction_matrix.tolil()
+    num_users, _ = matrix.shape
+
+    train = lil_matrix(matrix.shape)
+    test = lil_matrix(matrix.shape)
+
+    for user in range(num_users):
+        item_indices = matrix.rows[user]
+        if len(item_indices) == 0:
+            continue
+
+        test_size = max(1, int(len(item_indices) * test_percentage))
+        test_items = np.random.choice(item_indices, size=test_size, replace=False)
+
+        for item in item_indices:
+            if item in test_items:
+                test[user, item] = matrix[user, item]
+            else:
+                train[user, item] = matrix[user, item]
+    
+    return train.tocsr(), test.tocsr()
 
 def train_lightfm_model(train_interaction_matrix, test_interaction_matrix, item_features, epochs, num_threads, save_plot_path=None):
     """
@@ -264,8 +289,8 @@ def main():
     dataset, interaction_matrix, item_features, interactions = prepare_dataset(df_logs, df_products)
 
     logger.info("학습 및 테스트 데이터 분할")
-    train_interaction_matrix, test_interaction_matrix = random_train_test_split(interaction_matrix, test_percentage=0.2, random_state=42)
-    
+    train_interaction_matrix, test_interaction_matrix = train_test_split(interaction_matrix, test_percentage=0.2, random_state=42)
+
     logger.info("모델 학습 시작")
     start_time = time.time()
     model, precision, recall, auc = train_lightfm_model(
