@@ -7,12 +7,11 @@ import pickle
 import logging
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from io import BytesIO
 from lightfm import LightFM
 from lightfm.data import Dataset
 from scipy.sparse import lil_matrix
-from lightfm.cross_validation import random_train_test_split
 from lightfm.evaluation import precision_at_k, recall_at_k, auc_score
 from common.database import load_data
 
