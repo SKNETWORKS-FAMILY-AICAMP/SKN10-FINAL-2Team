@@ -283,8 +283,8 @@ def main():
 
     # 모델 저장
     if auc > SAVE_CONDITION['auc']:
-        # save_model_to_s3(model, dataset, item_features, bucket=S3_BUCKET, prefix=S3_PREFIX)
-        pass
+        save_model_to_s3(model, dataset, item_features, bucket=S3_BUCKET, prefix=S3_PREFIX)
+        logger.info("모델 저장 완료")
     else:
         logger.warning("저장 조건 미충족으로 모델 저장되지 않음")
 
