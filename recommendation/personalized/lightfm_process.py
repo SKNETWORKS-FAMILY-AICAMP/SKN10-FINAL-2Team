@@ -7,10 +7,11 @@ import pickle
 import logging
 import numpy as np
 import pandas as pd
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from io import BytesIO
 from lightfm import LightFM
 from lightfm.data import Dataset
+from lightfm.cross_validation import random_train_test_split
 from lightfm.evaluation import precision_at_k, recall_at_k, auc_score
 from common.database import load_data
 
@@ -19,9 +20,9 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 # 하이퍼파라미터 및 설정
-EPOCHS = 50
+EPOCHS = 30
 NUM_THREADS = 1
-SAVE_CONDITION = {'precision': 0.5, 'recall': 0.6, 'auc': 0.9}
+SAVE_CONDITION = {'auc': 0.6}
 S3_BUCKET = 'lightfm-model'
 S3_PREFIX = 'lightfm_model'
 METRICS_PATH = 'personalized/output/lightfm_metrics_final.png'
@@ -43,7 +44,7 @@ def load_logs():
         SELECT user_id
         FROM "Mypage_userlog"
         GROUP BY user_id
-        HAVING COUNT(DISTINCT product_id) >= 5
+        HAVING COUNT(product_id) >= 3
         )
     """
     df = load_data(query)
@@ -75,16 +76,18 @@ def load_products():
 def prepare_dataset(df_logs, df_products):
     """
     유저 로그와 상품 정보를 바탕으로 LightFM 학습에 필요한 interaction matrix와 item feature matrix를 생성한다.
+    - 유저가 같은 상품에 여러 번 상호작용한 경우 행동별 가중치를 합산하여 반영한다.
 
     Args:
         df_logs (pd.DataFrame): user_id, product_id, action 컬럼을 가진 유저 로그 데이터
         df_products (pd.DataFrame): product_id, title, ingredients, brand, supplement_type, product_form, vegan 컬럼을 가진 상품 정보 데이터
 
     Returns:
-        tuple: (dataset, interaction_matrix, item_features)
+        tuple: (dataset, interaction_matrix, item_features, interactions)
             - dataset: LightFM Dataset 객체 (user/item 인덱스 매핑 정보 포함)
             - interaction_matrix: 상호작용 행렬 (user x item)
             - item_features: 아이템 feature 행렬
+            - interactions: (user_id, product_id, weight) 튜플 리스트
     """
     # 유저 행동별 가중치 설정
     action_weight = {
@@ -92,13 +95,11 @@ def prepare_dataset(df_logs, df_products):
         'purchase': 5.0,
     }
 
-    # 아이템 feature로 사용할 컬럼 지정
-    item_feature_fields = ['brand', 'supplement_type', 'product_form', 'vegan']
-
-    # 로그에 등장한 상품만 필터링
+    # (1) 상품 필터링 (로그에 등장한 상품만)
     used_product_ids = df_logs['product_id'].unique()
     df_products_used = df_products[df_products['product_id'].isin(used_product_ids)].copy()
 
+    # (2) 아이템 feature 추출용 ingredients 정제
     df_products_used['ingredients'] = df_products_used['ingredients'].apply(
         lambda x: ast.literal_eval(x) if isinstance(x, str) else x
     )
@@ -109,8 +110,8 @@ def prepare_dataset(df_logs, df_products):
         for ing in ingredients
         if 'ingredient_name' in ing
     }
-    
-    # 모든 아이템 feature 값 추출
+
+    item_feature_fields = ['brand', 'supplement_type', 'product_form', 'vegan']
     all_item_features = np.unique(
         np.concatenate([
             df_products_used[item_feature_fields].values.ravel(),
@@ -118,7 +119,7 @@ def prepare_dataset(df_logs, df_products):
         ])
     )
 
-    # LightFM Dataset 객체 생성 및 유저/아이템/아이템 feature fitting
+    # (3) Dataset fitting
     dataset = Dataset()
     dataset.fit(
         users=df_logs['user_id'].unique(),
@@ -126,27 +127,25 @@ def prepare_dataset(df_logs, df_products):
         item_features=all_item_features
     )
 
-    # (user, item, weight) 튜플 생성
-    interactions = [
-        (row.user_id, row.product_id, action_weight.get(row.action, 1.0))
-        for _, row in df_logs.iterrows()
-    ]
-    # 상호작용 행렬 생성
+    # (4) 행동 가중치 적용 및 집계
+    df_logs['weight'] = df_logs['action'].map(action_weight).fillna(0)
+    df_agg = df_logs.groupby(['user_id', 'product_id'])['weight'].sum().reset_index()
+
+    interactions = list(df_agg.itertuples(index=False, name=None))  # (user_id, product_id, weight)
     interaction_matrix, _ = dataset.build_interactions(interactions)
 
-    # 아이템 feature 튜플 생성
+    # (5) 아이템 feature 구성
     item_features_data = []
     for _, row in df_products_used.iterrows():
         features = [row[col] for col in item_feature_fields if pd.notna(row[col])]
         features += [ing['ingredient_name'] for ing in row['ingredients'] if 'ingredient_name' in ing]
         item_features_data.append((row['product_id'], features))
 
-    # 아이템 feature 행렬 생성
     item_features = dataset.build_item_features(item_features_data)
 
-    return dataset, interaction_matrix, item_features
+    return dataset, interaction_matrix, item_features, interactions
 
-def train_lightfm_model(interaction_matrix, item_features, epochs, num_threads, save_plot_path=None):
+def train_lightfm_model(train_interaction_matrix, test_interaction_matrix, item_features, epochs, num_threads, save_plot_path=None):
     """
     interaction matrix와 item feature matrix를 받아 LightFM 모델을 학습하는 함수
     - 각 epoch마다 precision@10, recall@10, auc@10을 평가한다.
@@ -175,10 +174,10 @@ def train_lightfm_model(interaction_matrix, item_features, epochs, num_threads, 
     precisions, recalls, aucs = [], [], []
 
     for epoch in range(epochs):
-        model.fit_partial(interaction_matrix, item_features=item_features, epochs=1, num_threads=num_threads)
-        precision = precision_at_k(model, interaction_matrix, item_features=item_features, k=10).mean()
-        recall = recall_at_k(model, interaction_matrix, item_features=item_features, k=10).mean()
-        auc = auc_score(model, interaction_matrix, item_features=item_features, num_threads=num_threads).mean()
+        model.fit_partial(train_interaction_matrix, item_features=item_features, epochs=1, num_threads=num_threads)
+        precision = precision_at_k(model, test_interaction_matrix, train_interaction_matrix, item_features=item_features, k=10).mean()
+        recall = recall_at_k(model, test_interaction_matrix, train_interaction_matrix, item_features=item_features, k=10).mean()
+        auc = auc_score(model, test_interaction_matrix, train_interaction_matrix, item_features=item_features, num_threads=num_threads).mean()
 
         precisions.append(precision)
         recalls.append(recall)
@@ -196,12 +195,19 @@ def train_lightfm_model(interaction_matrix, item_features, epochs, num_threads, 
     # if save_plot_path:
     #     os.makedirs(os.path.dirname(save_plot_path), exist_ok=True)
     #     plt.figure(figsize=(15, 5))
-    #     for i, (metric, values, color) in enumerate(zip(['Precision@10', 'Recall@10', 'AUC'], [precisions, recalls, aucs], ['r', 'g', 'b'])):
+
+    #     metrics = [
+    #         ("Precision@10", precisions),
+    #         ("Recall@10", recalls),
+    #         ("AUC", aucs),
+    #     ]
+
+    #     for i, (metric_name, values) in enumerate(metrics):
     #         plt.subplot(1, 3, i + 1)
-    #         plt.plot(values, marker='o', color=color)
-    #         plt.title(metric)
+    #         plt.plot(values, marker='o')
+    #         plt.title(metric_name)
     #         plt.xlabel('Epoch')
-    #         plt.ylabel(metric)
+    #         plt.ylabel(metric_name)
     #     plt.tight_layout()
     #     plt.savefig(save_plot_path)
     #     plt.close()
@@ -255,12 +261,16 @@ def main():
     logger.info(f"유저 수: {df_logs['user_id'].nunique()}, 상품 수: {df_logs['product_id'].nunique()}")
 
     logger.info("데이터 전처리 및 행렬 생성")
-    dataset, interaction_matrix, item_features = prepare_dataset(df_logs, df_products)
+    dataset, interaction_matrix, item_features, interactions = prepare_dataset(df_logs, df_products)
 
+    logger.info("학습 및 테스트 데이터 분할")
+    train_interaction_matrix, test_interaction_matrix = random_train_test_split(interaction_matrix, test_percentage=0.2, random_state=42)
+    
     logger.info("모델 학습 시작")
     start_time = time.time()
     model, precision, recall, auc = train_lightfm_model(
-        interaction_matrix,
+        train_interaction_matrix,
+        test_interaction_matrix,
         item_features,
         epochs=EPOCHS,
         num_threads=NUM_THREADS,
@@ -272,8 +282,9 @@ def main():
     logger.info("최종 평가 - Precision: %.4f, Recall: %.4f, AUC: %.4f", precision, recall, auc)
 
     # 모델 저장
-    if precision > SAVE_CONDITION['precision'] and recall > SAVE_CONDITION['recall']:
-        save_model_to_s3(model, dataset, item_features, bucket=S3_BUCKET, prefix=S3_PREFIX)
+    if auc > SAVE_CONDITION['auc']:
+        # save_model_to_s3(model, dataset, item_features, bucket=S3_BUCKET, prefix=S3_PREFIX)
+        pass
     else:
         logger.warning("저장 조건 미충족으로 모델 저장되지 않음")
 
