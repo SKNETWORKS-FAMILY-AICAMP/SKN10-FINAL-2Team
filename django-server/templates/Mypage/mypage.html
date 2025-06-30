@@ -48,148 +48,37 @@
     gap: 16px;
 }
 
-.health-score-section {
+.survey-result-section {
     background: #f8f9fa;
     border-radius: 8px;
     padding: 20px;
-    text-align: center;
     border-left: 4px solid #DDC66F;
 }
 
-.health-score-section h2 {
+.survey-result-section h2 {
     font-size: 1.3em;
     color: #333;
     margin-bottom: 15px;
     font-weight: 600;
 }
 
-.score-circle {
-    display: inline-block;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: #DDC66F;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 10px auto;
-}
-
-.score {
-    font-size: 1.8em;
-    font-weight: bold;
-    color: white;
-}
-
-.score-label {
-    font-size: 1em;
-    color: white;
-    margin-left: 2px;
-}
-
-.health-status {
-    margin-top: 10px;
-    font-size: 1.1em;
-    font-weight: 500;
-}
-
-.status-good {
-    color: #DDC66F;
-}
-
-.status-normal {
-    color: #EADCA6;
-}
-
-.status-warning {
-    color: #C4A94C;
-}
-
-.status-bad {
-    color: #B39B3A;
-}
-
-.recommended-supplements-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    border-left: 4px solid #EADCA6;
-}
-
-.recommended-supplements-section h2 {
-    font-size: 1.3em;
-    color: #333;
-    margin-bottom: 15px;
-    font-weight: 600;
-}
-
-.supplements-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.supplement-card {
+.survey-summary {
     background: white;
     border-radius: 6px;
     padding: 15px;
     border: 1px solid #e9ecef;
 }
 
-.supplement-card h3 {
-    font-size: 1.1em;
-    color: #DDC66F;
-    margin-bottom: 8px;
-    font-weight: 600;
-}
-
-.supplement-card .reason {
-    font-size: 0.9em;
-    color: #666;
-    margin-bottom: 5px;
-}
-
-.supplement-card .benefits {
-    font-size: 0.9em;
-    color: #333;
-}
-
-.health-recommendations-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    border-left: 4px solid #C4A94C;
-}
-
-.health-recommendations-section h2 {
-    font-size: 1.3em;
-    color: #333;
-    margin-bottom: 15px;
-    font-weight: 600;
-}
-
-.recommendations-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.recommendation-item {
-    padding: 8px 0;
+.survey-info p {
+    margin: 8px 0;
     color: #333;
     font-size: 0.95em;
-    border-bottom: 1px solid #e9ecef;
+    line-height: 1.4;
 }
 
-.recommendation-item:last-child {
-    border-bottom: none;
-}
-
-.recommendation-item:before {
-    content: "•";
+.survey-info strong {
     color: #DDC66F;
-    font-weight: bold;
-    margin-right: 8px;
+    font-weight: 600;
 }
 
 .survey-history-section {
@@ -225,12 +114,6 @@
 .history-date {
     font-size: 0.9em;
     color: #666;
-}
-
-.history-score {
-    font-size: 0.9em;
-    color: #DDC66F;
-    font-weight: 600;
 }
 
 .btn-primary, .btn-secondary {
@@ -291,62 +174,36 @@
     </div>
 
     <div class="mypage-content">
-        <!-- 건강 점수 섹션 -->
-        <div class="health-score-section">
-            <h2>나의 건강 점수</h2>
-            {% if latest_survey %}
-                <div class="score-circle">
-                    <span class="score">{{ health_score }}</span>
-                    <span class="score-label">점</span>
-                </div>
-                <div class="health-status">
-                    {% if health_score >= 80 %}
-                        <span class="status-good">매우 좋음</span>
-                    {% elif health_score >= 60 %}
-                        <span class="status-normal">좋음</span>
-                    {% elif health_score >= 40 %}
-                        <span class="status-warning">보통</span>
-                    {% else %}
-                        <span class="status-bad">주의 필요</span>
-                    {% endif %}
-                </div>
-            {% else %}
-                <p>아직 설문을 진행하지 않았습니다.</p>
-                <a href="{% url 'mypage:survey' %}" class="btn-primary">설문하러 가기</a>
-            {% endif %}
-        </div>
-
-        <!-- 추천 영양제 섹션 -->
-        <div class="recommended-supplements-section">
-            <h2>추천 영양제</h2>
-            {% if recommended_supplements %}
-                <div class="supplements-grid">
-                    {% for supplement in recommended_supplements %}
-                    <div class="supplement-card">
-                        <h3>{{ supplement.name }}</h3>
-                        <p class="reason">{{ supplement.reason }}</p>
-                        <p class="benefits">{{ supplement.benefits }}</p>
+        <!-- 설문조사 결과 섹션 -->
+        {% if latest_survey %}
+            <div class="survey-result-section">
+                <h2>내 설문조사 결과</h2>
+                <div class="survey-summary">
+                    <div class="survey-info">
+                        <p><strong>최근 설문일:</strong> {{ latest_survey.created_at|date:"Y년 m월 d일" }}</p>
+                        <p><strong>성별:</strong> {{ latest_survey.answers.gender|default:"미입력" }}</p>
+                        <p><strong>나이대:</strong> {{ latest_survey.answers.age_range|default:"미입력" }}</p>
+                        <p><strong>운동 여부:</strong> {{ latest_survey.answers.exercise|default:"미입력" }}</p>
+                        <p><strong>피로도:</strong> {{ latest_survey.answers.fatigue|default:"미입력" }}</p>
+                        <p><strong>수면 품질:</strong> {{ latest_survey.answers.sleep_well|default:"미입력" }}</p>
                     </div>
-                    {% endfor %}
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="{% url 'mypage:survey_result' %}" class="btn-primary">상세 결과 보기</a>
+                        <a href="{% url 'chatbot:chat' %}" class="btn-secondary">챗봇과 상담하기</a>
+                    </div>
                 </div>
-            {% else %}
-                <p>아직 추천 영양제가 없습니다.</p>
-            {% endif %}
-        </div>
-
-        <!-- 건강 추천사항 섹션 -->
-        <div class="health-recommendations-section">
-            <h2>건강 추천사항</h2>
-            {% if recommendations %}
-                <ul class="recommendations-list">
-                    {% for recommendation in recommendations %}
-                    <li class="recommendation-item">{{ recommendation }}</li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>아직 추천사항이 없습니다.</p>
-            {% endif %}
-        </div>
+            </div>
+        {% else %}
+            <div class="survey-result-section">
+                <h2>설문조사</h2>
+                <div class="survey-summary">
+                    <p>아직 설문조사를 완료하지 않으셨습니다.</p>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="{% url 'mypage:survey' %}" class="btn-primary">설문하러 가기</a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
 
         <!-- 설문 이력 섹션 -->
         <div class="survey-history-section">
@@ -356,7 +213,6 @@
                     {% for survey in survey_history %}
                     <div class="history-item">
                         <div class="history-date">{{ survey.created_at|date:"Y년 m월 d일" }}</div>
-                        <div class="history-score">건강 점수: {{ survey.health_score }}점</div>
                         <a href="{% url 'mypage:survey_result' %}" class="btn-secondary">상세보기</a>
                     </div>
                     {% endfor %}
@@ -367,4 +223,5 @@
         </div>
     </div>
 </div>
+
 {% endblock %} 

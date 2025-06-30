@@ -4,13 +4,71 @@
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/header.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'css/Mypage/survey.css' %}">
+<style>
+.category-header {
+    background: #DDC66F;
+    color: white;
+    padding: 15px;
+    margin: 20px 0 10px 0;
+    border-radius: 8px;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.checkbox-option:hover {
+    border-color: #DDC66F;
+    background-color: #f9f9f9;
+}
+
+.checkbox-option.selected {
+    border-color: #DDC66F;
+    background-color: #f0f0f0;
+}
+
+.checkbox-option input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
+
+.text-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+.text-input:focus {
+    outline: none;
+    border-color: #DDC66F;
+}
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="survey-container">
     <div class="initial-survey-page">
         <h1 class="survey-title">건강 설문조사</h1>
-        <p class="survey-desc">안녕하세요, {{ user.name }}님! 설문조사를 통해 건강 상태와 생활 습관을 바탕으로 필요한 영양제를 추천해 드립니다.</p>
+        <p class="survey-desc">안녕하세요, {{ user.name|default:user.email }}님! 설문조사를 통해 건강 상태와 생활 습관을 바탕으로 필요한 영양제를 추천해 드립니다.</p>
         <button type="button" class="start-survey-btn" id="startButton">시작하기</button>
     </div>
 
@@ -20,7 +78,12 @@
         {% if survey_questions.questions %}
             {% for question in survey_questions.questions %}
             <div class="question-group" style="display: none;">
+                {% if forloop.first or question.category != previous_category %}
+                    <div class="category-header">{{ question.category }}</div>
+                {% endif %}
+                
                 <h2>{{ question.text }}</h2>
+                
                 {% if question.type == 'select' %}
                 <input type="hidden" name="{{ question.name }}" value="" required>
                 <div class="option-row">
@@ -28,9 +91,24 @@
                     <div class="option-box" data-value="{{ option }}" data-input="{{ question.name }}"><span>{{ option }}</span></div>
                     {% endfor %}
                 </div>
-                {% elif question.type == 'number' %}
+                
+                {% elif question.type == 'checkbox' %}
+                <div class="checkbox-group">
+                    {% for option in question.options %}
+                    <label class="checkbox-option">
+                        <input type="checkbox" name="{{ question.name }}" value="{{ option }}">
+                        <span>{{ option }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                
+                {% elif question.type == 'text' %}
+                <input type="text" name="{{ question.name }}" class="text-input" placeholder="답변을 입력해주세요" value="{{ question.default_value }}" required>
+                
+                {% else %}
                 <input type="number" name="{{ question.name }}" placeholder="숫자 입력" required min="1">
                 {% endif %}
+                
                 <div class="error-message">이 질문에 답변해주세요.</div>
                 <div class="survey-buttons">
                     {% if not forloop.first %}
@@ -49,12 +127,8 @@
         {% else %}
             <div class="error-message">
                 <p>설문 질문을 불러오는 중 오류가 발생했습니다.</p>
-                {% if debug_info %}
-                <p>디버그 정보:</p>
-                <ul>
-                    <li>파일 경로: {{ debug_info.file_path }}</li>
-                    <li>질문 수: {{ debug_info.questions_count }}</li>
-                </ul>
+                {% if error %}
+                <p>오류: {{ error }}</p>
                 {% endif %}
             </div>
         {% endif %}
@@ -103,11 +177,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 다음 버튼 클릭 이벤트
     document.querySelectorAll('.next-btn').forEach(button => {
         button.addEventListener('click', function(e) {
-            e.preventDefault(); // 모든 클릭 이벤트의 기본 동작 방지
+            e.preventDefault();
             
             const currentGroup = this.closest('.question-group');
             const selectedOption = currentGroup.querySelector('.option-box.active');
             const numberInput = currentGroup.querySelector('input[type="number"]');
+            const textInput = currentGroup.querySelector('input[type="text"]');
+            const checkboxes = currentGroup.querySelectorAll('input[type="checkbox"]:checked');
             const errorMessage = currentGroup.querySelector('.error-message');
             
             // 유효성 검사
@@ -124,6 +200,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         errorMessage.textContent = '0보다 큰 숫자를 입력해주세요.';
                     }
                 }
+            } else if (textInput) {
+                if (!textInput.value.trim()) {
+                    isValid = false;
+                    errorMessage.textContent = '답변을 입력해주세요.';
+                }
+            } else if (checkboxes.length > 0) {
+                // Checkbox pytania są opcjonalne
+                isValid = true;
             } else if (!selectedOption) {
                 isValid = false;
                 errorMessage.textContent = '옵션을 선택해주세요.';
@@ -187,6 +271,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Checkbox 클릭 이벤트
+    document.querySelectorAll('.checkbox-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                this.classList.add('selected');
+            } else {
+                this.classList.remove('selected');
+            }
+        });
+    });
+    
     // 제출 버튼 클릭 이벤트
     document.querySelectorAll('button[type="submit"]').forEach(button => {
         button.addEventListener('click', function(e) {
@@ -201,66 +299,35 @@ document.addEventListener('DOMContentLoaded', function() {
             questionGroups.forEach(group => {
                 const selectedOption = group.querySelector('.option-box.active');
                 const numberInput = group.querySelector('input[type="number"]');
+                const textInput = group.querySelector('input[type="text"]');
+                const checkboxes = group.querySelectorAll('input[type="checkbox"]:checked');
                 const errorMessage = group.querySelector('.error-message');
                 
-                if (numberInput) {
-                    if (!numberInput.value) {
-                        isValid = false;
-                        errorMessage.textContent = '숫자를 입력해주세요.';
-                        errorMessage.style.display = 'block';
-                        errorMessage.classList.add('show');
-                    }
-                } else if (!selectedOption) {
-                    isValid = false;
-                    errorMessage.textContent = '옵션을 선택해주세요.';
+                let groupValid = false;
+                
+                if (numberInput && numberInput.value) {
+                    groupValid = true;
+                } else if (textInput && textInput.value.trim()) {
+                    groupValid = true;
+                } else if (checkboxes.length > 0) {
+                    groupValid = true;
+                } else if (selectedOption) {
+                    groupValid = true;
+                }
+                
+                if (!groupValid) {
                     errorMessage.style.display = 'block';
                     errorMessage.classList.add('show');
+                    isValid = false;
+                } else {
+                    errorMessage.style.display = 'none';
+                    errorMessage.classList.remove('show');
                 }
             });
             
             if (isValid) {
                 console.log('Form is valid, submitting...');
-                const formData = new FormData(form);
-                
-                // 모든 질문의 응답을 수집
-                questionGroups.forEach(group => {
-                    const selectedOption = group.querySelector('.option-box.active');
-                    const numberInput = group.querySelector('input[type="number"]');
-                    const inputName = selectedOption ? selectedOption.dataset.input : numberInput.name;
-                    const value = selectedOption ? selectedOption.dataset.value : numberInput.value;
-                    
-                    if (inputName && value) {
-                        formData.append(inputName, value);
-                    }
-                });
-                
-                fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(response => {
-                    console.log('Response received:', response);
-                    if (response.ok) {
-                        return response.json();
-                    }
-                    throw new Error('Network response was not ok');
-                })
-                .then(data => {
-                    console.log('Success:', data);
-                    if (data.status === 'success') {
-                        window.location.href = "{% url 'mypage:survey_result' %}";
-                    } else {
-                        alert(data.message || '설문 제출 중 오류가 발생했습니다.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('설문 제출 중 오류가 발생했습니다.');
-                });
+                form.submit();
             } else {
                 console.log('Form validation failed');
             }
@@ -268,147 +335,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
-<style>
-.survey-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.initial-survey-page {
-    text-align: center;
-    padding: 40px 20px;
-}
-
-.survey-title {
-    font-size: 2em;
-    margin-bottom: 20px;
-    color: #333;
-}
-
-.survey-desc {
-    font-size: 1.1em;
-    color: #666;
-    margin-bottom: 30px;
-    line-height: 1.6;
-}
-
-.start-survey-btn {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 12px 30px;
-    font-size: 1.1em;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.start-survey-btn:hover {
-    background-color: #0056b3;
-}
-
-.question-group {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
-}
-
-.question-group h2 {
-    font-size: 1.3em;
-    color: #333;
-    margin-bottom: 20px;
-}
-
-.option-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.option-box {
-    flex: 1;
-    min-width: 120px;
-    padding: 15px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.option-box:hover {
-    border-color: #007bff;
-    background-color: #f8f9fa;
-}
-
-.option-box.active {
-    border-color: #007bff;
-    background-color: #e7f1ff;
-}
-
-.option-box span {
-    font-size: 1em;
-    color: #333;
-}
-
-input[type="number"] {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 1em;
-    margin-bottom: 20px;
-}
-
-input[type="number"]:focus {
-    border-color: #007bff;
-    outline: none;
-}
-
-.error-message {
-    color: #dc3545;
-    font-size: 0.9em;
-    margin-top: 10px;
-    display: none;
-}
-
-.error-message.show {
-    display: block;
-}
-
-.survey-buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 30px;
-}
-
-.prev-btn, .next-btn {
-    padding: 10px 25px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s;
-}
-
-.prev-btn {
-    background-color: #6c757d;
-    color: white;
-}
-
-.next-btn {
-    background-color: #007bff;
-    color: white;
-}
-
-.prev-btn:hover, .next-btn:hover {
-    opacity: 0.9;
-}
-</style>
 {% endblock %}
 
