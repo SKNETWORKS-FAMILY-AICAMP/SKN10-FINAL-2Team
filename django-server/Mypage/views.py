@@ -23,7 +23,7 @@ import csv
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 import ast
-from Chatbot.models import NutritionDailyRec, ChatbotRecommendation
+from Chatbot.models import NutritionDailyRec, RecommendationLog
 import markdown
 
 def convert_markdown_to_html(text):
@@ -123,10 +123,9 @@ def favorite_view(request):
         liked_supplements = [like.product for like in likes]
 
         # 챗봇 추천 결과 가져오기
-        chatbot_recommendation = ChatbotRecommendation.objects.filter(
-            user=request.user,
-            is_active=True
-        ).first()
+        chatbot_recommendation = RecommendationLog.objects.filter(
+            user=request.user
+        ).order_by('-timestamp').first()
         
         # 설문 기반 추천 영양제 가져오기 (백업용)
         latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
@@ -209,10 +208,9 @@ def analysis_view(request):
 
         print("Getting chatbot recommendations...")
         # 챗봇 추천 결과 가져오기
-        chatbot_recommendation = ChatbotRecommendation.objects.filter(
-            user=request.user,
-            is_active=True
-        ).first()
+        chatbot_recommendation = RecommendationLog.objects.filter(
+            user=request.user
+        ).order_by('-timestamp').first()
         
         print("Getting survey-based recommendations...")
         # 설문 기반 추천 영양제 가져오기 (백업용)

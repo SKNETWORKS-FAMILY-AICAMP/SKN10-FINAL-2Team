@@ -30,5 +30,5 @@ langchain-openai
 langchain-core
 langchain-neo4j
 boto3
-lightfm
+# lightfm  # Windows 설치 문제로 주석 처리
 sqlalchemy
