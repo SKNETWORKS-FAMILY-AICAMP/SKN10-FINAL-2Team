@@ -48,37 +48,19 @@ def mypage_view(request):
     # 사용자의 최근 설문 결과 가져오기
     latest_survey = SurveyResult.objects.filter(user=request.user).order_by('-created_at').first()
     
-    # 챗봇 추천 결과 가져오기
-    chatbot_recommendation = ChatbotRecommendation.objects.filter(
-        user=request.user,
-        is_active=True
-    ).first()
-
     if latest_survey:
-        # 설문 이력 가져오기
+        # 설문 이력 가져오기 (최대 3개)
         survey_history = SurveyResult.objects.filter(user=request.user).order_by('-created_at')[:3]
         
         context = {
             'latest_survey': latest_survey,
-            'recommended_supplements': [],  # 설문 기반 추천 제거
-            'recommendations': [],  # 고정된 recommendations 제거
-            'recommendations_html': None,  # 설문 기반 건강 추천사항 제거
             'survey_history': survey_history,
-            'chatbot_recommendation': chatbot_recommendation
         }
     else:
         context = {
             'latest_survey': None,
-            'recommended_supplements': [],
-            'recommendations': [],
-            'recommendations_html': None,
             'survey_history': [],
-            'chatbot_recommendation': chatbot_recommendation
         }
-    
-    print(f"context['chatbot_recommendation']: {context['chatbot_recommendation']}")
-    print(f"context['recommended_supplements']: {context['recommended_supplements']}")
-    print(f"=== END DEBUG ===")
     
     context['user'] = request.user
     return render(request, 'Mypage/mypage.html', context)
@@ -371,6 +353,7 @@ def generate_recommendations(survey_result, health_score):
 @require_POST
 def submit_survey(request):
     try:
+        print("=== DEBUG SUBMIT SURVEY START ===")
         # Get all form data
         responses = {}
         for key, value in request.POST.items():
@@ -423,16 +406,23 @@ def submit_survey(request):
             responses=responses,
             answers=mapped_answers
         )
-        # 설문 결과 분석 및 저장
-        result = analyze_survey_responses(survey_response)
-        SurveyResult.objects.create(
+        print(f"SurveyResponse created: {survey_response.id}")
+        
+        # 설문 결과 저장 (answers를 dict로 저장)
+        survey_result = SurveyResult.objects.create(
             user=request.user,
-            answers=mapped_answers,
-            result=result
+            answers=mapped_answers,  # dict 형태로 저장
+            result={}  # 빈 딕셔너리로 설정
         )
+        print(f"SurveyResult created: {survey_result.id}")
+        print("=== DEBUG SUBMIT SURVEY END ===")
+        
         return redirect('mypage:survey_result')
     except Exception as e:
         print(f"Error submitting survey: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        traceback.print_exc()
         messages.error(request, f'설문 제출 중 오류가 발생했습니다: {str(e)}')
         return redirect('mypage:survey')
 
@@ -461,24 +451,37 @@ def survey_result(request):
             health_report.save()
         
         # Generuj osobne sekcje raportu (추천 영양제 제외)
-        health_summary = generate_health_summary_section(request.user, survey_result)
-        warnings_section = generate_warnings_section(survey_result)
-        considerations_section = generate_considerations_section(survey_result)
-        
-        # Debug: sprawdź wygenerowane sekcje
-        print(f"DEBUG: Health summary: {health_summary[:100]}...")
-        print(f"DEBUG: Warnings section: {warnings_section[:100]}...")
-        print(f"DEBUG: Considerations section: {considerations_section[:100]}...")
-        
-        # Renderuj markdown do HTML
-        health_summary_html = markdown.markdown(health_summary, extensions=['extra'])
-        warnings_html = markdown.markdown(warnings_section, extensions=['extra'])
-        considerations_html = markdown.markdown(considerations_section, extensions=['extra'])
+        try:
+            health_summary = generate_health_summary_section(request.user, survey_result)
+            warnings_section = generate_warnings_section(survey_result)
+            considerations_section = generate_considerations_section(survey_result)
+            
+            # Debug: sprawdź wygenerowane sekcje
+            print(f"DEBUG: Health summary: {health_summary[:100]}...")
+            print(f"DEBUG: Warnings section: {warnings_section[:100]}...")
+            print(f"DEBUG: Considerations section: {considerations_section[:100]}...")
+            
+            # Renderuj markdown do HTML
+            health_summary_html = markdown.markdown(health_summary, extensions=['extra'])
+            warnings_html = markdown.markdown(warnings_section, extensions=['extra'])
+            considerations_html = markdown.markdown(considerations_section, extensions=['extra'])
+        except Exception as e:
+            print(f"Error generating report sections: {str(e)}")
+            # 기본값 설정
+            health_summary_html = "<p>건강 상태 요약을 생성할 수 없습니다.</p>"
+            warnings_html = "<p>주의사항을 생성할 수 없습니다.</p>"
+            considerations_html = "<p>고려사항을 생성할 수 없습니다.</p>"
         
         # 설문 응답 요약 생성
         answers = survey_result.answers
         if isinstance(answers, str):
-            answers = json.loads(answers)
+            try:
+                answers = json.loads(answers)
+            except json.JSONDecodeError:
+                # JSON 파싱 실패 시 빈 딕셔너리 사용
+                answers = {}
+        elif answers is None:
+            answers = {}
         
         # 매핑된 키를 한국어 질문으로 변환하는 딕셔너리
         key_to_question = {

@@ -48,197 +48,37 @@
     gap: 16px;
 }
 
-.recommended-supplements-section {
+.survey-result-section {
     background: #f8f9fa;
     border-radius: 8px;
     padding: 20px;
-    border-left: 4px solid #EADCA6;
+    border-left: 4px solid #DDC66F;
 }
 
-.recommended-supplements-section h2 {
+.survey-result-section h2 {
     font-size: 1.3em;
     color: #333;
     margin-bottom: 15px;
     font-weight: 600;
 }
 
-.supplements-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.supplement-card {
+.survey-summary {
     background: white;
     border-radius: 6px;
     padding: 15px;
     border: 1px solid #e9ecef;
 }
 
-.supplement-card h3 {
-    font-size: 1.1em;
-    color: #DDC66F;
-    margin-bottom: 8px;
-    font-weight: 600;
-}
-
-.supplement-card .reason {
-    color: #666;
-    font-size: 0.9em;
+.survey-info p {
     margin: 8px 0;
+    color: #333;
+    font-size: 0.95em;
     line-height: 1.4;
 }
 
-.supplement-card .rating {
-    color: #888;
-    font-size: 0.8em;
-    margin-top: 8px;
-}
-
-.health-recommendations-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    border-left: 4px solid #C4A94C;
-}
-
-.health-recommendations-section h2 {
-    font-size: 1.3em;
-    color: #333;
-    margin-bottom: 15px;
-    font-weight: 600;
-}
-
-.recommendations-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.recommendation-item {
-    padding: 12px 0;
-    color: #333;
-    font-size: 0.95em;
-    border-bottom: 1px solid #e9ecef;
-    line-height: 1.5;
-}
-
-.recommendation-item:last-child {
-    border-bottom: none;
-}
-
-.recommendation-item:before {
-    content: "•";
-    color: #DDC66F;
-    font-weight: bold;
-    margin-right: 8px;
-}
-
-/* 마크다운 스타일 개선 */
-.recommendation-item strong {
+.survey-info strong {
     color: #DDC66F;
     font-weight: 600;
-}
-
-.recommendation-item h3 {
-    font-size: 1.1em;
-    color: #333;
-    margin: 15px 0 8px 0;
-    font-weight: 600;
-    border-bottom: 2px solid #DDC66F;
-    padding-bottom: 3px;
-}
-
-.recommendation-item h4 {
-    font-size: 1em;
-    color: #555;
-    margin: 12px 0 6px 0;
-    font-weight: 600;
-}
-
-.recommendation-item ul {
-    margin: 8px 0;
-    padding-left: 20px;
-}
-
-.recommendation-item li {
-    margin: 4px 0;
-    color: #666;
-}
-
-/* 마크다운 헤더 스타일 */
-.recommendation-item:has(h3) {
-    background: #fff;
-    padding: 15px;
-    border-radius: 6px;
-    margin: 10px 0;
-    border-left: 3px solid #DDC66F;
-}
-
-.recommendation-item:has(h4) {
-    background: #fafafa;
-    padding: 10px 15px;
-    border-radius: 4px;
-    margin: 8px 0;
-}
-
-/* HTML 변환된 추천사항 스타일 */
-.recommendations-html {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    border: 1px solid #e9ecef;
-    line-height: 1.6;
-    color: #333;
-}
-
-.recommendations-html h2 {
-    font-size: 1.4em;
-    color: #333;
-    margin: 20px 0 15px 0;
-    font-weight: 700;
-    border-bottom: 2px solid #DDC66F;
-    padding-bottom: 8px;
-}
-
-.recommendations-html h2:first-child {
-    margin-top: 0;
-}
-
-.recommendations-html h3 {
-    font-size: 1.2em;
-    color: #555;
-    margin: 15px 0 10px 0;
-    font-weight: 600;
-}
-
-.recommendations-html h4 {
-    font-size: 1.1em;
-    color: #555;
-    margin: 15px 0 8px 0;
-    font-weight: 600;
-}
-
-.recommendations-html strong {
-    color: #DDC66F;
-    font-weight: 600;
-}
-
-.recommendations-html ul {
-    margin: 10px 0;
-    padding-left: 25px;
-}
-
-.recommendations-html li {
-    margin: 6px 0;
-    color: #666;
-    line-height: 1.5;
-}
-
-.recommendations-html p {
-    margin: 8px 0;
-    line-height: 1.5;
-    color: #333;
 }
 
 .survey-history-section {
@@ -334,51 +174,36 @@
     </div>
 
     <div class="mypage-content">
-        <!-- 추천 영양소 섹션 -->
-        <div class="recommended-supplements-section">
-            <h2>추천 영양소</h2>
-            {% if chatbot_recommendation %}
-                <!-- 챗봇 추천 결과 표시 -->
-                <div class="supplements-grid">
-                    {% for product in chatbot_recommendation.recommended_products %}
-                    <div class="supplement-card">
-                        <h3>{{ product.title }}</h3>
-                        <p class="reason">{{ product.brand }} - {{ product.supplement_type }}</p>
-                        {% if product.average_rating %}
-                            <p class="rating">평점: {{ product.average_rating }}/5 ({{ product.total_reviews }}개 리뷰)</p>
-                        {% endif %}
+        <!-- 설문조사 결과 섹션 -->
+        {% if latest_survey %}
+            <div class="survey-result-section">
+                <h2>내 설문조사 결과</h2>
+                <div class="survey-summary">
+                    <div class="survey-info">
+                        <p><strong>최근 설문일:</strong> {{ latest_survey.created_at|date:"Y년 m월 d일" }}</p>
+                        <p><strong>성별:</strong> {{ latest_survey.answers.gender|default:"미입력" }}</p>
+                        <p><strong>나이대:</strong> {{ latest_survey.answers.age_range|default:"미입력" }}</p>
+                        <p><strong>운동 여부:</strong> {{ latest_survey.answers.exercise|default:"미입력" }}</p>
+                        <p><strong>피로도:</strong> {{ latest_survey.answers.fatigue|default:"미입력" }}</p>
+                        <p><strong>수면 품질:</strong> {{ latest_survey.answers.sleep_well|default:"미입력" }}</p>
                     </div>
-                    {% endfor %}
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="{% url 'mypage:survey_result' %}" class="btn-primary">상세 결과 보기</a>
+                        <a href="{% url 'chatbot:chat' %}" class="btn-secondary">챗봇과 상담하기</a>
+                    </div>
                 </div>
-            {% else %}
-                <p>아직 챗봇 추천이 없습니다.</p>
-            {% endif %}
-            
-            <!-- 챗봇과 상담하기 버튼을 여기로 이동 -->
-            <div style="margin-top: 15px; text-align: center;">
-                <a href="{% url 'chatbot:chat' %}" class="btn-primary">챗봇과 상담하기</a>
-                {% if latest_survey %}
-                    <a href="{% url 'mypage:survey_result' %}" class="btn-secondary">설문 결과 보기</a>
-                {% else %}
-                    <a href="{% url 'mypage:survey' %}" class="btn-secondary">설문하러 가기</a>
-                {% endif %}
             </div>
-        </div>
-
-        <!-- 건강 추천사항 섹션 -->
-        <div class="health-recommendations-section">
-            <h2>건강 추천사항</h2>
-            {% if chatbot_recommendation and chatbot_recommendation.health_recommendations %}
-                <!-- 챗봇 건강 추천사항 표시 -->
-                <ul class="recommendations-list">
-                    {% for recommendation in chatbot_recommendation.health_recommendations %}
-                    <li class="recommendation-item">{{ recommendation }}</li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>아직 챗봇 추천사항이 없습니다.</p>
-            {% endif %}
-        </div>
+        {% else %}
+            <div class="survey-result-section">
+                <h2>설문조사</h2>
+                <div class="survey-summary">
+                    <p>아직 설문조사를 완료하지 않으셨습니다.</p>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="{% url 'mypage:survey' %}" class="btn-primary">설문하러 가기</a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
 
         <!-- 설문 이력 섹션 -->
         <div class="survey-history-section">
