@@ -2,23 +2,20 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.apps import apps # apps 모듈 임포트
-from Chatbot.agent_system.state import AgentState # AgentState 임포트 경로 수정
 from Chatbot.agent_system.agent import SupplementRecommendationAgent # Agent 클래스 임포트
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from Account.models import CustomUser
 from Mypage.models import SurveyResponse
 import json
 from .models import ChatRooms, ChatMessages
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from langchain_core.messages import HumanMessage
 from datetime import date
 from django.core.cache import cache  # 캐시 임포트
 
-@permission_classes([IsAuthenticated])
+
 class ChatWithNutiAPIView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
         # GET 요청 시 HTML 템플릿 렌더링
         return render(request, 'Chatbot/ChatNuti.html')

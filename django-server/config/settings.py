@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-v&$=%4dhpx&^khwr0=-xlyys@a9%=aw4$e&rqih!-9hz-#6-_r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -143,8 +143,8 @@ AUTHENTICATION_BACKENDS = (
 
 STATIC_URL = 'static/'
 STATIC_PATH = os.path.join(BASE_DIR, 'static')
-
-STATICFILES_DIRS = (STATIC_PATH,)   # 튜플로 넣어줌. 리스트로 넣어도 됨.
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+#STATICFILES_DIRS = (STATIC_PATH,)   # 튜플로 넣어줌. 리스트로 넣어도 됨.
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -163,8 +163,9 @@ PASSWORD_RESET_TIMEOUT = 3600
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication', # Add JWT authentication
-        'rest_framework.authentication.SessionAuthentication', # Keep if you use Django's sessions too
+         # Keep if you use Django's sessions too
         'rest_framework.authentication.BasicAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
@@ -180,7 +181,7 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5), # Access token validity
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10), # Access token validity
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1), # Refresh token validity
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,

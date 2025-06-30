@@ -274,6 +274,79 @@
             color: #bdbdbd !important;
             fill: #bdbdbd !important;
         }
+
+        .markdown-content details > summary {
+            cursor: pointer;
+            font-weight: 500;
+            outline: none;
+            transition: color 0.2s;
+        }
+        .markdown-content details[open] > summary {
+            color: #D97706;
+        }
+        .markdown-content details .details-content {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+        }
+        .markdown-content details[open] .details-content {
+            max-height: 1000px;
+            opacity: 1;
+            transition: max-height 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+        }
+
+        /* details 기본 스타일 재정의 */
+        .markdown-content details {
+            margin: 1rem 0;
+        }
+        
+        .markdown-content details > summary {
+            cursor: pointer !important;
+            font-weight: 500;
+            outline: none;
+            transition: color 0.2s;
+            padding: 0.5rem 0;
+            color: #D97706;
+            display: flex;
+            align-items: center;
+            list-style: none;
+        }
+        
+        .markdown-content details > summary::-webkit-details-marker {
+            display: none;
+        }
+        
+        .markdown-content details > summary:hover {
+            color: #B45309;
+        }
+        
+        .markdown-content details > summary::before {
+            content: "▶";
+            margin-right: 0.5rem;
+            transition: transform 0.3s ease;
+            font-size: 0.8em;
+            display: inline-block;
+        }
+        
+        .markdown-content details[open] > summary::before {
+            transform: rotate(90deg);
+        }
+        
+        .markdown-content details .details-content {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+            padding-left: 1.5rem;
+            margin-top: 0;
+        }
+        
+        .markdown-content details[open] .details-content {
+            max-height: 2000px;
+            opacity: 1;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-yellow-50">
@@ -935,6 +1008,9 @@
                 chatContainer.appendChild(messageDiv);
                 document.querySelector('.main-content').scrollTop = document.querySelector('.main-content').scrollHeight;
 
+                // details 애니메이션 적용 함수 호출
+                enhanceDetailsAnimation();
+
                 // 애니메이션 클래스 제거
                 setTimeout(() => {
                     const animatedElements = messageDiv.querySelectorAll('.message-animation');
@@ -942,6 +1018,87 @@
                         el.classList.remove('message-animation');
                     });
                 }, 500);
+            }
+
+            // details 애니메이션 및 포인터 UX 함수
+            function enhanceDetailsAnimation() {
+                console.log('enhanceDetailsAnimation 호출됨');
+                const detailsElements = document.querySelectorAll('.markdown-content details');
+                console.log('찾은 details 요소 수:', detailsElements.length);
+                
+                detailsElements.forEach((details, index) => {
+                    console.log(`details ${index} 처리 중`);
+                    
+                    // 이미 처리된 details는 건너뛰기
+                    if (details.dataset.enhanced === 'true') {
+                        console.log('이미 처리된 details');
+                        return;
+                    }
+                    
+                    // details-content 래퍼 추가
+                    if (!details.querySelector('.details-content')) {
+                        const nodes = [];
+                        let foundSummary = false;
+                        
+                        // childNodes를 배열로 변환하여 처리
+                        Array.from(details.childNodes).forEach(node => {
+                            if (node.tagName === 'SUMMARY' || (node.nodeType === 1 && node.matches('summary'))) {
+                                foundSummary = true;
+                                console.log('summary 찾음');
+                            } else if (foundSummary && node.nodeType === 1) {
+                                nodes.push(node);
+                                console.log('노드 추가:', node.tagName || node.nodeType);
+                            }
+                        });
+                        
+                        if (nodes.length > 0) {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'details-content';
+                            nodes.forEach(n => wrapper.appendChild(n));
+                            details.appendChild(wrapper);
+                            console.log('details-content 래퍼 추가됨');
+                        }
+                    }
+                    
+                    // 클릭 이벤트 추가
+                    const summary = details.querySelector('summary');
+                    if (summary) {
+                        summary.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            
+                            const isOpen = details.hasAttribute('open');
+                            const content = details.querySelector('.details-content');
+                            
+                            if (isOpen) {
+                                // 닫기
+                                details.removeAttribute('open');
+                                if (content) {
+                                    content.style.maxHeight = '0';
+                                    content.style.opacity = '0';
+                                    content.style.marginTop = '0';
+                                }
+                            } else {
+                                // 열기
+                                details.setAttribute('open', '');
+                                if (content) {
+                                    // 실제 높이 계산
+                                    const scrollHeight = content.scrollHeight;
+                                    content.style.maxHeight = scrollHeight + 'px';
+                                    content.style.opacity = '1';
+                                    content.style.marginTop = '0.5rem';
+                                    
+                                    // 애니메이션 완료 후 max-height 제거
+                                    setTimeout(() => {
+                                        content.style.maxHeight = 'none';
+                                    }, 300);
+                                }
+                            }
+                        });
+                    }
+                    
+                    // 처리 완료 표시
+                    details.dataset.enhanced = 'true';
+                });
             }
 
             // 채팅방 제목 수정 함수

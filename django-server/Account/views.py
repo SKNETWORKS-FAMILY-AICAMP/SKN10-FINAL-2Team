@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import SignupSerializer, FindEmailSerializer, SetNewPasswordWithTokenSerializer, PasswordResetRequestSerializer
-from django.contrib.auth import get_user_model, authenticate
+from .serializers import SignupSerializer, FindEmailSerializer, SetNewPasswordWithTokenSerializer, PasswordResetRequestSerializer,LoginSerializer
+from django.contrib.auth import get_user_model, authenticate, login
 from allauth.account.utils import send_email_confirmation
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -17,7 +17,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
 # Create your views here.
-def login(request):
+def loginview(request):
     return render(request, 'login/login.html')
 
 User = get_user_model()
@@ -59,7 +59,7 @@ class LoginAPIView(generics.GenericAPIView):
     
     # You might want a separate serializer for login (e.g., just email and password)
     # For simplicity, we can use a basic serializer or manually validate
-    serializer_class = SignupSerializer # Or create a dedicated LoginSerializer if needed
+    serializer_class = LoginSerializer # Or create a dedicated LoginSerializer if needed
 
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
@@ -86,7 +86,7 @@ class LoginAPIView(generics.GenericAPIView):
                 {"detail": "이메일 인증이 필요합니다. 이메일을 확인해주세요."},
                 status=status.HTTP_403_FORBIDDEN # Forbidden status
             )
-
+        login(request, user)
         # If authentication successful and user is verified, generate JWT tokens
         refresh = RefreshToken.for_user(user)
 
@@ -140,9 +140,9 @@ class PasswordResetRequestAPIView(generics.GenericAPIView):
         
         # 현재 사이트 도메인 가져오기
         current_site = get_current_site(request)
-        domain = "127.0.0.1:8000"
+        domain = "trendofpill.com"
         reset_url = "/login/"
-        protocol = 'http'
+        protocol = 'https'
 
         context = {
             'email': user.email,

@@ -29,6 +29,8 @@ langchain-community
 langchain-openai
 langchain-core
 langchain-neo4j
+gunicorn
+paramiko
 boto3
 lightfm
 sqlalchemy
