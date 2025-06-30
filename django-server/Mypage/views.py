@@ -223,8 +223,13 @@ def analysis_view(request):
         
         print("Loading nutrient standards...")
         # 영양소 기준치 데이터 로드
-        json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
         try:
+            if hasattr(settings, 'STATICFILES_DIRS') and settings.STATICFILES_DIRS:
+                json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+            else:
+                # STATICFILES_DIRS가 없으면 기본 static 경로 사용
+                json_path = os.path.join(settings.BASE_DIR, 'static', 'json', 'Mypage', 'nutrient_standards.json')
+            
             with open(json_path, 'r', encoding='utf-8') as f:
                 nutrient_standards = json.load(f)
             print(f"Nutrient standards loaded: {len(nutrient_standards)} items")
@@ -1704,3 +1709,14 @@ def map_nutrient_name(nutrient_name):
     
     # 매칭되지 않으면 원래 이름 반환
     return nutrient_name
+
+@login_required
+@require_POST
+def analyze_nutrients(request):
+    # TODO: 실제 분석 로직 구현 필요
+    return JsonResponse({'status': 'success', 'message': '아직 영양소 섭취 기록이 없습니다'})
+
+@login_required
+def get_nutrient_data(request):
+    # TODO: 실제 데이터 반환 로직 구현 필요
+    return JsonResponse({'status': 'success', 'data': {'total_nutrients': '{}'}})

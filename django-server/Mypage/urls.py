@@ -20,4 +20,6 @@ urlpatterns = [
     path('api/like/', views.like_api, name='like_api'),
     path('product/purchase/', views.product_purchase, name='product_purchase'),
     path('get-available-nutrients/', views.get_available_nutrients, name='get_available_nutrients'),
+    path('analyze-nutrients/', views.analyze_nutrients, name='analyze_nutrients'),
+    path('get-nutrient-data/', views.get_nutrient_data, name='get_nutrient_data'),
 ]
