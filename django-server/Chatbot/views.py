@@ -13,8 +13,9 @@ from rest_framework.permissions import IsAuthenticated
 from datetime import date
 from django.core.cache import cache  # 캐시 임포트
 
-@permission_classes([IsAuthenticated])
+
 class ChatWithNutiAPIView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, *args, **kwargs):
         # GET 요청 시 HTML 템플릿 렌더링
         return render(request, 'Chatbot/ChatNuti.html')

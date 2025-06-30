@@ -70,6 +70,25 @@ class SignupSerializer(serializers.ModelSerializer):
             is_verified=False # 이메일 인증을 위해 기본값 False
         )
         return user
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True)
+
+    # 로그인 성공 시 클라이언트에 돌려줄 데이터 (선택 사항)
+    access = serializers.CharField(read_only=True)
+    refresh = serializers.CharField(read_only=True)
+    user_id = serializers.IntegerField(read_only=True)
+    user_email = serializers.EmailField(read_only=True)
+    message = serializers.CharField(read_only=True) # 성공 메시지
+
+    # validate 메서드에서 직접 인증 로직을 포함하여 더 깔끔하게 처리할 수도 있습니다.
+    # 하지만 현재 LoginAPIView의 authenticate 로직을 유지하려면 validate는 간단히 둘 수 있습니다.
+    def validate(self, data):
+        email = data.get('email')
+        password = data.get('password')
+        if not email or not password:
+            raise serializers.ValidationError("이메일과 비밀번호를 모두 입력해주세요.")
+        return data
 class FindEmailSerializer(serializers.Serializer):
     # 클라이언트에서 받을 필드: 이름 (name)과 생년월일 (birth_date)
     name = serializers.CharField(max_length=20, required=True)

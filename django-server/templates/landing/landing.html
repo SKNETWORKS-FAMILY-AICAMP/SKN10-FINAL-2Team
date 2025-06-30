@@ -379,7 +379,12 @@
       chatbotLink.addEventListener('click', async function (event) {
         event.preventDefault();
         const userIsAuthenticated = await checkUserAuthentication();
-        window.location.href = userIsAuthenticated ? '/Chatbot/ChatWithNuti/' : '/login/';
+        if (userIsAuthenticated) {
+        window.location.href = '/Chatbot/ChatWithNuti/';
+        } else {
+            // JWT가 만료되었거나 유효하지 않고 갱신에도 실패했다면 로그인 페이지로
+            redirectToLogin();
+        }
       });
     }
 

@@ -181,7 +181,7 @@ def analysis_view(request):
             recommended_supplements = []
         
         # 영양소 기준치 데이터 로드
-        json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+        json_path = os.path.join(settings.STATIC_ROOT, 'json', 'Mypage', 'nutrient_standards.json')
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 nutrient_standards = json.load(f)
@@ -336,9 +336,9 @@ def generate_recommendations(survey_result, health_score):
         recommendations.append("하루 8잔 이상의 물을 마시는 것을 권장합니다.")
     
     # 생활습관 관련 추천
-    if answers.get('smoking'):
+    if answers.get('smoking')=="예":
         recommendations.append("흡연을 줄이거나 중단하는 것을 권장합니다.")
-    if answers.get('drinking'):
+    if answers.get('drinking')=="예":
         recommendations.append("음주를 줄이는 것을 권장합니다.")
     
     return '\n'.join(recommendations)
@@ -577,7 +577,7 @@ def add_manual_nutrient_intake(request):
         amount = data.get('amount', 0.0)
 
         # 영양소 기준치 데이터 로드
-        json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+        json_path = os.path.join(settings.STATIC_ROOT, 'json', 'Mypage', 'nutrient_standards.json')
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 nutrient_standards = json.load(f)
@@ -704,7 +704,7 @@ def analyze_nutrients(request):
                 recommended = intake.nutrient.daily_recommended
                 if not recommended or recommended <= 0:
                     # 기준치 파일에서 권장량 로드
-                    json_path = os.path.join(settings.STATICFILES_DIRS[0], 'json', 'Mypage', 'nutrient_standards.json')
+                    json_path = os.path.join(settings.STATIC_ROOT, 'json', 'Mypage', 'nutrient_standards.json')
                     try:
                         with open(json_path, 'r', encoding='utf-8') as f:
                             nutrient_standards = json.load(f)
@@ -1401,35 +1401,20 @@ def get_product_nutrients(request, product_id):
             'message': str(e)
         }, status=500)
 
-@login_required
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def product_click(request):
-    """Produkt kliknięcie - logowanie aktywności użytkownika"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            product_id = data.get('product_id')
-            
-            # Log aktywności użytkownika
-            UserLog.objects.create(
-                user=request.user,
-                action='product_click',
-                details=f'Product ID: {product_id}'
-            )
-
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Aktywność została zarejestrowana'
-            })
-        except Exception as e:
-            return JsonResponse({
-                'status': 'error',
-                'message': str(e)
-            }, status=500)
-    
-    return JsonResponse({
-        'status': 'error',
-        'message': 'Nieprawidłowe żądanie'
-    }, status=400)
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        # UserLog 저장 (click)
+        UserLog.objects.create(user=user, product=product, action='click')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @login_required
 def chatbot_view(request):
@@ -1641,57 +1626,88 @@ def extract_nutrients_from_text(text):
     
     return nutrients
 
-@login_required
+@csrf_exempt
+@api_view(["POST", "DELETE", "GET"])
+@permission_classes([IsAuthenticated])
 def like_api(request):
-    """API do zarządzania polubieniami"""
-    if request.method == 'GET':
-        # Pobierz polubione produkty
-        likes = Like.objects.filter(user=request.user).select_related('product')
-        liked_products = [{
-            'id': like.product.id,
-            'title': like.product.title,
-            'brand': like.product.brand
-        } for like in likes]
+    """
+    좋아요 API 엔드포인트
+    POST: 좋아요 추가
+    DELETE: 좋아요 제거
+    GET: 좋아요 상태 확인
+    """
+    # 로그인한 사용자 ID 사용
+    user_id = request.user.id
+    
+    if request.method == "GET":
+        # 쿼리 파라미터에서 product_id 가져오기
+        product_id = request.GET.get('product_id')
+        if not product_id:
+            return JsonResponse({"error": "상품 ID가 필요합니다."}, status=400)
+        
+        product = get_object_or_404(Products, id=product_id)
+        is_liked = Like.objects.filter(user_id=user_id, product=product).exists()
         
         return JsonResponse({
-            'status': 'success',
-            'liked_products': liked_products
+            "is_liked": is_liked
         })
-    
-    return JsonResponse({
-        'status': 'error',
-        'message': 'Nieprawidłowe żądanie'
-    }, status=400)
-
-@login_required
-def product_purchase(request):
-    """Zakup produktu - logowanie aktywności"""
-    if request.method == 'POST':
+        
+    elif request.method in ["POST", "DELETE"]:
         try:
-            data = json.loads(request.body)
-            product_id = data.get('product_id')
             
-            # Log zakupu
-            UserLog.objects.create(
-                user=request.user,
-                action='product_purchase',
-                details=f'Product ID: {product_id}'
-            )
+            product_id = request.data.get('product_id')
+            if not product_id:
+                return JsonResponse({"error": "상품 ID가 필요합니다."}, status=400)
             
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Zakup został zarejestrowany'
-            })
+            product = get_object_or_404(Products, id=product_id)
+            
+            if request.method == "POST":
+                # 좋아요 추가 (이미 있으면 무시)
+                like, created = Like.objects.get_or_create(
+                    user=request.user,
+                    product=product
+                )
+                return JsonResponse({
+                    "message": "좋아요가 추가되었습니다." if created else "이미 좋아요가 되어있습니다.",
+                    "is_liked": True
+                })
+                
+            elif request.method == "DELETE":
+                # 좋아요 제거
+                like = Like.objects.filter(user=request.user, product=product)
+                if like.exists():
+                    like.delete()
+                    return JsonResponse({
+                        "message": "좋아요가 제거되었습니다.",
+                        "is_liked": False
+                    })
+                else:
+                    return JsonResponse({
+                        "message": "좋아요가 되어있지 않습니다.",
+                        "is_liked": False
+                    })
+                    
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "잘못된 JSON 형식입니다."}, status=400)
         except Exception as e:
-            return JsonResponse({
-                'status': 'error',
-                'message': str(e)
-            }, status=500)
+            return JsonResponse({"error": str(e)}, status=500)
     
-    return JsonResponse({
-        'status': 'error',
-        'message': 'Nieprawidłowe żądanie'
-    }, status=400)
+    return JsonResponse({"error": "지원하지 않는 메서드입니다."}, status=405)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def product_purchase(request):
+    product_id = request.POST.get('product_id')
+    User = get_user_model()
+    # user = User.objects.get(pk=1)
+    user = request.user
+    try:
+        product = Products.objects.get(pk=product_id)
+        # UserLog 저장 (click)
+        UserLog.objects.create(user=user, product=product, action='purchase')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @login_required
 @require_POST
