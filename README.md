@@ -186,8 +186,6 @@ flowchart TD
 4. Amazon 사이트 이동 후 구매
 ```
 
-⇒ 추후 고도화 예정
-
 <br/>
 
 ## 사용 데이터
@@ -260,7 +258,7 @@ python manage.py runserver
 
 ## 시연 영상
 
-⇒ 추후 업로드 예정
+
 
 <br/>
 
