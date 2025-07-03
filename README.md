@@ -12,7 +12,7 @@
 
 #### 3. [주요 기능](#주요-기능)
 
-#### 4. [추천 시스템](#추천-시스템)
+#### 4. [시스템 설계도](#시스템-설계도)
 
 #### 5. [시스템 아키텍처](#시스템-아키텍처)
 
@@ -32,11 +32,11 @@
 
 |이름|역할|메인 업무|깃허브|
 |---|---|---|---|
-|**최수헌**|팀장|프로젝트 관리 및 LLM|[HoneyWater8](https://github.com/HoneyWater8)|
-|**권석현**|팀원|DB|[seo-droid](https://github.com/seo-droid)|
-|**원유형**|팀원|데이터수집 및 AWS|[uhyeong](https://github.com/uhyeong)|
-|**좌민서**|팀원|추천 시스템|[INe](https://github.com/INe904)|
-|**홍승표**|팀원|웹 개발|[redwin02](https://github.com/redwin-02)|
+|**최수헌**|팀장|서비스 기획 및 KAG Multi-Agent|[HoneyWater8](https://github.com/HoneyWater8)|
+|**권석현**|팀원|공공데이터 수집 및 DB 구축|[seo-droid](https://github.com/seo-droid)|
+|**원유형**|팀원|AWS CI/CD 및 데이터 파이프라인 구축|[uhyeong](https://github.com/uhyeong)|
+|**좌민서**|팀원|추천 시스템 개발|[INe](https://github.com/INe904)|
+|**홍승표**|팀원|Django 기반 UI 개발|[redwin02](https://github.com/redwin-02)|
 
 ### 기술 스택
 
@@ -132,25 +132,17 @@ SKN10-FINAL-2TEAM/
 
 <br/>
 
-## 추천 시스템
+## 시스템 설계도
 
-### 비개인화 추천 시스템
+![](https://github.com/user-attachments/assets/2b512f29-b03e-46a9-a99d-901d8fc45c3c)
 
-- 감성 분석 기반 만족도 추천
-  - 사용자 리뷰를 LLM으로 분석하여 긍정률 기반 추천
+### 데이터 수집 파이프라인
 
-- 판매 순위 기반 추천
-  - Amazon의 카테고리별 랭킹 활용
+![](https://github.com/user-attachments/assets/28ef0cd9-6d90-4406-acae-97fbab0a2950)
 
-- 가성비 추천
-  - 가격 대비 평점 최적 상품 추천
+### 모델 학습 MLOps 파이프라인
 
-### 개인화 추천 시스템
-
-- LightFM 모델
-  - 사용자의 행동 데이터 및 상품 데이터를 기반으로 상품 추천
- 
-  - 서비스 이용 규모를 통해 SASRec과 같은 딥러닝 기반 추천 시스템보다 LightFM의 머신러닝 모델이 합리적이라고 판단
+![](https://github.com/user-attachments/assets/00cb9806-f642-4bca-9884-be744c504afc)
 
 <br/>
 
@@ -215,22 +207,52 @@ flowchart TD
 
 ```bash
 git clone https://github.com/SKNETWORKS-FAMILY-AICAMP/SKN10-FINAL-2Team.git
-cd SKN10-FINAL-2Team
+cd .\SKN10-FINAL-2Team\
 ```
 
-### 2. 가상환경 생성 및 라이브러리 설치
+### 2. 가상환경 생성
 
 ```bash
-cd ../django-server
-uv venv .venv -p 3.13
+py -3.11 -m venv .venv
 .\.venv\Scripts\activate
-uv pip install -r requirements.txt
 ```
 
-### 3. 서비스 실행
+### 3. 라이브러리 설치
+
+```bash
+cd .\django-server\
+[venv 경로]\.venv\Scripts\python.exe -m pip install --upgrade pip setuptools wheel
+pip install --no-use-pep517 lightfm
+pip install -r .\requirements.txt
+```
+
+### 4. 환경 변수 설정
+
+```bash
+OPENAI_API_KEY=[YOUR_OPENAI_KEY]
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
+LANGCHAIN_PROJECT=[YOUR_LANGSMITH_PROJECT]
+LANGCHAIN_API_KEY=[YOUR_LANGSMITH_KEY]
+POSTGRES_URI=[YOUR_POSTGRESQL_URI]
+POSTGRES_PASSWORD=[YOUR_POSTGRESQL_PASSWORD]
+POSTGRES_HOST=[YOUR_POSTGRESQL_HOST]
+GOOGLE_CLIENT_ID=[YOUR_GOOGLE_CLIENT_ID]
+GOOGLE_CLIENT_SECRET=[YOUR_GOOGLE_CLIENT_SECRET]
+EMAIL_HOST_USER=[YOUR_EMAIL_HOST_USER]
+EMAIL_HOST_PASSWORD=[YOUR_EMAIL_HOST_PASSWORD]
+```
+
+### 5. 데이터베이스 설정 및 마이그레이션
 
 ```bash
 python manage.py makemigrations
+python manage.py migrate
+```
+
+### 6. 프로젝트 실행
+
+```bash
 python manage.py runserver
 ```
 
